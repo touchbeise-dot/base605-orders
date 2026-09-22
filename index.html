@@ -72,13 +72,14 @@ textarea{min-height:60px;resize:vertical}
 .primary{background:var(--brand);color:var(--brand-ink);border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}
 .ghost{background:none;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-weight:600;color:var(--ink);cursor:pointer}
 .ghost.danger{color:var(--danger);border-color:#f1c9c9}
-.toggle{display:flex;gap:8px;flex-wrap:wrap}
-.toggle label{flex:1;margin:0;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:600}
-.toggle input{width:auto}
-details.more>summary{cursor:pointer;font-weight:700;color:var(--brand);list-style:none;padding:4px 0}
-details.more>summary::before{content:"▸ ";}
-details.more[open]>summary::before{content:"▾ ";}
-details.more>summary::-webkit-details-marker{display:none}
+.extras{display:flex;flex-direction:column;gap:8px}
+.extras .opt{margin:0;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:600;white-space:nowrap}
+.extras .opt input[type=checkbox]{width:18px;height:18px;margin:0;flex:0 0 auto}
+.extras .opt>span:first-of-type{flex:1}
+.extras .opt b{font-weight:600;color:var(--mute)}
+.extras .amt-in{display:flex;align-items:center;gap:4px;color:var(--mute)}
+.extras .amt-in input{width:84px;padding:6px 8px;text-align:right}
+input,select,textarea{max-width:100%}
 .hint{font-size:12px;color:var(--brand);font-weight:700;margin-top:4px;min-height:14px}
 .note{font-size:13px;color:var(--mute)}
 .savebar{position:fixed;left:0;right:0;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));z-index:5;background:var(--card);border-top:1px solid var(--line);padding:10px 16px;display:none;gap:12px;align-items:center}
@@ -204,6 +205,13 @@ details.more>summary::-webkit-details-marker{display:none}
 .qrs .q-gcash img{border-color:#007DFE}.qrs .q-gcash figcaption{color:#007DFE}
 .qrs .q-bpi img{border-color:#B11116}.qrs .q-bpi figcaption{color:#B11116}
 .inv-foot{margin-top:12px;font-size:13px;color:#6b6b74;text-align:center}
+.dmap{width:100%;display:block;border-radius:10px;margin-top:12px;max-height:260px;object-fit:cover}
+.dloc{margin-top:12px;padding:12px 14px;background:#f7f3ee;border-left:4px solid #f9a75d;border-radius:10px}
+.dloc b{display:block;font-size:16px}
+.dloc .who2{margin-top:6px;color:#6b6b74}
+.pick-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pick-map{display:flex;gap:10px;align-items:center;margin-top:8px}
+.pick-map img{width:72px;height:54px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
 .invacts{max-width:440px;margin:12px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .invacts .wide{grid-column:1/-1}
 .rushtag{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:#fde2e1;color:#b3261e;margin-left:6px;vertical-align:middle}
@@ -312,17 +320,16 @@ details.more>summary::-webkit-details-marker{display:none}
       <div id="items"></div>
       <div style="margin-top:12px"><button class="ghost" id="addItem" type="button">+ Add another item</button></div>
     </div>
-    <div class="card">
-      <details class="more" id="moreOpts"><summary>More options: rush, delivery, payment method, notes</summary>
-        <div class="toggle" style="margin-top:10px">
-          <label><input type="checkbox" id="rush"> Rush fee <span id="rushLbl">₱100</span></label>
-          <label><input type="checkbox" id="ship"> J&amp;T delivery ₱<input id="shipAmt" type="number" min="0" value="60" inputmode="numeric" style="width:72px;padding:6px 8px"></label>
-        </div>
-        <label for="payment">Paying via</label>
-        <select id="payment"><option value="">— not yet —</option><option value="gcash">GCash</option><option value="bpi">BPI</option></select>
-        <label for="notes">Notes</label>
-        <textarea id="notes" placeholder="Address, special requests"></textarea>
-      </details>
+    <div class="card" id="moreOpts">
+      <h3>Extras</h3>
+      <div class="extras">
+        <label class="opt"><input type="checkbox" id="rush"><span>Rush fee <b id="rushLbl">₱100</b> each</span><span class="amt-in">× <input id="rushQty" type="number" min="1" value="1" inputmode="numeric" style="width:64px"></span></label>
+        <label class="opt"><input type="checkbox" id="ship"><span>J&amp;T delivery</span><span class="amt-in">₱ <input id="shipAmt" type="number" min="0" value="60" inputmode="numeric"></span></label>
+      </div>
+      <label for="payment">Paying via</label>
+      <select id="payment"><option value="">— not yet —</option><option value="gcash">GCash</option><option value="bpi">BPI</option></select>
+      <label for="notes">Notes</label>
+      <textarea id="notes" placeholder="Address, special requests"></textarea>
     </div>
     <button class="ghost" id="cancelEdit" type="button" hidden style="width:100%">Cancel edit</button>
   </section>
@@ -366,6 +373,12 @@ details.more>summary::-webkit-details-marker{display:none}
       </div>
     </div>
     <div class="card">
+      <h3>Pickup locations (for Grab / Lalamove)</h3>
+      <p class="note" style="margin:0 0 8px">Add a map screenshot per location; it's printed on the delivery card.</p>
+      <div id="catPickups"></div>
+      <button class="ghost" id="catAddPick" type="button" style="width:100%;margin-top:8px">+ Add location</button>
+    </div>
+    <div class="card">
       <h3>Payment details (shown on invoices)</h3>
       <label>GCash</label><input id="catGcash" placeholder="GCash 0917 182 3137 · Name">
       <label>BPI</label><input id="catBpi" placeholder="BPI · Account name · Account number">
@@ -376,6 +389,26 @@ details.more>summary::-webkit-details-marker{display:none}
       <div id="catMsgs"></div>
     </div>
     <button class="primary" id="catSave" type="button" style="width:100%">Save catalog</button>
+  </section>
+
+  <section id="tab-deliv" hidden>
+    <div class="card" style="max-width:440px;margin:0 auto 12px">
+      <label for="pickSel">Pickup location</label>
+      <select id="pickSel"></select>
+      <div id="pickCustom" hidden>
+        <label>Location name</label><input id="pcName" placeholder="e.g. Makati office">
+        <label>Address</label><input id="pcAddr" placeholder="Street, barangay, city">
+        <div class="row"><div><label>Contact person</label><input id="pcPerson"></div><div><label>Phone</label><input id="pcPhone" inputmode="tel"></div></div>
+        <label>Google Maps link (optional)</label><input id="pcMaps" placeholder="https://maps.app.goo.gl/…">
+        <button class="ghost" id="pcSave" type="button" style="width:100%;margin-top:10px">Use this location</button>
+      </div>
+    </div>
+    <div class="inv" id="deliv"></div>
+    <div class="invacts">
+      <button class="primary" id="delivPng" type="button">Download PNG</button>
+      <button class="ghost" id="delivCopy" type="button">Copy as text</button>
+      <button class="ghost wide" id="delivBack" type="button">Back</button>
+    </div>
   </section>
 
   <section id="tab-done" hidden>
@@ -413,6 +446,10 @@ const DEFAULT_CATALOG={
     {id:"print",   name:"Print Only",   price:50,  sets:[], greeting:false, per10:true},
   ],
   basePieces:30, stepPrice:50, rush:100, ship:60,
+  pickups:[
+    {id:"cubao1",name:"Cubao 1",address:"28 MT Dioquino, Project 4, Quezon City",person:"Chloe",phone:"0999 490 4186",maps:"",map:""},
+    {id:"cubao2",name:"Cubao 2",address:"GC Residences, 78 12th Ave, Cubao, Quezon City",person:"Bei",phone:"0999 490 4186",maps:"",map:""},
+  ],
   payments:{gcash:"GCash 0917 182 3137 · Chloe Louise M.", bpi:"BPI 0419 3605 08 · Chloe Louise Manuel"},
   messages:{
     invoice:"Hi {customer}! Here's your Base 605 order {order}:\n{items}\n\nTotal: {total}{release_line}\n{pay_options}\n{payment}\nSend your proof of payment here in our chat and we'll start on it. Thank you!",
@@ -421,17 +458,19 @@ const DEFAULT_CATALOG={
     pickup:"Hi {customer}! Your Base 605 tags ({order}) are ready for pickup! Let us know when you're coming so we can prepare them.\n{balance_note}See you!",
     shipped:"Hi {customer}! Your order {order} has been shipped via J&T.\nTracking no.: ____\nYou can track it at jtexpress.ph. Message us if anything comes up!",
     thanks:"Thank you for ordering from Base 605, {customer}! We hope you love your tags. Tag us when you use them, we'd love to see!",
+    delivery:"Hi {customer}! Here are the pickup details for your order {order} — you can book Grab or Lalamove to this address:\n\n{pickup_name}\n{pickup_address}\nContact: {pickup_person} · {pickup_phone}{pickup_maps_line}\n\nPlease send us the rider's details once booked. Thank you!",
     nudge:"Hi {customer}! Just checking in on the draft for your order {order} — is it good to go, or would you like any changes? Once you approve we'll print right away so we can release on time. Thank you!",
   },
 };
-const MSG_LABELS={invoice:"Invoice / order summary",balance:"Balance reminder",draft:"Draft for approval",nudge:"Approval follow-up (nudge)",pickup:"Ready for pickup",shipped:"Shipped via J&T",thanks:"Thank you / done"};
-const MSG_HELP="Placeholders: {customer} {order} {items} {total} {paid} {balance} {downpayment} {release} {release_line} {release_so} {payment} {pay_options} {balance_note}";
+const MSG_LABELS={invoice:"Invoice / order summary",balance:"Balance reminder",draft:"Draft for approval",nudge:"Approval follow-up (nudge)",pickup:"Ready for pickup",delivery:"Delivery details (Grab / Lalamove)",shipped:"Shipped via J&T",thanks:"Thank you / done"};
+const MSG_HELP="Placeholders: {pickup_name} {pickup_address} {pickup_person} {pickup_phone} {pickup_maps_line} {customer} {order} {items} {total} {paid} {balance} {downpayment} {release} {release_line} {release_so} {payment} {pay_options} {balance_note}";
 let CAT=JSON.parse(JSON.stringify(DEFAULT_CATALOG));
 const range=(p,n)=>Array.from({length:n},(_,i)=>p+(i+1));
 let PRODUCTS={}, PAYMENTS={}, RUSH=100, BASE_PIECES=30, STEP_PRICE=50;
 function applyCatalog(c){
   CAT=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CATALOG)),c||{});
   CAT.messages=Object.assign({},DEFAULT_CATALOG.messages,c&&c.messages||{});
+  if(!Array.isArray(CAT.pickups))CAT.pickups=DEFAULT_CATALOG.pickups;
   if(!Array.isArray(CAT.products)||!CAT.products.length)CAT.products=DEFAULT_CATALOG.products;
   PRODUCTS={};CAT.products.forEach(p=>{const codes=(p.sets||[]).flatMap(s=>range(String(s.p||"").toUpperCase(),Number(s.n)||0));PRODUCTS[p.id]={name:p.name,price:Number(p.price)||0,codes:codes.length?codes:null,pieces:true,greeting:!!p.greeting,per10:!!p.per10};});
   PAYMENTS={gcash:{label:"GCash",details:CAT.payments.gcash||""},bpi:{label:"BPI",details:CAT.payments.bpi||""}};
@@ -455,6 +494,9 @@ const dayKey=d=>{const t=new Date();t.setHours(0,0,0,0);const [y,m,dd]=d.split("
 const dayTag=k=>k<0?`${-k} day${k===-1?"":"s"} overdue`:k===0?"Today":k===1?"Tomorrow":`in ${k} days`;
 const dayPill=k=>k===null?"":`<small class="${k<0?"":k===0?"today":k<=2?"soon":""}">${dayTag(k)}</small>`;
 const pill=st=>"st-"+String(st||"").replace(/\s+/g,"-");
+const rushN=o=>o.rush===true?1:Number(o.rush)||0;
+const rushFee=o=>o.rushFee!=null?Number(o.rushFee):rushN(o)*RUSH;
+const rushLabel=o=>rushN(o)>1?`Rush fee ×${rushN(o)}`:"Rush fee";
 const custKey=c=>String(c||"").trim().toLowerCase().replace(/^@/,"");
 const $=id=>document.getElementById(id);
 
@@ -520,12 +562,12 @@ async function initStore(){
 let tab="today";
 function go(t){
   tab=t;
-  ["today","new","list","up","print","stats","cat","done"].forEach(x=>$("tab-"+x).hidden=(x!==t));
+  ["today","new","list","up","print","stats","cat","done","deliv"].forEach(x=>$("tab-"+x).hidden=(x!==t));
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
-  $("title").textContent={today:"Today",new:editing?"Edit order":"New order",list:"Orders",up:"Upcoming releases",print:"Print list",stats:"Stats",cat:"Catalog & settings",done:"Invoice"}[t];
+  $("title").textContent={today:"Today",new:editing?"Edit order":"New order",list:"Orders",up:"Upcoming releases",print:"Print list",stats:"Stats",cat:"Catalog & settings",done:"Invoice",deliv:"Delivery details"}[t];
   $("savebar").classList.toggle("show",t==="new");
-  $("fab").style.display=(t==="new"||t==="done")?"none":"";
-  document.querySelector("header").style.display=t==="done"?"none":"";
+  $("fab").style.display=(t==="new"||t==="done"||t==="deliv")?"none":"";
+  document.querySelector("header").style.display=(t==="done"||t==="deliv")?"none":"";
   window.scrollTo(0,0);
   if(t==="today")renderToday();
   if(t==="cat")renderCatalog();
@@ -593,12 +635,14 @@ const shipAmt=()=>Math.max(0,Number($("shipAmt").value)||0);
 function recalc(){
   const items=readItems();
   [...itemsEl.querySelectorAll(".item")].forEach((div,i)=>div.querySelector(".linetotal").textContent=items[i].addon?`${items[i].pieces} pcs · +${peso(items[i].addon)} = ${peso(items[i].line)}`:peso(items[i].line));
-  const total=items.reduce((s,i)=>s+i.line,0)+($("rush").checked?RUSH:0)+($("ship").checked?shipAmt():0);
+  const rq=$("rush").checked?Math.max(1,Number($("rushQty").value)||1):0;
+  const total=items.reduce((s,i)=>s+i.line,0)+rq*RUSH+($("ship").checked?shipAmt():0);
   $("grand").textContent=peso(total);
   return {items,total};
 }
 $("addItem").onclick=()=>addItem();
 $("rush").addEventListener("change",recalc);$("ship").addEventListener("change",recalc);
+$("rushQty").addEventListener("input",()=>{$("rush").checked=true;recalc();});
 $("shipAmt").addEventListener("input",()=>{$("ship").checked=true;recalc();});
 $("customer").addEventListener("input",()=>{
   const k=custKey($("customer").value),h=$("custHint");if(!k){h.textContent="";return;}
@@ -609,12 +653,12 @@ function refreshCustList(){const seen=new Set();$("custList").innerHTML=orders.m
 function resetForm(){
   editing=null;$("save").textContent="Save order";$("saveLbl").textContent="Total";$("cancelEdit").hidden=true;
   ["customer","contact","release","payment","notes"].forEach(i=>$(i).value="");$("custHint").textContent="";
-  $("rush").checked=false;$("ship").checked=false;$("shipAmt").value=CAT.ship||60;$("moreOpts").open=false;$("rushLbl").textContent=peso(RUSH);
+  $("rush").checked=false;$("rushQty").value=1;$("ship").checked=false;$("shipAmt").value=CAT.ship||60;$("rushLbl").textContent=peso(RUSH);
   itemsEl.innerHTML="";seq=0;addItem();recalc();
 }
 function startEdit(o){
   editing=o;$("customer").value=o.customer;$("contact").value=o.contact||"";$("release").value=o.releaseDate||"";$("payment").value=o.payment||"";$("notes").value=o.notes||"";
-  $("rush").checked=!!o.rush;$("ship").checked=!!o.shipping;$("shipAmt").value=o.shipping||CAT.ship||60;$("moreOpts").open=!!(o.rush||o.shipping||o.payment||o.notes);
+  $("rush").checked=rushN(o)>0;$("rushQty").value=rushN(o)||1;$("ship").checked=!!o.shipping;$("shipAmt").value=o.shipping||CAT.ship||60;
   itemsEl.innerHTML="";seq=0;o.items.forEach(i=>addItem(i));
   $("save").textContent="Update";$("saveLbl").textContent=`Editing ${ono(o.no)}`;$("cancelEdit").hidden=false;go("new");recalc();
 }
@@ -631,7 +675,7 @@ $("save").onclick=async()=>{
   if(!customer){toast("Customer is required");$("customer").focus();return;}
   const {items,total}=recalc();
   const order={paid:0,status:"new",createdAt:new Date().toISOString(),stageAt:new Date().toISOString(),...(editing?{id:editing.id,no:editing.no,createdAt:editing.createdAt,stageAt:editing.stageAt||editing.createdAt,status:editing.status,paid:editing.paid||0}:{}),
-    customer,contact:$("contact").value.trim(),releaseDate:$("release").value,payment:$("payment").value,items,rush:$("rush").checked,shipping:$("ship").checked?shipAmt():0,notes:$("notes").value.trim(),total};
+    customer,contact:$("contact").value.trim(),releaseDate:$("release").value,payment:$("payment").value,items,rush:$("rush").checked?Math.max(1,Number($("rushQty").value)||1):0,rushFee:($("rush").checked?Math.max(1,Number($("rushQty").value)||1):0)*RUSH,shipping:$("ship").checked?shipAmt():0,notes:$("notes").value.trim(),total};
   const btn=$("save");btn.disabled=true;
   try{
     if(editing)await store.update(order);else await store.add(order);
@@ -645,12 +689,13 @@ const payDetails=o=>o.payment&&PAYMENTS[o.payment]?PAYMENTS[o.payment].details:O
 function fillMessage(tpl,o){
   const paid=Number(o.paid)||0,bal=Math.max(0,o.total-paid);
   const items=o.items.map(i=>`• ${i.product}${i.code?` ${i.code}`:""}${i.pieces?` · ${i.pieces} pcs`:""}${i.sender?` · "${i.sender}"`:""}${i.greeting?` · "${i.greeting}"`:""}: ${peso(i.line)}`);
-  if(o.rush)items.push(`• Rush fee: ${peso(RUSH)}`);if(o.shipping)items.push(`• J&T delivery: ${peso(o.shipping)}`);
+  if(rushN(o))items.push(`• ${rushLabel(o)}: ${peso(rushFee(o))}`);if(o.shipping)items.push(`• J&T delivery: ${peso(o.shipping)}`);
   const vars={
     customer:o.customer,order:ono(o.no),items:items.join("\n"),total:peso(o.total),paid:peso(paid),balance:peso(bal),downpayment:peso(Math.ceil(o.total/2)),
     release:o.releaseDate?fmtDate(o.releaseDate):"TBD",release_line:o.releaseDate?`\nRelease: ${fmtDate(o.releaseDate)}`:"",release_so:o.releaseDate?` so we can release on ${fmtDate(o.releaseDate)}`:"",
     payment:payDetails(o),
     pay_options:paid>=o.total?"Fully paid — thank you!":paid>0?`Paid: ${peso(paid)} · Balance: ${peso(bal)}`:`50% downpayment: ${peso(Math.ceil(o.total/2))} or full: ${peso(o.total)}`,
+    pickup_name:o.pickup?.name||"",pickup_address:o.pickup?.address||"",pickup_person:o.pickup?.person||"",pickup_phone:o.pickup?.phone||"",pickup_maps_line:o.pickup?.maps?`\nMap: ${o.pickup.maps}`:"",
     balance_note:bal>0?`Remaining balance: ${peso(bal)} — send proof here in our chat or pay on pickup.\n`:"",
   };
   return String(tpl).replace(/\{(\w+)\}/g,(m,k)=>k in vars?vars[k]:m);
@@ -663,7 +708,7 @@ let lastOrder=null;
 function renderInvoice(o){
   const paid=Number(o.paid)||0,bal=Math.max(0,o.total-paid),half=Math.ceil(o.total/2);
   const rows=o.items.map(i=>`<tr><td>${esc(i.product)}${i.code?` · ${esc(i.code)}`:""}${i.pieces?` · ${i.pieces} pcs`:""}<small>${[i.sender?`Name: ${esc(i.sender)}`:"",i.greeting?`Greeting: “${esc(i.greeting)}”`:""].filter(Boolean).join("<br>")}</small></td><td>${peso(i.line)}</td></tr>`).join("");
-  const extras=(o.rush?`<tr class="sub"><td>Rush fee</td><td>${peso(RUSH)}</td></tr>`:"")+(o.shipping?`<tr class="sub"><td>J&amp;T delivery</td><td>${peso(o.shipping)}</td></tr>`:"");
+  const extras=(rushN(o)?`<tr class="sub"><td>${rushLabel(o)}</td><td>${peso(rushFee(o))}</td></tr>`:"")+(o.shipping?`<tr class="sub"><td>J&amp;T delivery</td><td>${peso(o.shipping)}</td></tr>`:"");
   const acct=esc(payDetails(o)).replace(/\n/g,"<br>");
   const which=o.payment&&PAYMENTS[o.payment]?[o.payment]:["gcash","bpi"];
   const qrs=which.filter(k=>QR[k]).map(k=>`<figure class="q-${k}"><img src="${QR[k]}" alt="${PAYMENTS[k].label} QR"><figcaption>${PAYMENTS[k].label} · scan to pay</figcaption></figure>`).join("");
@@ -677,18 +722,61 @@ function renderInvoice(o){
 function showInvoice(o){lastOrder=o;renderInvoice(o);go("done");}
 $("copy").onclick=async()=>{try{await navigator.clipboard.writeText(messageFor(lastOrder));toast("Copied");}catch{toast("Copy failed");}};
 $("another").onclick=()=>go("new");$("toToday").onclick=()=>go("today");
-$("png").onclick=async()=>{
+async function downloadPng(el,name,btn){
   if(!window.html2canvas){toast("PNG not available — screenshot instead");return;}
-  const btn=$("png");btn.disabled=true;
+  btn.disabled=true;
   try{
-    const canvas=await html2canvas($("invoice"),{scale:3,backgroundColor:"#ffffff",useCORS:true});
+    const canvas=await html2canvas(el,{scale:3,backgroundColor:"#ffffff",useCORS:true});
     const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
-    const name=`base605-${lastOrder&&lastOrder.no?ono(lastOrder.no).slice(1):"invoice"}.png`;
     if(store.downloads){try{await store.downloads.save({filename:name,data:blob});toast("Saved");}catch(e){if(e?.code!=="declined")toast("Download unavailable — screenshot instead");}}
     else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
   }catch(e){console.error(e);toast("Couldn't render — screenshot instead");}
   finally{btn.disabled=false;}
+}
+$("png").onclick=()=>downloadPng($("invoice"),`base605-${lastOrder&&lastOrder.no?ono(lastOrder.no).slice(1):"invoice"}.png`,$("png"));
+
+// ===== DELIVERY DETAILS =====
+let delivOrder=null, prevTab="today";
+function pickupOptions(){return `<option value="">— choose —</option>${CAT.pickups.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}<option value="__custom">Other location…</option>`;}
+function showDelivery(o){
+  delivOrder=o; prevTab=tab==="deliv"?prevTab:tab;
+  $("pickSel").innerHTML=pickupOptions();
+  const cur=o.pickup; const known=cur&&CAT.pickups.find(p=>p.id===cur.id);
+  $("pickSel").value=known?cur.id:(cur&&cur.name?"__custom":"");
+  $("pickCustom").hidden=$("pickSel").value!=="__custom";
+  if(cur&&!known){$("pcName").value=cur.name||"";$("pcAddr").value=cur.address||"";$("pcPerson").value=cur.person||"";$("pcPhone").value=cur.phone||"";$("pcMaps").value=cur.maps||"";}
+  renderDelivery(); go("deliv");
+}
+function renderDelivery(){
+  const o=delivOrder; if(!o)return; const p=o.pickup;
+  if(!p||!p.name){$("deliv").innerHTML=`<div class="inv-band"><img src="${LOGO}" alt="Base 605"><div class="no">${ono(o.no)}<small>Delivery details</small></div></div><div class="inv-rule"></div><div class="inv-body"><p class="note" style="padding:20px 0;text-align:center">Choose a pickup location above.</p></div>`;return;}
+  const mapsLine=p.maps?`<div style="margin-top:8px;font-size:13px;word-break:break-all"><b style="display:inline;font-size:11px;color:#6b6b74;text-transform:uppercase;letter-spacing:.04em">Map </b>${esc(p.maps)}</div>`:"";
+  $("deliv").innerHTML=`<div class="inv-band"><img src="${LOGO}" alt="Base 605"><div class="no">${ono(o.no)}<small>Pickup details</small></div></div><div class="inv-rule"></div><div class="inv-body">
+    <div class="inv-meta"><div><b>Customer</b>${esc(o.customer)}${o.contact?`<br>${esc(o.contact)}`:""}</div><div><b>Items</b>${o.items.map(i=>`${esc(i.product.replace(" Tag",""))}${i.code?" "+esc(i.code):""}${i.pieces?" ×"+i.pieces:""}`).join(", ")}</div></div>
+    <div class="dloc"><b>${esc(p.name)}</b>${esc(p.address)}<div class="who2">Contact: ${esc(p.person)}${p.phone?` · ${esc(p.phone)}`:""}</div>${mapsLine}</div>
+    ${p.map?`<img class="dmap" src="${p.map}" alt="Map">`:""}
+    <div class="inv-foot">Book Grab or Lalamove to this address · send us the rider's details once booked</div></div>`;
+}
+$("pickSel").addEventListener("change",async e=>{
+  const v=e.target.value; $("pickCustom").hidden=v!=="__custom";
+  if(v==="__custom")return;
+  const p=CAT.pickups.find(x=>x.id===v);
+  const snap=p?{id:p.id,name:p.name,address:p.address,person:p.person,phone:p.phone,maps:p.maps||""}:null;
+  delivOrder.pickup=snap; renderDelivery();
+  try{await store.patch(delivOrder,{pickup:snap});}catch(err){console.error(err);toast("Couldn't save location");}
+});
+$("pcSave").onclick=async()=>{
+  const snap={id:"custom",name:$("pcName").value.trim(),address:$("pcAddr").value.trim(),person:$("pcPerson").value.trim(),phone:$("pcPhone").value.trim(),maps:$("pcMaps").value.trim()};
+  if(!snap.name||!snap.address){toast("Name and address are required");return;}
+  delivOrder.pickup=snap; renderDelivery();
+  try{await store.patch(delivOrder,{pickup:snap});toast("Location saved");}catch(err){console.error(err);toast("Couldn't save location");}
 };
+$("delivBack").onclick=()=>go(prevTab||"today");
+$("delivCopy").onclick=async()=>{try{await navigator.clipboard.writeText(fillMessage(CAT.messages.delivery,{...delivOrder,pickup:{...(delivOrder.pickup||{}),map:undefined}}));toast("Copied");}catch{toast("Copy failed");}};
+$("delivPng").onclick=()=>downloadPng($("deliv"),`base605-${delivOrder&&delivOrder.no?ono(delivOrder.no).slice(1):"order"}-pickup.png`,$("delivPng"));
+// map snapshot for delivery card: pickup snapshot stores no image; pull from catalog by id at render time
+const origRenderDelivery=renderDelivery;
+renderDelivery=function(){const o=delivOrder;if(o&&o.pickup&&!o.pickup.map){const c=CAT.pickups.find(x=>x.id===o.pickup.id);if(c&&c.map)o.pickup={...o.pickup,map:c.map};}origRenderDelivery();if(o&&o.pickup)delete o.pickup.map;};
 
 // ===== ACTIONS =====
 let sheetView=null; // {type:"order",id} | {type:"customer",key}
@@ -706,8 +794,8 @@ function renderSheet(){
     const paid=Number(o.paid)||0;
     el.innerHTML=`<div class="grab"></div>
       <div class="top"><div><h2><small>${ono(o.no)}</small><button data-act="cust" class="x" style="font-size:20px;font-weight:700;color:var(--ink);padding:0;text-decoration:underline dotted var(--mute)">${esc(o.customer)}</button>${o.rush?'<span class="rushtag">RUSH</span>':""}</h2><div class="when">${fmt(o.createdAt)}</div></div><div style="display:flex;align-items:flex-start;gap:6px">${pillsOf(o)}<button class="x" data-act="close" aria-label="Close">×</button></div></div>
-      <div class="meta"><div><b>Release</b>${o.releaseDate?`<span class="rel ${!CLOSED(o.status)&&dayKey(o.releaseDate)<0?"late":""}">${fmtDate(o.releaseDate)} · ${dayTag(dayKey(o.releaseDate))}</span>`:"not set"}</div><div><b>Contact</b>${o.contact?esc(o.contact):"—"}</div><div><b>Delivery</b>${o.shipping?`J&amp;T · ${peso(o.shipping)}`:"Pickup"}</div><div><b>Paying via</b>${o.payment&&PAYMENTS[o.payment]?PAYMENTS[o.payment].label:"—"}</div>${o.notes?`<div style="grid-column:1/-1"><b>Notes</b>${esc(o.notes)}</div>`:""}</div>
-      <ul class="items">${o.items.map(i=>`<li><div>${esc(i.product)}${i.code?` · <b>${esc(i.code)}</b>`:""}${i.pieces?` · ${i.pieces} pcs`:""}<small>${[i.sender?"Name: "+esc(i.sender):"",i.greeting?"“"+esc(i.greeting)+"”":""].filter(Boolean).join(" · ")}</small></div><div>${peso(i.line)}</div></li>`).join("")}${o.rush?`<li><div>Rush fee</div><div>${peso(RUSH)}</div></li>`:""}${o.shipping?`<li><div>J&amp;T delivery</div><div>${peso(o.shipping)}</div></li>`:""}</ul>
+      <div class="meta"><div><b>Release</b>${o.releaseDate?`<span class="rel ${!CLOSED(o.status)&&dayKey(o.releaseDate)<0?"late":""}">${fmtDate(o.releaseDate)} · ${dayTag(dayKey(o.releaseDate))}</span>`:"not set"}</div><div><b>Contact</b>${o.contact?esc(o.contact):"—"}</div><div><b>Delivery</b>${o.shipping?`J&amp;T · ${peso(o.shipping)}`:o.pickup&&o.pickup.name?`Grab/Lalamove from ${esc(o.pickup.name)}`:"Pickup"}</div><div><b>Paying via</b>${o.payment&&PAYMENTS[o.payment]?PAYMENTS[o.payment].label:"—"}</div>${o.notes?`<div style="grid-column:1/-1"><b>Notes</b>${esc(o.notes)}</div>`:""}</div>
+      <ul class="items">${o.items.map(i=>`<li><div>${esc(i.product)}${i.code?` · <b>${esc(i.code)}</b>`:""}${i.pieces?` · ${i.pieces} pcs`:""}<small>${[i.sender?"Name: "+esc(i.sender):"",i.greeting?"“"+esc(i.greeting)+"”":""].filter(Boolean).join(" · ")}</small></div><div>${peso(i.line)}</div></li>`).join("")}${rushN(o)?`<li><div>${rushLabel(o)}</div><div>${peso(rushFee(o))}</div></li>`:""}${o.shipping?`<li><div>J&amp;T delivery</div><div>${peso(o.shipping)}</div></li>`:""}</ul>
       <div class="tot"><span>Total</span><span>${peso(o.total)}</span></div>
       ${paid>0&&paid<o.total?`<div class="paidbadge" style="text-align:left">${peso(paid)} paid · ${peso(o.total-paid)} balance</div>`:""}
       <h4>Stage</h4>${stepper(o)}${nextOf(o.status)?`<div class="grp"><button class="primary" data-act="next" style="padding:9px 14px;font-size:13px">→ ${esc(nextOf(o.status))}</button></div>`:""}
@@ -762,6 +850,7 @@ document.body.addEventListener("click",async e=>{
   if(act==="stage"){await setStatus(o,b.dataset.st);return;}
   if(act==="cancel"){await setStatus(o,o.status==="cancelled"?"new":"cancelled");return;}
   if(act==="invoice"){closeSheet();showInvoice(o);return;}
+  if(act==="deliv"){closeSheet();showDelivery(o);return;}
   if(act==="nudge"){try{await navigator.clipboard.writeText(fillMessage(CAT.messages.nudge,o));toast("Copied nudge");}catch{toast("Copy failed");}return;}
   if(act==="edit"){closeSheet();startEdit(o);return;}
   if(act==="reorder"){closeSheet();startReorder(o);return;}
@@ -784,10 +873,10 @@ document.body.addEventListener("change",async e=>{
 const openIds=new Set();
 const payBadge=o=>{const p=Number(o.paid)||0;return p>0&&p<o.total?`<div class="paidbadge">${peso(p)} paid · ${peso(o.total-p)} bal</div>`:""};
 const pillsOf=o=>`<div class="pills"><span class="status pay-${payState(o)}">${payState(o)}</span><span class="status ${pill(o.status)}">${esc(o.status)}</span></div>${payBadge(o)}`;
-const itemLines=o=>o.items.map(i=>`<li>${esc(i.product)}${i.code?" "+esc(i.code):""}${i.pieces?" · "+i.pieces+" pcs":""}${i.sender?" · Name: "+esc(i.sender):""}${i.greeting?" · “"+esc(i.greeting)+"”":""} — ${peso(i.line)}</li>`).join("")+(o.rush?`<li>Rush fee — ${peso(RUSH)}</li>`:"")+(o.shipping?`<li>J&amp;T delivery — ${peso(o.shipping)}</li>`:"")+(o.contact?`<li>${esc(o.contact)}</li>`:"")+(o.payment&&PAYMENTS[o.payment]?`<li>Paying via ${PAYMENTS[o.payment].label}</li>`:"")+(o.notes?`<li>${esc(o.notes)}</li>`:"");
+const itemLines=o=>o.items.map(i=>`<li>${esc(i.product)}${i.code?" "+esc(i.code):""}${i.pieces?" · "+i.pieces+" pcs":""}${i.sender?" · Name: "+esc(i.sender):""}${i.greeting?" · “"+esc(i.greeting)+"”":""} — ${peso(i.line)}</li>`).join("")+(rushN(o)?`<li>${rushLabel(o)} — ${peso(rushFee(o))}</li>`:"")+(o.shipping?`<li>J&amp;T delivery — ${peso(o.shipping)}</li>`:"")+(o.contact?`<li>${esc(o.contact)}</li>`:"")+(o.payment&&PAYMENTS[o.payment]?`<li>Paying via ${PAYMENTS[o.payment].label}</li>`:"")+(o.notes?`<li>${esc(o.notes)}</li>`:"");
 const stageRow=o=>`<div class="grp"><span class="lbl">Stage</span><select data-act="status" class="stsel ${pill(o.status)}">${STATUSES.map(st=>`<option ${st===o.status?"selected":""}>${st}</option>`).join("")}</select>${nextOf(o.status)?`<button class="ghost" data-act="next">→ ${esc(nextOf(o.status))}</button>`:""}</div>`;
 const payRow=o=>`<div class="grp"><span class="lbl">Payment</span>${payState(o)!=="paid"?`<button class="ghost" data-act="pay50">Got 50%</button><button class="ghost" data-act="payfull">Got ${payState(o)==="partial"?"balance":"full"}</button>`:""}<button class="ghost" data-act="payother">Set amount</button></div><div class="grp payset" hidden><span class="lbl">Paid so far</span><span style="display:flex;gap:6px;align-items:center;flex:1">₱<input type="number" class="payamt" min="0" max="${o.total}" step="1" inputmode="numeric" value="${Number(o.paid)||0}" style="width:110px;padding:8px 10px"><button class="primary" data-act="paysave" style="padding:8px 12px;font-size:13px">Save</button><span class="note">of ${peso(o.total)}</span></span></div>`;
-const sendRow=o=>`<div class="grp"><span class="lbl">Send</span><button class="ghost" data-act="invoice">Invoice</button><select data-act="msg" class="stsel"><option value="">Copy message…</option>${Object.entries(TEMPLATES).map(([k,t])=>`<option value="${k}">${t.label}</option>`).join("")}</select></div>`;
+const sendRow=o=>`<div class="grp"><span class="lbl">Send</span><button class="ghost" data-act="invoice">Invoice</button><button class="ghost" data-act="deliv">Delivery details</button><select data-act="msg" class="stsel"><option value="">Copy message…</option>${Object.entries(TEMPLATES).map(([k,t])=>`<option value="${k}">${t.label}</option>`).join("")}</select></div>`;
 const custCount=c=>{const k=custKey(c);return orders.filter(o=>custKey(o.customer)===k).length};
 function orderCard(o){
   return `<div class="card order ${o.rush?"rush":""}" data-id="${o.id}">
@@ -796,7 +885,7 @@ function orderCard(o){
         <div class="when">${fmt(o.createdAt)}${o.releaseDate?` · <span class="rel ${!CLOSED(o.status)&&dayKey(o.releaseDate)<0?"late":""}">release ${fmtDate(o.releaseDate)}</span>`:""}</div></div>
       <div><div class="amt">${peso(o.total)}</div>${pillsOf(o)}</div>
     </div>
-    <div class="sum">${o.items.map(i=>`${esc(i.product).replace(" Tag","").replace(" (own design)","")}${i.code?" "+esc(i.code):""}${i.pieces?" ×"+i.pieces:""}`).join(" · ")}${o.rush?" · Rush":""}${o.shipping?" · J&T":""}</div>
+    <div class="sum">${o.items.map(i=>`${esc(i.product).replace(" Tag","").replace(" (own design)","")}${i.code?" "+esc(i.code):""}${i.pieces?" ×"+i.pieces:""}`).join(" · ")}${rushN(o)?" · Rush"+(rushN(o)>1?" ×"+rushN(o):""):""}${o.shipping?" · J&T":""}</div>
   </div>`;
 }
 function renderAll(){
@@ -920,9 +1009,23 @@ function renderCatalog(){
   $("catBase").value=catDraft.basePieces;$("catStep").value=catDraft.stepPrice;$("catRush").value=catDraft.rush;$("catShip").value=catDraft.ship;
   $("catGcash").value=catDraft.payments.gcash||"";$("catBpi").value=catDraft.payments.bpi||"";
   $("msgHelp").textContent=MSG_HELP;
+  drawCatPickups();
   $("catMsgs").innerHTML=Object.keys(MSG_LABELS).map(k=>`<label for="msg_${k}">${MSG_LABELS[k]}</label><textarea id="msg_${k}" data-msg="${k}" style="min-height:96px">${esc(catDraft.messages[k]||"")}</textarea><button class="ghost" data-reset="${k}" type="button" style="padding:5px 10px;font-size:12px;margin-top:4px">Reset to default</button>`).join("");
   drawCatProducts();
 }
+function drawCatPickups(){
+  $("catPickups").innerHTML=(catDraft.pickups||[]).map((p,i)=>`<div class="card cat" data-pi="${i}" style="margin-bottom:8px">
+    <div class="row3"><div><label>Location name</label><input data-pk="name" value="${esc(p.name)}"></div><div><label>Contact person</label><input data-pk="person" value="${esc(p.person||"")}"></div><button class="del" data-pk="del" type="button">✕</button></div>
+    <label>Address</label><input data-pk="address" value="${esc(p.address||"")}">
+    <div class="pick-row"><div><label>Phone</label><input data-pk="phone" inputmode="tel" value="${esc(p.phone||"")}"></div><div><label>Google Maps link</label><input data-pk="maps" value="${esc(p.maps||"")}" placeholder="optional"></div></div>
+    <div class="pick-map">${p.map?`<img src="${p.map}" alt="">`:""}<label class="ghost" style="padding:7px 12px;font-size:13px;cursor:pointer;margin:0">${p.map?"Replace map":"Add map screenshot"}<input type="file" accept="image/*" data-pk="map" hidden></label>${p.map?`<button class="ghost" data-pk="unmap" type="button" style="padding:7px 12px;font-size:13px">Remove</button>`:""}</div>
+  </div>`).join("");
+}
+function shrinkImage(file,max=900,q=.82){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const r=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",q));};img.onerror=rej;img.src=URL.createObjectURL(file);});}
+$("catPickups").addEventListener("input",e=>{const k=e.target.dataset.pk;if(!k||k==="map")return;const p=catDraft.pickups[+e.target.closest(".cat").dataset.pi];p[k]=e.target.value;});
+$("catPickups").addEventListener("change",async e=>{if(e.target.dataset.pk!=="map"||!e.target.files[0])return;const p=catDraft.pickups[+e.target.closest(".cat").dataset.pi];try{p.map=await shrinkImage(e.target.files[0]);drawCatPickups();toast("Map added — remember to Save catalog");}catch{toast("Couldn't read image");}});
+$("catPickups").addEventListener("click",e=>{const b=e.target.closest("button[data-pk]");if(!b)return;const i=+b.closest(".cat").dataset.pi;if(b.dataset.pk==="del"){catDraft.pickups.splice(i,1);drawCatPickups();}if(b.dataset.pk==="unmap"){catDraft.pickups[i].map="";drawCatPickups();}});
+$("catAddPick").onclick=()=>{catDraft.pickups=catDraft.pickups||[];catDraft.pickups.push({id:"loc"+Date.now().toString(36),name:"",address:"",person:"",phone:"",maps:"",map:""});drawCatPickups();$("catPickups").lastElementChild.querySelector("input").focus();};
 function drawCatProducts(){
   $("catProducts").innerHTML=catDraft.products.map((p,i)=>`<div class="card cat" data-i="${i}">
     <div class="row3"><div><label>Product name</label><input data-k="name" value="${esc(p.name)}"></div><div><label>${p.per10?"Price per 10 pcs":"Price"} (₱)</label><input data-k="price" type="number" min="0" inputmode="numeric" value="${p.price}"></div><button class="del" data-k="delprod" type="button" title="Remove product">✕</button></div>
@@ -945,6 +1048,7 @@ $("catSave").onclick=async()=>{
   catDraft.messages={};Object.keys(MSG_LABELS).forEach(k=>catDraft.messages[k]=$("msg_"+k).value.trim()||DEFAULT_CATALOG.messages[k]);
   catDraft.basePieces=Number($("catBase").value)||30;catDraft.stepPrice=Number($("catStep").value)||0;catDraft.rush=Number($("catRush").value)||0;catDraft.ship=Number($("catShip").value)||0;
   catDraft.payments={gcash:$("catGcash").value.trim(),bpi:$("catBpi").value.trim()};
+  catDraft.pickups=(catDraft.pickups||[]).filter(p=>p.name.trim()&&p.address.trim());
   catDraft.products=catDraft.products.filter(p=>p.name.trim()).map(p=>({...p,sets:(p.sets||[]).filter(st=>st.p&&st.n>0)}));
   try{await store.saveCatalog(catDraft);itemsEl.innerHTML="";seq=0;addItem();recalc();renderCatalog();toast("Catalog saved");}catch(e){console.error(e);toast("Couldn't save catalog");}
 };
@@ -953,7 +1057,7 @@ $("catSave").onclick=async()=>{
 $("export").onclick=async()=>{
   if(!orders.length){toast("Nothing to export");return;}
   const head=["order_no","date","release_date","customer","contact","payment","status","paid","balance","product","design_code","pieces","sender","greeting","line_total","rush","shipping","order_total","notes"];
-  const rows=[head];orders.forEach(o=>o.items.forEach(i=>rows.push([ono(o.no),o.createdAt,o.releaseDate||"",o.customer,o.contact||"",o.payment||"",o.status,Number(o.paid)||0,o.total-(Number(o.paid)||0),i.product,i.code,i.pieces,i.sender,i.greeting||"",i.line,o.rush?RUSH:0,o.shipping||0,o.total,o.notes||""])));
+  const rows=[head];orders.forEach(o=>o.items.forEach(i=>rows.push([ono(o.no),o.createdAt,o.releaseDate||"",o.customer,o.contact||"",o.payment||"",o.status,Number(o.paid)||0,o.total-(Number(o.paid)||0),i.product,i.code,i.pieces,i.sender,i.greeting||"",i.line,rushFee(o),o.shipping||0,o.total,o.notes||""])));
   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n"),name=`base605-orders-${new Date().toISOString().slice(0,10)}.csv`;
   if(store.downloads){try{await store.downloads.save({filename:name,data:csv});toast("Saved");}catch(e){if(e?.code!=="declined")toast("Download unavailable");}}
   else{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
