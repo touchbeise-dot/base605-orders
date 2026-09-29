@@ -297,6 +297,16 @@ input,select,textarea{max-width:100%;min-width:0}
   .rushtag{border:1px solid #000;background:none;color:#000}
   .pl .code{color:#000}
 }
+/* press feedback */
+button{transition:transform .08s ease,filter .08s ease,opacity .15s}
+button:active{transform:scale(.95);filter:brightness(.9)}
+button.pressed{animation:press .25s ease}
+@keyframes press{0%{transform:scale(1)}40%{transform:scale(.93)}100%{transform:scale(1)}}
+button.busy{opacity:.7;pointer-events:none}
+button.busy::after{content:"";display:inline-block;width:12px;height:12px;margin-left:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+button.ok-flash{background:#2e9e5b !important;color:#fff !important;border-color:#2e9e5b !important}
+.payset{flex-wrap:wrap}
+.payset .note{white-space:nowrap}
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 12px 10px 16px;border-radius:999px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;display:flex;gap:12px;align-items:center;white-space:nowrap;z-index:9}
 .toast.show{opacity:1;pointer-events:auto}
@@ -477,7 +487,7 @@ const DEFAULT_CATALOG={
     {id:"cubao1",name:"Cubao 1",address:"28 MT Dioquino, Project 4, Quezon City",person:"Chloe",phone:"0999 490 4186",maps:"",map:""},
     {id:"cubao2",name:"Cubao 2",address:"GC Residences, 78 12th Ave, Cubao, Quezon City",person:"Bei",phone:"0999 490 4186",maps:"",map:""},
   ],
-  payments:{gcash:"GCash 0917 182 3137 · Chloe Louise M.", bpi:"BPI 0649 7738 62 · BASE 605"},
+  payments:{gcash:"GCash 0917 182 3137 · Chloe Louise M.", bpi:"BPI 0649 7738 62 · BASE 605 · BE•••••••E AC••O AY••N"},
   messages:{
     invoice:"Hi {customer}! Here's your Base 605 order {order}:\n{items}\n\nTotal: {total}{release_line}\n{pay_options}\n{payment}\nSend your proof of payment here in our chat and we'll start on it. Thank you!",
     balance:"Hi {customer}! Friendly reminder for your Base 605 order {order}: remaining balance is {balance}.\n{payment}\nPlease send your proof of payment here in our chat{release_so}. Thank you!",
@@ -498,7 +508,7 @@ function applyCatalog(c){
   CAT=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CATALOG)),c||{});
   CAT.messages=Object.assign({},DEFAULT_CATALOG.messages,c&&c.messages||{});
   if(!Array.isArray(CAT.pickups))CAT.pickups=DEFAULT_CATALOG.pickups;
-  if(/0419\s*3605\s*08|\[account/.test(CAT.payments.bpi||""))CAT.payments.bpi=DEFAULT_CATALOG.payments.bpi;
+  if(/0419\s*3605\s*08|\[account/.test(CAT.payments.bpi||"")||CAT.payments.bpi==="BPI 0649 7738 62 · BASE 605")CAT.payments.bpi=DEFAULT_CATALOG.payments.bpi;
   if(!Array.isArray(CAT.products)||!CAT.products.length)CAT.products=DEFAULT_CATALOG.products;
   PRODUCTS={};CAT.products.forEach(p=>{const codes=(p.sets||[]).flatMap(s=>range(String(s.p||"").toUpperCase(),Number(s.n)||0));PRODUCTS[p.id]={name:p.name,price:Number(p.price)||0,codes:codes.length?codes:null,pieces:true,greeting:!!p.greeting,greetingAddon:Number(p.greetingAddon)||0,per10:!!p.per10};});
   PAYMENTS={gcash:{label:"GCash",details:CAT.payments.gcash||""},bpi:{label:"BPI",details:CAT.payments.bpi||""}};
@@ -609,6 +619,10 @@ const wide=window.matchMedia("(min-width:740px)");
 const syncNavNew=()=>{$("navNew").style.display=wide.matches?"":"none";};
 syncNavNew();wide.addEventListener("change",syncNavNew);
 
+// ===== PRESS FEEDBACK =====
+document.addEventListener("pointerdown",e=>{const b=e.target.closest("button");if(!b||b.disabled)return;b.classList.remove("pressed");void b.offsetWidth;b.classList.add("pressed");setTimeout(()=>b.classList.remove("pressed"),260);},true);
+async function withBusy(btn,fn,okText){const t=btn.textContent;btn.classList.add("busy");try{const r=await fn();btn.classList.remove("busy");if(okText){btn.classList.add("ok-flash");btn.textContent=okText;setTimeout(()=>{btn.classList.remove("ok-flash");btn.textContent=t;},900);}return r;}catch(e){btn.classList.remove("busy");throw e;}}
+
 // ===== TOAST + UNDO =====
 let tt,undoFn=null;
 function toast(m,undo){
@@ -718,12 +732,12 @@ $("save").onclick=async()=>{
   const {items,total}=recalc();
   const order={paid:0,status:"new",createdAt:new Date().toISOString(),stageAt:new Date().toISOString(),...(editing?{id:editing.id,no:editing.no,createdAt:editing.createdAt,stageAt:editing.stageAt||editing.createdAt,status:editing.status,paid:editing.paid||0}:{}),
     customer,contact:$("contact").value.trim(),releaseDate:$("release").value,payment:$("payment").value,items,rush:$("rush").checked?Math.max(1,Number($("rushQty").value)||1):0,rushFee:($("rush").checked?Math.max(1,Number($("rushQty").value)||1):0)*RUSH,shipping:$("ship").checked?shipAmt():0,notes:$("notes").value.trim(),total};
-  const btn=$("save");btn.disabled=true;
+  const btn=$("save");btn.disabled=true;btn.classList.add("busy");
   try{
     if(editing)await store.update(order);else await store.add(order);
     showInvoice(order);resetForm();
   }catch(e){console.error(e);toast(e?.code==="quota_exceeded"?"Storage full — delete old orders":"Save failed, try again");}
-  finally{btn.disabled=false;}
+  finally{btn.disabled=false;btn.classList.remove("busy");}
 };
 
 // ===== MESSAGES =====
@@ -823,7 +837,7 @@ $("pcSave").onclick=async()=>{
   const snap={id:"custom",name:$("pcName").value.trim(),address:$("pcAddr").value.trim(),person:$("pcPerson").value.trim(),phone:$("pcPhone").value.trim(),maps:$("pcMaps").value.trim()};
   if(!snap.name||!snap.address){toast("Name and address are required");return;}
   delivOrder.pickup=snap; renderDelivery();
-  try{await store.patch(delivOrder,{pickup:snap});toast("Location saved");}catch(err){console.error(err);toast("Couldn't save location");}
+  try{await withBusy($("pcSave"),()=>store.patch(delivOrder,{pickup:snap}),"Saved ✓");toast("Location saved");}catch(err){console.error(err);toast("Couldn't save location");}
 };
 $("delivBack").onclick=()=>go(prevTab||"today");
 $("delivCopy").onclick=async()=>{try{await navigator.clipboard.writeText(fillMessage(CAT.messages.delivery,{...delivOrder,pickup:{...(delivOrder.pickup||{}),map:undefined}}));toast("Copied");}catch{toast("Copy failed");}};
@@ -910,12 +924,12 @@ document.body.addEventListener("click",async e=>{
   if(act==="nudge"){try{await navigator.clipboard.writeText(fillMessage(CAT.messages.nudge,o));toast("Copied nudge");}catch{toast("Copy failed");}return;}
   if(act==="edit"){closeSheet();startEdit(o);return;}
   if(act==="reorder"){closeSheet();startReorder(o);return;}
-  if(act==="next"&&nextOf(o.status)){await setStatus(o,nextOf(o.status));return;}
+  if(act==="next"&&nextOf(o.status)){await withBusy(b,()=>setStatus(o,nextOf(o.status)));return;}
   if(act==="paych"){await store.patch(o,{payment:o.payment===b.dataset.m?"":b.dataset.m});return;}
-  if(act==="pay50"){await setPaid(o,(Number(o.paid)||0)+Math.ceil(o.total/2));return;}
-  if(act==="payfull"){await setPaid(o,o.total);return;}
+  if(act==="pay50"){await withBusy(b,()=>setPaid(o,(Number(o.paid)||0)+Math.ceil(o.total/2)),"✓");return;}
+  if(act==="payfull"){await withBusy(b,()=>setPaid(o,o.total),"✓");return;}
   if(act==="payother"){const box=b.parentElement.nextElementSibling;if(box&&box.classList.contains("payset")){box.hidden=!box.hidden;if(!box.hidden){const i=box.querySelector(".payamt");i.focus();i.select();}}return;}
-  if(act==="paysave"){const i=b.parentElement.querySelector(".payamt");await setPaid(o,Number(i.value)||0);return;}
+  if(act==="paysave"){const i=b.parentElement.querySelector(".payamt");await withBusy(b,()=>setPaid(o,Number(i.value)||0),"Saved ✓");return;}
   if(act==="del"){closeSheet();softDelete(o);return;}
 });
 document.body.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("payamt")){e.preventDefault();e.target.parentElement.querySelector("button[data-act=paysave]").click();}});
@@ -1107,7 +1121,7 @@ $("catSave").onclick=async()=>{
   catDraft.payments={gcash:$("catGcash").value.trim(),bpi:$("catBpi").value.trim()};
   catDraft.pickups=(catDraft.pickups||[]).filter(p=>p.name.trim()&&p.address.trim());
   catDraft.products=catDraft.products.filter(p=>p.name.trim()).map(p=>({...p,sets:(p.sets||[]).filter(st=>st.p&&st.n>0)}));
-  try{await store.saveCatalog(catDraft);itemsEl.innerHTML="";seq=0;addItem();recalc();renderCatalog();toast("Catalog saved");}catch(e){console.error(e);toast("Couldn't save catalog");}
+  try{await withBusy($("catSave"),()=>store.saveCatalog(catDraft),"Saved ✓");itemsEl.innerHTML="";seq=0;addItem();recalc();renderCatalog();toast("Catalog saved");}catch(e){console.error(e);toast("Couldn't save catalog");}
 };
 
 // ===== RESET (testing) =====
