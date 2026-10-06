@@ -189,6 +189,19 @@ input,select,textarea{max-width:100%;min-width:0}
 .pl .code{font-weight:700;font-size:13px;color:var(--brand)}
 .pl .r small{display:block;color:var(--mute)}
 .pl .r button{padding:6px 10px;font-size:12px}
+.pl details{border-bottom:1px solid var(--line)}
+.pl details:last-child{border-bottom:0}
+.pl details.rush{border-left:4px solid var(--danger);margin-left:-14px;padding-left:10px}
+.pl summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:11px 0;align-items:center}
+.pl summary::-webkit-details-marker{display:none}
+.pl summary .name{font-weight:700;font-size:16px}
+.pl summary .name::before{content:"▸";display:inline-block;width:14px;color:var(--mute);font-size:12px;transition:transform .15s}
+.pl details[open] summary .name::before{transform:rotate(90deg)}
+.pl summary small{display:block;color:var(--mute)}
+.pl .sub{padding:0 0 8px 14px}
+.pl .sub .r{grid-template-columns:auto 1fr;padding:7px 0}
+.pl .sub .code{min-width:52px}
+@media print{.pl details{border-left:0}.pl summary .name::before{display:none}}
 /* stats */
 .rank{list-style:none;margin:0;padding:0}
 .rank li{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
@@ -307,6 +320,22 @@ button.busy::after{content:"";display:inline-block;width:12px;height:12px;margin
 button.ok-flash{background:#2e9e5b !important;color:#fff !important;border-color:#2e9e5b !important}
 .payset{flex-wrap:wrap}
 .payset .note{white-space:nowrap}
+/* package labels: 2in wide, any height */
+.labels{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+.pkg{width:2in;background:#fff;color:#111;border:1px solid #999;padding:.10in .11in .12in;font-family:"Public Sans",system-ui,sans-serif;line-height:1.2;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
+.pkg .lh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2.5px solid #111;padding-bottom:4px;font-weight:700;font-size:9.5pt;letter-spacing:.05em}
+.pkg .lh span:last-child{letter-spacing:0;font-size:10.5pt}
+.pkg .ln{font-size:19pt;font-weight:700;line-height:1.05;margin:8px 0 5px;overflow-wrap:anywhere}
+.pkg .ld{font-size:9.5pt;font-weight:600;color:#222;margin:3px 0;overflow-wrap:anywhere}
+.pkg .lt{display:inline-block;font-size:9.5pt;font-weight:700;margin-top:5px;padding:2px 6px;border:1.5px solid #111}
+.pkg .li{border-top:1px solid #999;margin-top:8px;padding-top:6px;font-size:9.5pt;font-weight:600;color:#222}
+.pkg .li b{font-weight:700;display:block}
+@media print{
+  body.print-labels header,body.print-labels nav,body.print-labels .fab,body.print-labels .invacts,body.print-labels .toast{display:none !important}
+  body.print-labels main{padding:0;max-width:none}
+  body.print-labels .labels{display:block}
+  body.print-labels .pkg{border:0;margin:0 0 .15in;page-break-after:always}
+}
 /* toast */
 .toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 12px 10px 16px;border-radius:999px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;display:flex;gap:12px;align-items:center;white-space:nowrap;z-index:9}
 .toast.show{opacity:1;pointer-events:auto}
@@ -352,6 +381,7 @@ button.ok-flash{background:#2e9e5b !important;color:#fff !important;border-color
         <label class="opt"><input type="checkbox" id="rush"><span>Rush fee <b id="rushLbl">₱100</b> each</span><span class="amt-in">× <input id="rushQty" type="number" min="1" value="1" inputmode="numeric" style="width:64px"></span></label>
         <label class="opt"><input type="checkbox" id="ship"><span>J&amp;T delivery</span><span class="amt-in">₱ <input id="shipAmt" type="number" min="0" value="60" inputmode="numeric"></span></label>
       </div>
+      <div id="addrWrap" hidden><label for="address">Delivery address (J&amp;T)</label><textarea id="address" placeholder="House/unit, street, barangay, city" style="min-height:48px"></textarea></div>
       <label for="payment">Paying via</label>
       <select id="payment"><option value="">— not yet —</option><option value="gcash">GCash</option><option value="bpi">BPI</option></select>
       <label for="notes">Notes</label>
@@ -428,6 +458,15 @@ button.ok-flash{background:#2e9e5b !important;color:#fff !important;border-color
     </div>
   </section>
 
+  <section id="tab-label" hidden>
+    <div class="labels" id="labels"></div>
+    <div class="invacts">
+      <button class="primary" id="labelPng" type="button">Download PNG</button>
+      <button class="ghost" id="labelPrint" type="button">Print</button>
+      <button class="ghost wide" id="labelBack" type="button">Back</button>
+    </div>
+  </section>
+
   <section id="tab-deliv" hidden>
     <div class="card" style="max-width:440px;margin:0 auto 12px">
       <label for="pickSel">Pickup location</label>
@@ -493,14 +532,14 @@ const DEFAULT_CATALOG={
     balance:"Hi {customer}! Friendly reminder for your Base 605 order {order}: remaining balance is {balance}.\n{payment}\nPlease send your proof of payment here in our chat{release_so}. Thank you!",
     draft:"Hi {customer}! Here's the draft for your order {order}. Please double-check the spelling of the name and greeting, then reply \"approved\" or tell us what to change. We'll print once you confirm!",
     pickup:"Hi {customer}! Your Base 605 tags ({order}) are ready for pickup! Let us know when you're coming so we can prepare them.\n{balance_note}See you!",
-    shipped:"Hi {customer}! Your order {order} has been shipped via J&T.\nTracking no.: ____\nYou can track it at jtexpress.ph. Message us if anything comes up!",
+    shipped:"Hi {customer}! Your order {order} has been shipped via J&T.\nTracking no.: {tracking}\nYou can track it at jtexpress.ph. Message us if anything comes up!",
     thanks:"Thank you for ordering from Base 605, {customer}! We hope you love your tags. Tag us when you use them, we'd love to see!",
     delivery:"Hi {customer}! Here are the pickup details for your order {order} — you can book Grab or Lalamove to this address:\n\n{pickup_name}\n{pickup_address}\nContact: {pickup_person} · {pickup_phone}{pickup_maps_line}\n\nPlease send us the rider's details once booked. Thank you!",
     nudge:"Hi {customer}! Just checking in on the draft for your order {order} — is it good to go, or would you like any changes? Once you approve we'll print right away so we can release on time. Thank you!",
   },
 };
 const MSG_LABELS={invoice:"Invoice / order summary",balance:"Balance reminder",draft:"Draft for approval",nudge:"Approval follow-up (nudge)",pickup:"Ready for pickup",delivery:"Delivery details (Grab / Lalamove)",shipped:"Shipped via J&T",thanks:"Thank you / done"};
-const MSG_HELP="Placeholders: {pickup_name} {pickup_address} {pickup_person} {pickup_phone} {pickup_maps_line} {customer} {order} {items} {total} {paid} {balance} {downpayment} {release} {release_line} {release_so} {payment} {pay_options} {balance_note}";
+const MSG_HELP="Placeholders: {tracking} {address} {pickup_name} {pickup_address} {pickup_person} {pickup_phone} {pickup_maps_line} {customer} {order} {items} {total} {paid} {balance} {downpayment} {release} {release_line} {release_so} {payment} {pay_options} {balance_note}";
 let CAT=JSON.parse(JSON.stringify(DEFAULT_CATALOG));
 const range=(p,n)=>Array.from({length:n},(_,i)=>p+(i+1));
 let PRODUCTS={}, PAYMENTS={}, RUSH=100, BASE_PIECES=30, STEP_PRICE=50;
@@ -601,12 +640,12 @@ async function initStore(){
 let tab="today";
 function go(t){
   tab=t;
-  ["today","new","list","up","print","stats","cat","done","deliv"].forEach(x=>$("tab-"+x).hidden=(x!==t));
+  ["today","new","list","up","print","stats","cat","done","deliv","label"].forEach(x=>$("tab-"+x).hidden=(x!==t));
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
-  $("title").textContent={today:"Today",new:editing?"Edit order":"New order",list:"Orders",up:"Upcoming releases",print:"Print list",stats:"Stats",cat:"Catalog & settings",done:"Invoice",deliv:"Delivery details"}[t];
+  $("title").textContent={today:"Today",new:editing?"Edit order":"New order",list:"Orders",up:"Upcoming releases",print:"Print list",stats:"Stats",cat:"Catalog & settings",done:"Invoice",deliv:"Delivery details",label:"Package labels"}[t];
   $("savebar").classList.toggle("show",t==="new");
-  $("fab").style.display=(t==="new"||t==="done"||t==="deliv")?"none":"";
-  document.querySelector("header").style.display=(t==="done"||t==="deliv")?"none":"";
+  $("fab").style.display=(t==="new"||t==="done"||t==="deliv"||t==="label")?"none":"";
+  document.querySelector("header").style.display=(t==="done"||t==="deliv"||t==="label")?"none":"";
   window.scrollTo(0,0);
   if(t==="today")renderToday();
   if(t==="cat")renderCatalog();
@@ -697,9 +736,9 @@ function renderGauge(items){
   $("schedule").innerHTML=days.length?`Already scheduled:<div class="sched">${days.map(d=>`<span class="${load[d]>=200?"hot":""}">${fmtDate(d)} · ${load[d]} tags</span>`).join("")}</div>`:"Nothing else scheduled yet.";
 }
 $("addItem").onclick=()=>addItem();
-$("rush").addEventListener("change",recalc);$("ship").addEventListener("change",recalc);
+$("rush").addEventListener("change",recalc);$("ship").addEventListener("change",()=>{$("addrWrap").hidden=!$("ship").checked;recalc();});
 $("rushQty").addEventListener("input",()=>{$("rush").checked=true;recalc();});
-$("shipAmt").addEventListener("input",()=>{$("ship").checked=true;recalc();});
+$("shipAmt").addEventListener("input",()=>{$("ship").checked=true;$("addrWrap").hidden=false;recalc();});
 $("customer").addEventListener("input",()=>{
   const k=custKey($("customer").value),h=$("custHint");if(!k){h.textContent="";return;}
   const prev=orders.filter(o=>custKey(o.customer)===k);
@@ -708,13 +747,13 @@ $("customer").addEventListener("input",()=>{
 function refreshCustList(){const seen=new Set();$("custList").innerHTML=orders.map(o=>o.customer).filter(c=>{const k=custKey(c);if(!k||seen.has(k))return false;seen.add(k);return true;}).map(c=>`<option value="${esc(c)}">`).join("");}
 function resetForm(){
   editing=null;$("save").textContent="Save order";$("saveLbl").textContent="Total";$("cancelEdit").hidden=true;
-  ["customer","contact","release","payment","notes"].forEach(i=>$(i).value="");$("custHint").textContent="";
+  ["customer","contact","release","payment","notes","address"].forEach(i=>$(i).value="");$("addrWrap").hidden=true;$("custHint").textContent="";
   $("rush").checked=false;$("rushQty").value=1;$("ship").checked=false;$("shipAmt").value=CAT.ship||60;$("rushLbl").textContent=peso(RUSH);
   itemsEl.innerHTML="";seq=0;addItem();recalc();
 }
 function startEdit(o){
   editing=o;$("customer").value=o.customer;$("contact").value=o.contact||"";$("release").value=o.releaseDate||"";$("payment").value=o.payment||"";$("notes").value=o.notes||"";
-  $("rush").checked=rushN(o)>0;$("rushQty").value=rushN(o)||1;$("ship").checked=!!o.shipping;$("shipAmt").value=o.shipping||CAT.ship||60;
+  $("rush").checked=rushN(o)>0;$("rushQty").value=rushN(o)||1;$("ship").checked=!!o.shipping;$("address").value=o.address||"";$("addrWrap").hidden=!o.shipping;$("shipAmt").value=o.shipping||CAT.ship||60;
   itemsEl.innerHTML="";seq=0;o.items.forEach(i=>addItem(i));
   $("save").textContent="Update";$("saveLbl").textContent=`Editing ${ono(o.no)}`;$("cancelEdit").hidden=false;go("new");recalc();
 }
@@ -731,7 +770,7 @@ $("save").onclick=async()=>{
   if(!customer){toast("Customer is required");$("customer").focus();return;}
   const {items,total}=recalc();
   const order={paid:0,status:"new",createdAt:new Date().toISOString(),stageAt:new Date().toISOString(),...(editing?{id:editing.id,no:editing.no,createdAt:editing.createdAt,stageAt:editing.stageAt||editing.createdAt,status:editing.status,paid:editing.paid||0}:{}),
-    customer,contact:$("contact").value.trim(),releaseDate:$("release").value,payment:$("payment").value,items,rush:$("rush").checked?Math.max(1,Number($("rushQty").value)||1):0,rushFee:($("rush").checked?Math.max(1,Number($("rushQty").value)||1):0)*RUSH,shipping:$("ship").checked?shipAmt():0,notes:$("notes").value.trim(),total};
+    customer,contact:$("contact").value.trim(),releaseDate:$("release").value,payment:$("payment").value,items,rush:$("rush").checked?Math.max(1,Number($("rushQty").value)||1):0,rushFee:($("rush").checked?Math.max(1,Number($("rushQty").value)||1):0)*RUSH,shipping:$("ship").checked?shipAmt():0,address:$("ship").checked?$("address").value.trim():"",tracking:editing?editing.tracking||"":"",notes:$("notes").value.trim(),total};
   const btn=$("save");btn.disabled=true;btn.classList.add("busy");
   try{
     if(editing)await store.update(order);else await store.add(order);
@@ -751,6 +790,7 @@ function fillMessage(tpl,o){
     release:o.releaseDate?fmtDate(o.releaseDate):"TBD",release_line:o.releaseDate?`\nRelease: ${fmtDate(o.releaseDate)}`:"",release_so:o.releaseDate?` so we can release on ${fmtDate(o.releaseDate)}`:"",
     payment:payDetails(o),
     pay_options:paid>=o.total?"Fully paid — thank you!":paid>0?`Paid: ${peso(paid)} · Balance: ${peso(bal)}`:`50% downpayment: ${peso(Math.ceil(o.total/2))} or full: ${peso(o.total)}`,
+    tracking:o.tracking||"____",address:o.address||"",
     pickup_name:o.pickup?.name||"",pickup_address:o.pickup?.address||"",pickup_person:o.pickup?.person||"",pickup_phone:o.pickup?.phone||"",pickup_maps_line:o.pickup?.maps?`\nMap: ${o.pickup.maps}`:"",
     balance_note:bal>0?`Remaining balance: ${peso(bal)} — send proof here in our chat or pay on pickup.\n`:"",
   };
@@ -794,7 +834,7 @@ async function downloadPng(el,name,btn){
   if(!window.html2canvas){toast("PNG not available — screenshot instead");return;}
   btn.disabled=true;
   try{
-    const canvas=await html2canvas(el,{scale:3,backgroundColor:"#ffffff",useCORS:true});
+    const canvas=await html2canvas(el,{scale:el.classList.contains("pkg")?4:3,backgroundColor:"#ffffff",useCORS:true});
     const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
     if(store.downloads){try{await store.downloads.save({filename:name,data:blob});toast("Saved");}catch(e){if(e?.code!=="declined")toast("Download unavailable — screenshot instead");}}
     else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
@@ -846,6 +886,20 @@ $("delivPng").onclick=()=>downloadPng($("deliv"),`base605-${delivOrder&&delivOrd
 const origRenderDelivery=renderDelivery;
 renderDelivery=function(){const o=delivOrder;if(o&&o.pickup&&!o.pickup.map){const c=CAT.pickups.find(x=>x.id===o.pickup.id);if(c&&c.map)o.pickup={...o.pickup,map:c.map};}origRenderDelivery();if(o&&o.pickup)delete o.pickup.map;};
 
+// ===== PACKAGE LABELS =====
+let labelOrders=[],labelPrev="today";
+function labelHtml(o){
+  const codes=o.items.map(i=>`${esc(i.code||i.product.replace(" Tag","").replace(" (own design)",""))} ×${i.pieces}`);
+  const tags=o.items.reduce((a,i)=>a+(Number(i.pieces)||0),0);
+  const items=o.items.length>4?`<b>${o.items.length} designs · ${tags} tags</b>${o.items.map(i=>esc(i.code||i.product.replace(" Tag",""))).join(", ")}`:codes.join("<br>");
+  const deliv=o.shipping?(o.address?`<div class="ld">${esc(o.address)}</div>`:"")+`<div class="lt">J&amp;T${o.tracking?` · ${esc(o.tracking)}`:""}</div>`:o.pickup&&o.pickup.name?`<div class="ld">Grab/Lalamove · from ${esc(o.pickup.name)}</div>`:`<div class="ld">Pickup${o.releaseDate?" · "+fmtDate(o.releaseDate).replace(/^\w+, /,""):""}</div>`;
+  return `<div class="pkg"><div class="lh"><span>BASE 605</span><span>${ono(o.no)}${rushN(o)?" · RUSH":""}</span></div><div class="ln">${esc(o.customer)}</div>${o.contact?`<div class="ld">${esc(o.contact)}</div>`:""}${deliv}<div class="li">${items}</div></div>`;
+}
+function showLabels(list){labelOrders=list;labelPrev=tab;$("labels").innerHTML=list.map(labelHtml).join("");$("labelPng").style.display=list.length===1?"":"none";go("label");}
+$("labelBack").onclick=()=>go(labelPrev||"today");
+$("labelPng").onclick=()=>downloadPng($("labels").firstElementChild,`base605-${labelOrders[0]&&labelOrders[0].no?ono(labelOrders[0].no).slice(1):"order"}-label.png`,$("labelPng"));
+$("labelPrint").onclick=()=>{const st=document.createElement("style");st.textContent="@page{size:2in auto;margin:0}";document.head.appendChild(st);document.body.classList.add("print-labels");const done=()=>{document.body.classList.remove("print-labels");st.remove();window.removeEventListener("afterprint",done);};window.addEventListener("afterprint",done);setTimeout(()=>window.print(),60);};
+
 // ===== ACTIONS =====
 let sheetView=null; // {type:"order",id} | {type:"customer",key}
 function openOrder(o){sheetView={type:"order",id:o.id};renderSheet();}
@@ -862,11 +916,12 @@ function renderSheet(){
     const paid=Number(o.paid)||0;
     el.innerHTML=`<div class="grab"></div>
       <div class="top"><div><h2><small>${ono(o.no)}</small><button data-act="cust" class="x" style="font-size:20px;font-weight:700;color:var(--ink);padding:0;text-decoration:underline dotted var(--mute)">${esc(o.customer)}</button>${o.rush?'<span class="rushtag">RUSH</span>':""}</h2><div class="when">${fmt(o.createdAt)}</div></div><div style="display:flex;align-items:flex-start;gap:4px"><div class="pills" style="flex-direction:column;align-items:flex-end;margin:2px 0 0">${'<span class="status pay-'+payState(o)+'">'+payState(o)+'</span><span class="status '+pill(o.status)+'">'+esc(o.status)+'</span>'}</div><button class="x" data-act="close" aria-label="Close">×</button></div></div>
-      <div class="meta"><div><b>Release</b>${o.releaseDate?`<span class="rel ${!CLOSED(o.status)&&dayKey(o.releaseDate)<0?"late":""}">${fmtDate(o.releaseDate)} · ${dayTag(dayKey(o.releaseDate))}</span>`:"not set"}</div><div><b>Contact</b>${o.contact?esc(o.contact):"—"}</div><div><b>Delivery</b>${o.shipping?`J&amp;T · ${peso(o.shipping)}`:o.pickup&&o.pickup.name?`Grab/Lalamove from ${esc(o.pickup.name)}`:"Pickup"}</div><div><b>Paying via</b>${o.payment&&PAYMENTS[o.payment]?PAYMENTS[o.payment].label:"—"}</div>${o.notes?`<div style="grid-column:1/-1"><b>Notes</b>${esc(o.notes)}</div>`:""}</div>
+      <div class="meta"><div><b>Release</b>${o.releaseDate?`<span class="rel ${!CLOSED(o.status)&&dayKey(o.releaseDate)<0?"late":""}">${fmtDate(o.releaseDate)} · ${dayTag(dayKey(o.releaseDate))}</span>`:"not set"}</div><div><b>Contact</b>${o.contact?esc(o.contact):"—"}</div><div><b>Delivery</b>${o.shipping?`J&amp;T · ${peso(o.shipping)}${o.address?`<br><span class="note">${esc(o.address)}</span>`:""}`:o.pickup&&o.pickup.name?`Grab/Lalamove from ${esc(o.pickup.name)}`:"Pickup"}</div><div><b>Paying via</b>${o.payment&&PAYMENTS[o.payment]?PAYMENTS[o.payment].label:"—"}</div>${o.notes?`<div style="grid-column:1/-1"><b>Notes</b>${esc(o.notes)}</div>`:""}</div>
       <ul class="items">${o.items.map(i=>`<li><div>${esc(i.product)}${i.code?` · <b>${esc(i.code)}</b>`:""}${i.pieces?` · ${i.pieces} pcs`:""}<small>${itemNotes(i).join(" · ")}</small></div><div>${peso(i.line)}</div></li>`).join("")}${rushN(o)?`<li><div>${rushLabel(o)}</div><div>${peso(rushFee(o))}</div></li>`:""}${o.shipping?`<li><div>J&amp;T delivery</div><div>${peso(o.shipping)}</div></li>`:""}</ul>
       <div class="tot"><span>Total</span><span>${peso(o.total)}</span></div>
       ${paid>0&&paid<o.total?`<div class="paidbadge" style="text-align:left">${peso(paid)} paid · ${peso(o.total-paid)} balance</div>`:""}
       <h4>Stage</h4>${stepper(o)}${nextOf(o.status)?`<div class="grp"><button class="primary" data-act="next" style="padding:9px 14px;font-size:13px">→ ${esc(nextOf(o.status))}</button></div>`:""}
+      ${o.shipping?`<h4>J&amp;T tracking</h4><div class="grp"><input class="trackin" value="${esc(o.tracking||"")}" placeholder="Tracking number" style="flex:1;min-width:140px;padding:8px 10px"><button class="ghost" data-act="tracksave" style="padding:8px 12px">Save</button></div>`:""}
       <h4>Payment</h4>${payRow(o).replace('<span class="lbl">Payment</span>',"")}
       <h4>Send to customer</h4>${sendRow(o).replace('<span class="lbl">Send</span>',"")}
       <div class="danger-row"><button class="ghost" data-act="edit">Edit</button><button class="ghost" data-act="reorder">Reorder</button><button class="ghost" data-act="cancel">${o.status==="cancelled"?"Un-cancel":"Cancel order"}</button><button class="ghost danger" data-act="del">Delete</button></div>`;
@@ -910,6 +965,7 @@ document.body.addEventListener("click",async e=>{
     const m=e.target.closest(".mini,.order,.pl .r");if(m){const o=orders.find(x=>x.id===m.dataset.id);if(o)openOrder(o);}return;}
   const act=b.dataset.act;
   if(act==="printday"){const d=b.dataset.date;const list=orders.filter(o=>o.status==="approved"&&(o.releaseDate||"")===d);for(const o of list)await store.patch(o,{status:"printed",stageAt:new Date().toISOString()});toast(`${list.length} marked printed`,async()=>{for(const o of list)await store.patch(o,{status:"approved"});});return;}
+  if(act==="labelday"){const d=b.dataset.date;const list=orders.filter(x=>!CLOSED(x.status)&&(x.releaseDate||"")===d);if(list.length)showLabels(list);return;}
   if(act==="kpi"){filter=b.dataset.f||"all";payFilter=b.dataset.p||"all";if(payFilter==="paid"&&filter==="new")payFilter="haspaid";$("payFilter").value=payFilter==="haspaid"?"all":payFilter;$("search").value="";go(b.dataset.tab||"list");renderList();return;}
   const wrap=b.closest("[data-id]");if(!wrap)return;
   const o=orders.find(x=>x.id===wrap.dataset.id);if(!o)return;
@@ -925,6 +981,8 @@ document.body.addEventListener("click",async e=>{
   if(act==="edit"){closeSheet();startEdit(o);return;}
   if(act==="reorder"){closeSheet();startReorder(o);return;}
   if(act==="next"&&nextOf(o.status)){await withBusy(b,()=>setStatus(o,nextOf(o.status)));return;}
+  if(act==="tracksave"){const v=b.parentElement.querySelector(".trackin").value.trim();await withBusy(b,()=>store.patch(o,{tracking:v}),"Saved ✓");return;}
+  if(act==="label"){closeSheet();showLabels([o]);return;}
   if(act==="paych"){await store.patch(o,{payment:o.payment===b.dataset.m?"":b.dataset.m});return;}
   if(act==="pay50"){await withBusy(b,()=>setPaid(o,(Number(o.paid)||0)+Math.ceil(o.total/2)),"✓");return;}
   if(act==="payfull"){await withBusy(b,()=>setPaid(o,o.total),"✓");return;}
@@ -947,7 +1005,7 @@ const pillsOf=o=>`<div class="pills"><span class="status pay-${payState(o)}">${p
 const itemLines=o=>o.items.map(i=>`<li>${esc(i.product)}${i.code?" "+esc(i.code):""}${i.pieces?" · "+i.pieces+" pcs":""}${itemNotes(i).length?" · "+itemNotes(i).join(" · "):""} — ${peso(i.line)}</li>`).join("")+(rushN(o)?`<li>${rushLabel(o)} — ${peso(rushFee(o))}</li>`:"")+(o.shipping?`<li>J&amp;T delivery — ${peso(o.shipping)}</li>`:"")+(o.contact?`<li>${esc(o.contact)}</li>`:"")+(o.payment&&PAYMENTS[o.payment]?`<li>Paying via ${PAYMENTS[o.payment].label}</li>`:"")+(o.notes?`<li>${esc(o.notes)}</li>`:"");
 const stageRow=o=>`<div class="grp"><span class="lbl">Stage</span><select data-act="status" class="stsel ${pill(o.status)}">${STATUSES.map(st=>`<option ${st===o.status?"selected":""}>${st}</option>`).join("")}</select>${nextOf(o.status)?`<button class="ghost" data-act="next">→ ${esc(nextOf(o.status))}</button>`:""}</div>`;
 const payRow=o=>`<div class="grp"><span class="lbl">Via</span><button class="ghost paych ${o.payment==="gcash"?"on":""}" data-act="paych" data-m="gcash" style="border-color:${o.payment==="gcash"?"#007DFE":"var(--line)"};color:${o.payment==="gcash"?"#007DFE":""}">GCash</button><button class="ghost paych ${o.payment==="bpi"?"on":""}" data-act="paych" data-m="bpi" style="border-color:${o.payment==="bpi"?"#B11116":"var(--line)"};color:${o.payment==="bpi"?"#B11116":""}">BPI</button>${(o.payLog||[]).length?`<span class="note">${o.payLog.map(l=>`${peso(l.amt)} ${l.method?PAYMENTS[l.method]?.label||l.method:""} ${fmtDate(String(l.at).slice(0,10))}`).join(" · ")}</span>`:""}</div><div class="grp"><span class="lbl">Payment</span>${payState(o)!=="paid"?`<button class="ghost" data-act="pay50">Got 50%</button><button class="ghost" data-act="payfull">Got ${payState(o)==="partial"?"balance":"full"}</button>`:""}<button class="ghost" data-act="payother">Set amount</button></div><div class="grp payset" hidden><span class="lbl">Paid so far</span><span style="display:flex;gap:6px;align-items:center;flex:1">₱<input type="number" class="payamt" min="0" max="${o.total}" step="1" inputmode="numeric" value="${Number(o.paid)||0}" style="width:110px;padding:8px 10px"><button class="primary" data-act="paysave" style="padding:8px 12px;font-size:13px">Save</button><span class="note">of ${peso(o.total)}</span></span></div>`;
-const sendRow=o=>`<div class="grp"><span class="lbl">Send</span><button class="ghost" data-act="invoice">Invoice</button>${payState(o)==="partial"?`<button class="ghost" data-act="balinv">Balance invoice</button>`:""}<button class="ghost" data-act="deliv">Delivery details</button><select data-act="msg" class="stsel"><option value="">Copy message…</option>${Object.entries(TEMPLATES).map(([k,t])=>`<option value="${k}">${t.label}</option>`).join("")}</select></div>`;
+const sendRow=o=>`<div class="grp"><span class="lbl">Send</span><button class="ghost" data-act="invoice">Invoice</button><button class="ghost" data-act="label">Label</button>${payState(o)==="partial"?`<button class="ghost" data-act="balinv">Balance invoice</button>`:""}<button class="ghost" data-act="deliv">Delivery details</button><select data-act="msg" class="stsel"><option value="">Copy message…</option>${Object.entries(TEMPLATES).map(([k,t])=>`<option value="${k}">${t.label}</option>`).join("")}</select></div>`;
 const custCount=c=>{const k=custKey(c);return orders.filter(o=>custKey(o.customer)===k).length};
 function orderCard(o){
   return `<div class="card order ${o.rush?"rush":""} ${CLOSED(o.status)?"closed":""}" data-id="${o.id}">
@@ -1029,7 +1087,7 @@ function renderUpcoming(){
   if(!rows.length){el.innerHTML='<div class="empty">No upcoming releases</div>';return;}
   let html="",last=null;
   rows.forEach(o=>{
-    if(o.releaseDate!==last){last=o.releaseDate;const k=dayKey(o.releaseDate);html+=`<div class="day ${k<0?"late":""}"><span>${fmtDate(o.releaseDate)}</span>${dayPill(k)}</div>`;}
+    if(o.releaseDate!==last){last=o.releaseDate;const k=dayKey(o.releaseDate);html+=`<div class="day ${k<0?"late":""}"><span>${fmtDate(o.releaseDate)}${dayPill(k)}</span><button class="ghost" data-act="labelday" data-date="${o.releaseDate}">Labels</button></div>`;}
     html+=`<div class="card order upcard ${o.rush?"rush":""}" data-id="${o.id}"><div class="head"><div><div class="who"><span style="color:var(--mute)">${ono(o.no)}</span> ${esc(o.customer)}${o.rush?'<span class="rushtag">RUSH</span>':""}</div><div class="when">${o.contact?esc(o.contact)+" · ":""}${o.shipping?"J&amp;T":"Pickup"}</div></div><div>${pillsOf(o)}</div></div>
       <div class="sum">${o.items.map(i=>`${esc(i.product).replace(" Tag","").replace(" (own design)","")}${i.code?" "+esc(i.code):""}${i.pieces?" ×"+i.pieces:""}${i.sender?" · "+esc(i.sender):""}`).join(" · ")}</div>
 </div>`;
@@ -1038,6 +1096,8 @@ function renderUpcoming(){
 }
 
 // ===== PRINT =====
+const printOpen=new Set();
+$("printlist").addEventListener("toggle",e=>{const d=e.target;if(d.tagName!=="DETAILS")return;d.open?printOpen.add(d.dataset.id):printOpen.delete(d.dataset.id);},true);
 function renderPrint(){
   const el=$("printlist");if(loading){el.innerHTML='<div class="loading">Loading…</div>';return;}
   const rows=orders.filter(o=>o.status==="approved").sort((a,b)=>String(a.releaseDate||"9").localeCompare(String(b.releaseDate||"9")));
@@ -1049,7 +1109,8 @@ function renderPrint(){
     if(o.releaseDate!==last){if(last!==undefined)html+="</div>";last=o.releaseDate;const k=o.releaseDate?dayKey(o.releaseDate):null;
       const grp=rows.filter(x=>(x.releaseDate||"")===(o.releaseDate||""));
       html+=`<div class="day ${k!==null&&k<0?"late":""}"><span>${o.releaseDate?fmtDate(o.releaseDate):"No release date"} ${dayPill(k)}<span class="sheets">${sheetsOf(grp)} sheet${sheetsOf(grp)===1?"":"s"} · ${tagsOf(grp)} tags${grp.some(x=>x.rush)?' · <span style="color:var(--danger)">'+grp.filter(x=>x.rush).length+' rush</span>':""}</span></span><button class="ghost" data-act="printday" data-date="${o.releaseDate||""}">Mark all printed</button></div><div class="pl">`;}
-    o.items.forEach((i,idx)=>{html+=`<div class="r ${o.rush?"rush":""}" data-id="${o.id}"><div><div class="name">${esc(o.customer)} <span class="note">${ono(o.no)}</span>${o.rush?'<span class="rushtag">RUSH</span>':""}</div></div><div><span class="code">${esc(i.code||"—")}</span> · ${esc(i.product)} · ${i.pieces} pcs (${Math.ceil((Number(i.pieces)||0)/10)} sheet${Math.ceil((Number(i.pieces)||0)/10)===1?"":"s"})<small>${i.sender?`Name: <b>${esc(i.sender)}</b>`:""}${i.greeting?`${i.sender?" · ":""}“${esc(i.greeting)}”`:""}${i.extra?` · <b>${esc(i.extra)}</b>`:""}</small></div>${idx===0?`<button class="ghost" data-act="next">Printed</button>`:"<span></span>"}</div>`;});
+    const tg=o.items.reduce((a,i)=>a+(Number(i.pieces)||0),0),sh=o.items.reduce((a,i)=>a+Math.ceil((Number(i.pieces)||0)/10),0);
+    html+=`<details class="${o.rush?"rush":""}" data-id="${o.id}" ${printOpen.has(o.id)?"open":""}><summary><div><div class="name">${esc(o.customer)} <span class="note">${ono(o.no)}</span>${o.rush?'<span class="rushtag">RUSH</span>':""}</div><small>${o.items.length} design${o.items.length===1?"":"s"} · ${tg} tags · ${sh} sheet${sh===1?"":"s"} · ${o.items.map(i=>esc(i.code||i.product.replace(" Tag",""))).join(", ")}</small></div><button class="ghost" data-act="next">Printed</button></summary><div class="sub">${o.items.map(i=>`<div class="r"><span class="code">${esc(i.code||"—")}</span><div>${esc(i.product)} · ${i.pieces} pcs (${Math.ceil((Number(i.pieces)||0)/10)} sheet${Math.ceil((Number(i.pieces)||0)/10)===1?"":"s"})<small>${i.sender?`Name: <b>${esc(i.sender)}</b>`:""}${i.greeting?`${i.sender?" · ":""}“${esc(i.greeting)}”`:""}${i.extra?` · <b>${esc(i.extra)}</b>`:""}</small></div></div>`).join("")}</div></details>`;
   });
   el.innerHTML=html+"</div>";
 }
@@ -1148,7 +1209,7 @@ $("export").onclick=async()=>{
 };
 
 // ===== PRINT TO PAPER + KEYBOARD =====
-$("printBtn").onclick=()=>{go("print");setTimeout(()=>window.print(),50);};
+$("printBtn").onclick=()=>{go("print");document.querySelectorAll("#printlist details").forEach(d=>d.open=true);setTimeout(()=>window.print(),80);};
 document.addEventListener("keydown",e=>{
   const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
   if(e.key==="Escape"){if(sheetView){closeSheet();return;}if(tab==="new"&&editing){resetForm();go("list");}return;}
