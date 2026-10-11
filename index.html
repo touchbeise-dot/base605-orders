@@ -309,6 +309,15 @@ input,select,textarea{max-width:100%;min-width:0}
 .sheet .grp .ghost{padding:9px 12px;font-size:13px}
 .sheet .danger-row{margin-top:18px;padding-top:12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
 .sheet .quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.stiles{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.stile{border-radius:12px;padding:10px 10px;min-width:0}
+.stile b{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stile span{display:block;font-size:10.5px;font-weight:500;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-red{background:linear-gradient(135deg,#f9e3e0,#fbf0ee);color:#9a2e36}
+.s-amber{background:linear-gradient(135deg,#f7e9cb,#fbf3e3);color:#8a5a12}
+.s-green{background:linear-gradient(135deg,#ddebe0,#eef5ef);color:#2f5d44}
+.s-blue{background:linear-gradient(135deg,#dfe9f1,#eef3f8);color:#2f5a78}
+.s-grey{background:#f1efea;color:#75706a}
 .sheet .quick button{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;border:1px solid transparent;cursor:pointer}
 .sheet .quick button{background:#fff}
 .sheet .quick .q-edit{border-color:#2f5a78;color:#2f5a78}
@@ -958,6 +967,9 @@ function renderSheet(){
     el.innerHTML=`<div class="grab"></div>
       <div class="top"><div><h2><small>${ono(o.no)}</small><button data-act="cust" class="x" style="font-size:20px;font-weight:700;color:var(--ink);padding:0;text-decoration:underline dotted var(--mute)">${esc(o.customer)}</button>${o.rush?'<span class="rushtag">RUSH</span>':""}</h2><div class="when">${fmt(o.createdAt)}</div></div><div style="display:flex;align-items:flex-start;gap:4px"><div class="pills" style="flex-direction:column;align-items:flex-end;margin:2px 0 0">${'<span class="status pay-'+payState(o)+'">'+payState(o)+'</span><span class="status '+pill(o.status)+'">'+esc(o.status)+'</span>'}</div><button class="x" data-act="close" aria-label="Close">×</button></div></div>
       <div class="quick"><button data-act="edit" class="q-edit">Edit</button><button data-act="reorder" class="q-re">Reorder</button><button data-act="cancel" class="q-cancel">${o.status==="cancelled"?"Un-cancel":"Cancel"}</button><button data-act="del" class="q-del">Delete</button></div>
+      ${(()=>{const tg=o.items.reduce((a,i)=>a+(Number(i.pieces)||0),0),bal=Math.max(0,o.total-paid),k=o.releaseDate?dayKey(o.releaseDate):null;
+        const t=(cls,n,l)=>`<div class="stile ${cls}"><b>${n}</b><span>${l}</span></div>`;
+        return `<div class="stiles">${paid>=o.total?t("s-green","Paid","in full"):t("s-red",peso(bal),paid>0?"balance due":"unpaid")}${k===null?t("s-grey","—","no release date"):k<0?t("s-red",`${-k}d`,"overdue"):k===0?t("s-amber","Today","release"):k===1?t("s-amber","Tmrw","release"):t("s-amber",`${k} days`,"to release")}${t("s-green",`${o.items.length} · ${tg}`,"designs · tags")}${t("s-blue",o.shipping?"J&amp;T":o.bookRider?"Grab":o.pickup&&o.pickup.name?"Grab":"Pickup",o.shipping?"delivery":o.bookRider?"we book":o.pickup&&o.pickup.name?"from "+esc(o.pickup.name):"delivery")}</div>`;})()}
       <div class="meta"><div><b>Release</b>${o.releaseDate?`<span class="rel ${!CLOSED(o.status)&&dayKey(o.releaseDate)<0?"late":""}">${fmtDate(o.releaseDate)} · ${dayTag(dayKey(o.releaseDate))}</span>`:"not set"}</div><div><b>Contact</b>${o.contact?esc(o.contact):"—"}</div><div><b>Delivery</b>${o.shipping?`J&amp;T · ${peso(o.shipping)}${o.address?`<br><span class="note">${esc(o.address)}</span>`:""}`:o.bookRider?`<span style="color:var(--cran);font-weight:600">We book Grab/Lalamove</span>${o.pickup&&o.pickup.name?` · from ${esc(o.pickup.name)}`:""}${o.address?`<br><span class="note">${esc(o.address)}</span>`:""}`:o.pickup&&o.pickup.name?`Grab/Lalamove from ${esc(o.pickup.name)}`:"Pickup"}</div><div><b>Paying via</b>${o.payment&&PAYMENTS[o.payment]?PAYMENTS[o.payment].label:"—"}</div>${o.notes?`<div style="grid-column:1/-1"><b>Notes</b>${esc(o.notes)}</div>`:""}${(CAT.customers[custKey(o.customer)]||{}).note?`<div style="grid-column:1/-1"><b>Customer note</b>📝 ${esc(CAT.customers[custKey(o.customer)].note)}</div>`:""}</div>
       <ul class="items">${o.items.map(i=>`<li><div>${esc(i.product)}${i.code?` · <b>${esc(i.code)}</b>`:""}${i.pieces?` · ${i.pieces} pcs`:""}<small>${itemNotes(i).join(" · ")}</small></div><div>${peso(i.line)}</div></li>`).join("")}${rushN(o)?`<li><div>${rushLabel(o)}</div><div>${peso(rushFee(o))}</div></li>`:""}${o.shipping?`<li><div>J&amp;T delivery</div><div>${peso(o.shipping)}</div></li>`:""}</ul>
       <div class="tot"><span>Total</span><span>${peso(o.total)}</span></div>
