@@ -580,6 +580,7 @@ const MSG_HELP="Placeholders: {tracking} {address} {pickup_name} {pickup_address
 let CAT=JSON.parse(JSON.stringify(DEFAULT_CATALOG));
 const range=(p,n)=>Array.from({length:n},(_,i)=>p+(i+1));
 let PRODUCTS={}, PAYMENTS={}, RUSH=100, BASE_PIECES=30, STEP_PRICE=50;
+let _catSig="";
 function applyCatalog(c){
   CAT=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CATALOG)),c||{});
   CAT.messages=Object.assign({},DEFAULT_CATALOG.messages,c&&c.messages||{});
@@ -590,6 +591,9 @@ function applyCatalog(c){
   PRODUCTS={};CAT.products.forEach(p=>{const codes=(p.sets||[]).flatMap(s=>range(String(s.p||"").toUpperCase(),Number(s.n)||0));PRODUCTS[p.id]={name:p.name,price:Number(p.price)||0,codes:codes.length?codes:null,pieces:true,greeting:!!p.greeting,greetingAddon:Number(p.greetingAddon)||0,per10:!!p.per10,stock:(p.stock||"tag").trim().toLowerCase()||"tag"};});
   PAYMENTS={gcash:{label:"GCash",details:CAT.payments.gcash||""},bpi:{label:"BPI",details:CAT.payments.bpi||""}};
   RUSH=Number(CAT.rush)||0;BASE_PIECES=Number(CAT.basePieces)||30;STEP_PRICE=Number(CAT.stepPrice)||0;
+  const sig=JSON.stringify([CAT.products,CAT.basePieces,CAT.stepPrice,CAT.rush]);
+  if(sig!==_catSig){_catSig=sig;try{refreshFormCatalog();}catch(e){}}
+  try{const rl=document.getElementById("rushLbl");if(rl)rl.textContent=peso(RUSH);}catch(e){}
 }
 applyCatalog(CAT);
 const STEP=10;
@@ -745,11 +749,26 @@ function addItem(vals){
     recalc();
   };
   prod.addEventListener("change",setCode);
+  div._setCode=setCode;
   div.addEventListener("input",recalc); div.addEventListener("change",recalc);
   div.querySelector(".rm")?.addEventListener("click",()=>{div.remove();recalc();});
   if(vals){prod.value=Object.keys(PRODUCTS).find(k=>PRODUCTS[k].name===vals.product)||Object.keys(PRODUCTS)[0];}
   setCode();
   if(vals){const c=div.querySelector(".code");if(c)c.value=vals.code||"";const p=div.querySelector(".pieces");if(vals.pieces)p.value=String(vals.pieces);div.querySelector(".sender").value=vals.sender||"";div.querySelector(".greeting").value=vals.greeting||"";div.querySelector(".extra").value=vals.extra||"";div.querySelector(".extraPrice").value=vals.extraPrice||"";recalc();}
+}
+function refreshFormCatalog(){
+  if(typeof itemsEl==="undefined"||!itemsEl)return;
+  const opts=Object.entries(PRODUCTS).map(([k,p])=>`<option value="${k}">${p.name}${p.per10?` — ${peso(p.price)} per 10 pcs`:` — ${peso(p.price)}`}</option>`).join("");
+  itemsEl.querySelectorAll(".item").forEach(div=>{
+    const prod=div.querySelector(".product"),cur=prod.value,code=div.querySelector(".code")?.value||"",pcs=div.querySelector(".pieces")?.value;
+    prod.innerHTML=opts;prod.value=PRODUCTS[cur]?cur:Object.keys(PRODUCTS)[0];
+    if(div._setCode)div._setCode();
+    const c=div.querySelector(".code");if(c&&code&&[...(c.options||[])].some(o=>o.value===code)||c&&c.tagName==="INPUT")c.value=code;
+    const p=div.querySelector(".pieces");if(p&&pcs&&[...p.options].some(o=>o.value===pcs))p.value=pcs;
+    const gn=div.querySelector(".greetnote");if(gn)gn.textContent=PRODUCTS[prod.value].greetingAddon?`(+${peso(PRODUCTS[prod.value].greetingAddon)})`:"";
+    const pn=div.querySelector(".piecesnote");if(pn)pn.textContent=`(${BASE_PIECES} incl., +${peso(STEP_PRICE)} per 10)`;
+  });
+  if(typeof recalc==="function")recalc();
 }
 function readItems(){
   return [...itemsEl.querySelectorAll(".item")].map(div=>{
