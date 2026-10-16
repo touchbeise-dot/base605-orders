@@ -383,6 +383,56 @@ input,select,textarea{max-width:100%;min-width:0}
 .cx-cands button.taken{opacity:.45}
 .cx-mrow .oth{display:flex;gap:6px;margin-top:8px;align-items:center}
 .cx-mrow .oth select{flex:1;padding:7px 9px;font-size:13px}
+/* today (christmas) */
+.xban{position:relative;overflow:hidden;border-radius:22px;padding:22px 18px 18px;background:linear-gradient(160deg,#b03a42 0%,#922b2c 70%,#7a2125 100%);color:#fff;margin-bottom:14px}
+.xban .fl{position:absolute;color:#fff;pointer-events:none}
+.xban .xstar{position:absolute;right:16%;top:44%;width:22px;height:22px}
+.xban .xin{position:relative;display:flex;align-items:flex-end;gap:24px}
+.xban .xd{font-size:12px;font-weight:600;letter-spacing:.06em;opacity:.8}
+.xban .xt{font-size:28px;font-weight:600;letter-spacing:-.02em;margin-top:4px}
+.xban .xs{font-size:14px;opacity:.9;margin-top:4px}
+.xban .xpill{display:inline-block;margin-top:12px;font-size:12.5px;font-weight:600;padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.16)}
+.xban .xstats{display:none;gap:10px;margin-left:auto;margin-right:16%}
+.xban .xstats div{padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.14)}
+.xban .xstats b{display:block;font-size:20px;font-weight:600}.xban .xstats span{font-size:11.5px;opacity:.85}
+.tgroups{display:flex;flex-direction:column;gap:10px}
+.tg{border-radius:18px;padding:0 14px;background:var(--tg-bg);color:var(--tg-fg)}
+.tg.g-gold{--tg-bg:linear-gradient(135deg,#f7e9cb,#fbf3e3);--tg-fg:#8a5a12}
+.tg.g-lav{--tg-bg:linear-gradient(135deg,#e8e4f2,#f3f1f8);--tg-fg:#5b4b8f}
+.tg.g-cran{--tg-bg:linear-gradient(135deg,#f9e3e0,#fbf0ee);--tg-fg:#9a2e36}
+.tg.g-pine{--tg-bg:linear-gradient(135deg,#ddebe0,#eef5ef);--tg-fg:#2f5d44}
+.tg.g-green{--tg-bg:linear-gradient(135deg,#e3eedc,#f1f7ec);--tg-fg:#3f6b1f}
+.tg.g-blue{--tg-bg:linear-gradient(135deg,#dfe9f1,#eef3f8);--tg-fg:#2f5a78}
+.tg.empty{opacity:.55}
+.tgh{width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;padding:14px 0;color:inherit;cursor:pointer;text-align:left;font:inherit}
+.tgt{flex:1;min-width:0}.tgt b{display:block;font-size:16px;font-weight:600}
+.tgt small{display:block;font-size:12.5px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tgt small b{display:inline;font-size:inherit}
+.tgn{font-size:22px;font-weight:600}
+.tgc{font-size:18px;opacity:.6;transition:transform .15s}
+.tg.open .tgc{transform:rotate(90deg)}
+.tgb{display:none;padding:0 0 12px}
+.tg.open .tgb{display:block}
+.trow{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,255,255,.8);border-radius:12px;margin-top:6px;font-size:14px;color:var(--ink);cursor:pointer}
+.trow .tn{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .tn i{font-style:normal;color:var(--mute);font-weight:500}
+.trow .tr{font-size:12.5px;color:var(--mute);white-space:nowrap}
+.trow .tr.late{color:var(--cran);font-weight:600}
+.trow.dragging{opacity:.4}
+.tnudge{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;border:1px solid #e9b9b5;background:#fff;color:var(--cran);cursor:pointer}
+.tnone{padding:8px 2px;opacity:.6;font-size:13px}
+@media (min-width:740px){
+  .xban{padding:24px 26px}.xban .xt{font-size:32px}
+  .tgroups{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));align-items:start}
+  .tgb{display:block}.tgc{display:none}.tgh{cursor:default;padding:14px 0 6px}
+  .tg.empty{opacity:.7}
+}
+@media (min-width:1200px){
+  body[data-tab="today"] main{max-width:none;padding-left:24px;padding-right:24px}
+  .xban .xstats{display:flex}.xban .xpill{display:none}
+  .tgroups{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .tg.over{outline:2px dashed var(--tg-fg);outline-offset:2px}
+  .trow{cursor:grab}
+}
 /* catalog */
 .cat .row3{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;align-items:end}
 .cat .codes{display:flex;flex-direction:column;gap:6px;margin-top:8px}
@@ -527,9 +577,8 @@ section.enter-back{animation:inBack .2s ease-out}
 </header>
 <main>
   <section id="tab-today">
-    <div class="greet" id="greet"></div>
-    <div class="kpis" id="kpis"></div>
-    <div id="todayLists"></div>
+    <div class="xban" id="xban"></div>
+    <div class="tgroups" id="todayLists"></div>
   </section>
 
   <section id="tab-new" hidden>
@@ -850,7 +899,7 @@ function go(t,fromBack){
   tab=t;document.body.dataset.tab=t;
   ["today","new","list","up","print","stats","cat","done","deliv","label","cut"].forEach(x=>$("tab-"+x).hidden=(x!==t));
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
-  $("title").textContent={today:"Today",new:editing?"Edit order":"New order",list:"Orders",up:"Upcoming releases",print:"Print list",stats:"Stats",cat:"Catalog & settings",done:"Invoice",deliv:"Delivery details",label:"Package labels",cut:"Cutter"}[t];
+  $("title").textContent={today:"",new:editing?"Edit order":"New order",list:"Orders",up:"Upcoming releases",print:"Print list",stats:"Stats",cat:"Catalog & settings",done:"Invoice",deliv:"Delivery details",label:"Package labels",cut:"Cutter"}[t];
   $("savebar").classList.toggle("show",t==="new");
   $("fab").style.display=(t==="new"||t==="done"||t==="deliv"||t==="label"||t==="cut")?"none":"";
   if(t==="cut"&&window.cxRefresh)window.cxRefresh();
@@ -1249,7 +1298,7 @@ document.body.addEventListener("click",async e=>{
   if(!b){
     if(e.target.closest("button,select,input,a,summary"))return;
     if(e.target.id==="sheetBg"){closeSheet();return;}
-    const m=e.target.closest(".mini,.order,.pl .r");if(m){const o=orders.find(x=>x.id===m.dataset.id);if(o)openOrder(o);}return;}
+    const m=e.target.closest(".mini,.order,.pl .r,.trow");if(m){const o=orders.find(x=>x.id===m.dataset.id);if(o)openOrder(o);}return;}
   const act=b.dataset.act;
   if(act==="printday"){const d=b.dataset.date;const list=orders.filter(o=>o.status==="ready to print"&&(o.releaseDate||"")===d);for(const o of list)await store.patch(o,{status:"printed",stageAt:new Date().toISOString()});toast(`${list.length} marked printed`,async()=>{for(const o of list)await store.patch(o,{status:"ready to print"});});return;}
   if(act==="custnotesave"){const key=b.dataset.key,v=b.closest("#sheet").querySelector(".custnote").value.trim();const c=JSON.parse(JSON.stringify(CAT));c.customers=c.customers||{};if(v)c.customers[key]={note:v};else delete c.customers[key];await withBusy(b,()=>store.saveCatalog(c),"Saved ✓");return;}
@@ -1315,38 +1364,56 @@ function renderAll(){
 }
 
 // ===== TODAY =====
-let collapsed=new Set();try{collapsed=new Set(JSON.parse(localStorage.getItem("base605-collapsed")||"[]"));}catch{}
-$("todayLists").addEventListener("toggle",e=>{const d=e.target.closest("details.tcard");if(!d)return;if(d.open)collapsed.delete(d.dataset.key);else collapsed.add(d.dataset.key);try{localStorage.setItem("base605-collapsed",JSON.stringify([...collapsed]));}catch{}},true);
-function renderToday(){
-  const h=new Date().getHours(),greet=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
-  const active=orders.filter(o=>!CLOSED(o.status));
-  const today=active.filter(o=>o.releaseDate&&dayKey(o.releaseDate)===0),tmr=active.filter(o=>o.releaseDate&&dayKey(o.releaseDate)===1);
-  const late=active.filter(o=>o.releaseDate&&dayKey(o.releaseDate)<0);
-  const daysIn=o=>Math.floor((Date.now()-new Date(o.stageAt||o.createdAt))/864e5);
-  const approval=active.filter(o=>o.status==="for approval").sort((a,b)=>daysIn(b)-daysIn(a)),stale=approval.filter(o=>daysIn(o)>=2),toPrint=active.filter(o=>o.status==="ready to print"),approvedN=active.filter(o=>o.status==="approved").length;
-  const toDraft=active.filter(o=>o.status==="new"&&payState(o)!=="unpaid").sort((a,b)=>String(a.releaseDate||"9").localeCompare(String(b.releaseDate||"9")));
-  const owed=active.filter(o=>payState(o)!=="paid"&&o.releaseDate&&dayKey(o.releaseDate)<=2);
-  const owedAmt=owed.reduce((a,o)=>a+(o.total-(Number(o.paid)||0)),0);
-  $("greet").innerHTML=`${greet}<small>${new Date().toLocaleDateString("en-PH",{weekday:"long",month:"long",day:"numeric"})} · ${active.length} active order${active.length===1?"":"s"}</small>`;
-  if(loading){$("kpis").innerHTML="";$("todayLists").innerHTML='<div class="loading">Loading orders…</div>';return;}
-  $("kpis").innerHTML=`
-    <button class="kpi ${late.length?"late":""}" data-act="kpi" data-tab="up"><b>${today.length}</b><span>releasing today${late.length?` · ${late.length} overdue`:""}</span></button>
-    <button class="kpi" data-act="kpi" data-tab="up"><b>${tmr.length}</b><span>releasing tomorrow</span></button>
-    <button class="kpi" data-act="kpi" data-f="new" data-p="paid"><b>${toDraft.length}</b><span>to draft (paid, not started)</span></button>
-    <button class="kpi ${stale.length?"late":"warn"}" data-act="kpi" data-f="for approval"><b>${approval.length}</b><span>waiting for approval${stale.length?` · ${stale.length} need a nudge`:""}</span></button>
-    <button class="kpi" data-act="kpi" data-tab="print"><b>${toPrint.length}</b><span>ready to print${approvedN?` · ${approvedN} approved`:""}</span></button>`;
-  const mini=(o,extra,btn="")=>`<div class="mini ${CLOSED(o.status)?"closed":""}" data-id="${o.id}"><div><b>${esc(o.customer)}</b> <span class="note">${ono(o.no)}</span><small>${extra}</small></div><div style="text-align:right">${pillsOf(o)}${btn}<button class="ghost" data-act="open" style="padding:4px 10px;font-size:12px;margin-top:4px">Open</button></div></div>`;
-  let html="";
-  const sec=(key,title,n,body)=>`<details class="card tcard" data-key="${key}" ${collapsed.has(key)?"":"open"}><summary><h3>${title}<span class="cnt">${n}</span></h3></summary>${body}</details>`;
-  if(late.length||today.length)html+=sec("due",`Due ${late.length?"and overdue":"today"}`,late.length+today.length,[...late,...today].map(o=>mini(o,`${o.releaseDate?fmtDate(o.releaseDate)+" · ":""}${o.status}${payState(o)!=="paid"?" · balance "+peso(o.total-(Number(o.paid)||0)):""}`)).join(""));
-  if(owed.length)html+=sec("owed",`Balances to collect · ${peso(owedAmt)}`,owed.length,owed.map(o=>mini(o,`${peso(o.total-(Number(o.paid)||0))} due · release ${fmtDate(o.releaseDate)}`)).join(""));
-  if(toDraft.length)html+=sec("draft","To draft · paid, not started",toDraft.length,toDraft.map(o=>mini(o,`${payState(o)==="paid"?"fully paid":"50% paid"}${o.releaseDate?" · release "+fmtDate(o.releaseDate):""} · ${o.items.map(i=>(i.code||i.product.replace(" Tag",""))).join(", ")}`,`<button class="ghost" data-act="next" style="padding:4px 10px;font-size:12px;margin-top:4px;margin-right:4px">→ drafted</button>`)).join(""));
-  if(approval.length)html+=sec("approval","Waiting for customer approval",approval.length,approval.map(o=>{const dd=daysIn(o);return mini(o,`${dd>=2?`<span style="color:var(--danger);font-weight:800">${dd} days waiting — nudge them</span>`:dd===1?"1 day waiting":"sent today"}`,dd>=2?`<button class="ghost" data-act="nudge" style="padding:4px 10px;font-size:12px;margin-top:4px;margin-right:4px">Copy nudge</button>`:"");}).join(""));
-  const recent=orders.filter(o=>!CLOSED(o.status)).slice(0,5);
-  if(recent.length)html+=sec("recent","Recent orders",recent.length,recent.map(o=>mini(o,`${fmt(o.createdAt)} · ${peso(o.total)}`)).join(""));
-  if(!orders.length)html=`<div class="empty">No orders yet. Tap + to log the first one.</div>`;
-  $("todayLists").innerHTML=html;
+const TGROUPS=[
+  {key:"pay",label:"Waiting for downpayment",cls:"g-gold",target:null,test:o=>o.status==="new"&&payState(o)==="unpaid"},
+  {key:"draft",label:"Draft",cls:"g-lav",target:"drafted",test:o=>(o.status==="new"&&payState(o)!=="unpaid")||o.status==="drafted"},
+  {key:"chase",label:"Chase approval",cls:"g-cran",target:"for approval",test:o=>o.status==="for approval"},
+  {key:"prep",label:"Prep files",cls:"g-pine",target:"approved",test:o=>o.status==="approved"},
+  {key:"print",label:"Print",cls:"g-green",target:"ready to print",test:o=>o.status==="ready to print"},
+  {key:"hand",label:"Hand over",cls:"g-blue",target:"printed",test:o=>["printed","messaged for pickup","for ship out"].includes(o.status)}];
+let tOpen=new Set();try{tOpen=new Set(JSON.parse(localStorage.getItem("base605-tgroups")||"[]"));}catch{}
+const daysIn=o=>Math.floor((Date.now()-new Date(o.stageAt||o.createdAt))/864e5);
+function xmasLine(n){const t=new Date();t.setHours(0,0,0,0);const x=new Date(t.getFullYear(),11,25);const d=Math.round((x-t)/864e5);
+  const a=`${n} active order${n===1?"":"s"}`;if(d===0)return `Merry Christmas! · ${a}`;if(d>0&&d<=100)return `${d} day${d===1?"":"s"} to Christmas · ${a}`;return a;}
+function trow(o,g){
+  const rel=o.releaseDate?dayKey(o.releaseDate):null,lateRel=rel!==null&&rel<0;let right="",late=false,extra="";
+  if(g.key==="pay")right=`${peso(o.total-(Number(o.paid)||0))} due`;
+  else if(g.key==="chase"){const dd=daysIn(o);late=dd>=2;right=dd>=2?`${dd} days waiting`:dd===1?"1 day":"sent today";if(late)extra=`<button type="button" class="tnudge" data-act="nudge">Nudge</button>`;}
+  else if(g.key==="draft"&&o.status==="drafted")right="draft ready · send";
+  else if(g.key==="hand")right=o.status==="messaged for pickup"?"waiting pickup":o.status==="for ship out"?"ship out":(o.shipping?"ship J&T":"message pickup");
+  else{late=lateRel;right=o.releaseDate?(lateRel?`${-rel}d overdue`:rel===0?"today":rel===1?"tomorrow":fmtDate(o.releaseDate)):"no date";}
+  return `<div class="trow" data-id="${o.id}" draggable="true"><span class="tn">${esc(o.customer)} <i>${ono(o.no)}</i>${rushN(o)?'<span class="rushtag">RUSH</span>':""}</span><span class="tr${late?" late":""}">${right}</span>${extra}</div>`;
 }
+function renderToday(){
+  const active=orders.filter(o=>!CLOSED(o.status));
+  const owedAmt=active.reduce((a,o)=>a+Math.max(0,o.total-(Number(o.paid)||0)),0);
+  const relToday=active.filter(o=>o.releaseDate&&dayKey(o.releaseDate)===0).length,relSoon=active.filter(o=>o.releaseDate&&(dayKey(o.releaseDate)===1||(dayKey(o.releaseDate)<=3&&new Date().getDay()>=5))).length;
+  const now=new Date(),dateLine=now.toLocaleDateString("en-PH",{weekday:"long",month:"short",day:"numeric"}).toUpperCase().replace(",", " ·");
+  const flakes=[[72,18,.45,16],[80,56,.3,24],[88,12,.4,12],[76,98,.25,14],[93,84,.5,18],[66,64,.22,11],[97,30,.3,10]].map(([x,y,o,z])=>`<span class="fl" style="left:${x}%;top:${y}px;opacity:${o};font-size:${z}px">❄</span>`).join("");
+  $("xban").innerHTML=`${flakes}<svg class="xstar" viewBox="0 0 24 24"><path d="M12 0C12.8 7 17 11.2 24 12C17 12.8 12.8 17 12 24C11.2 17 7 12.8 0 12C7 11.2 11.2 7 12 0Z" fill="#f9a75d"/></svg>
+    <div class="xin"><div class="xtxt"><div class="xd">${dateLine}</div><div class="xt">Today</div><div class="xs">${xmasLine(active.length)}</div><div class="xpill">${peso(owedAmt)} still to collect</div></div>
+    <div class="xstats"><div><b>${peso(owedAmt)}</b><span>to collect</span></div><div><b>${relToday}</b><span>releasing today</span></div><div><b>${relSoon}</b><span>releasing soon</span></div></div></div>`;
+  if(loading){$("todayLists").innerHTML='<div class="loading">Loading orders…</div>';return;}
+  if(!orders.length){$("todayLists").innerHTML=`<div class="empty">No orders yet. Tap + to log the first one.</div>`;return;}
+  const sortRel=(a,b)=>String(a.releaseDate||"9").localeCompare(String(b.releaseDate||"9"));
+  $("todayLists").innerHTML=TGROUPS.map(g=>{
+    let list=active.filter(g.test);
+    if(g.key==="chase")list.sort((a,b)=>daysIn(b)-daysIn(a));else list.sort(sortRel);
+    const lateN=g.key==="chase"?list.filter(o=>daysIn(o)>=2).length:list.filter(o=>o.releaseDate&&dayKey(o.releaseDate)<0).length;
+    const names=list.slice(0,3).map(o=>o.customer.split(/\s+/)[0]).join(", ")+(list.length>3?` +${list.length-3}`:"");
+    const hint=!list.length?"nothing here":(lateN?`<b>${lateN} ${g.key==="chase"?"waiting 2+ days":"overdue"}</b> · `:"")+esc(names);
+    const open=tOpen.has(g.key);
+    return `<div class="tg ${g.cls}${open?" open":""}${list.length?"":" empty"}" data-g="${g.key}"><button type="button" class="tgh" data-act="tg"><span class="tgt"><b>${g.label}</b><small>${hint}</small></span><span class="tgn">${list.length}</span><span class="tgc">›</span></button><div class="tgb">${list.map(o=>trow(o,g)).join("")||'<div class="tnone">—</div>'}</div></div>`;
+  }).join("");
+}
+document.addEventListener("click",e=>{const b=e.target.closest('button[data-act="tg"]');if(!b)return;const g=b.closest(".tg");g.classList.toggle("open");const k=g.dataset.g;g.classList.contains("open")?tOpen.add(k):tOpen.delete(k);try{localStorage.setItem("base605-tgroups",JSON.stringify([...tOpen]));}catch{}});
+// desktop: drag a name to another column to change its stage
+(()=>{let dragId=null;const L=$("todayLists");
+  L.addEventListener("dragstart",e=>{const r=e.target.closest(".trow");if(!r)return;dragId=r.dataset.id;e.dataTransfer.effectAllowed="move";try{e.dataTransfer.setData("text/plain",dragId);}catch{}r.classList.add("dragging");});
+  L.addEventListener("dragend",e=>{const r=e.target.closest(".trow");if(r)r.classList.remove("dragging");L.querySelectorAll(".tg.over").forEach(x=>x.classList.remove("over"));dragId=null;});
+  L.addEventListener("dragover",e=>{const g=e.target.closest(".tg");if(!g||!dragId)return;const G=TGROUPS.find(x=>x.key===g.dataset.g);if(!G||!G.target)return;e.preventDefault();L.querySelectorAll(".tg.over").forEach(x=>x!==g&&x.classList.remove("over"));g.classList.add("over");});
+  L.addEventListener("drop",async e=>{const g=e.target.closest(".tg");if(!g||!dragId)return;e.preventDefault();g.classList.remove("over");const G=TGROUPS.find(x=>x.key===g.dataset.g),o=orders.find(x=>x.id===dragId);if(G&&G.target&&o&&!G.test(o))await setStatus(o,G.target);});
+})();
 
 // ===== ORDERS LIST =====
 let filter="all",payFilter="all",showArch=false;
