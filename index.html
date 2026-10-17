@@ -81,6 +81,8 @@ textarea{min-height:60px;resize:vertical}
 .sched{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .sched span{border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:600;color:var(--mute);background:var(--card)}
 .sched span.hot{border-color:var(--orange);color:#9a4a10;background:#fff3e6}
+.pcsc{display:flex;gap:6px}.pcsc input{flex:1;min-width:0}
+.pcsBack{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:10px;padding:0 10px;font-size:12px;font-weight:600;color:var(--mute);cursor:pointer}
 .extras{display:flex;flex-direction:column;gap:8px}
 .extras .opt{margin:0;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:600;white-space:nowrap}
 .extras .opt input[type=checkbox]{width:18px;height:18px;margin:0;flex:0 0 auto}
@@ -953,7 +955,7 @@ function addItem(vals){
     <select class="product">${Object.entries(PRODUCTS).map(([k,p])=>`<option value="${k}">${p.name}${p.per10?` — ${peso(p.price)} per 10 pcs`:` — ${peso(p.price)}`}</option>`).join("")}</select>
     <div class="row">
       <div><label>Design code</label><span class="codewrap"></span></div>
-      <div><label>Pieces <span class="note piecesnote">(${BASE_PIECES} incl., +${peso(STEP_PRICE)} per 10)</span></label><select class="pieces"></select></div>
+      <div><label>Pieces <span class="note piecesnote">(${BASE_PIECES} incl., +${peso(STEP_PRICE)} per 10)</span></label><select class="pieces"></select><div class="pcsc" hidden><input class="pcsCustom" type="number" min="10" step="10" inputmode="numeric" placeholder="e.g. 500"><button type="button" class="pcsBack" title="Back to list">List</button></div></div>
     </div>
     <label>Sender name</label><input class="sender" placeholder="Name printed on the tag">
     <div class="greetwrap"><label>Greeting <span class="note greetnote"></span></label><input class="greeting" placeholder="Message on the tag"></div>
@@ -967,7 +969,9 @@ function addItem(vals){
     if(prev&&p.codes&&p.codes.includes(prev))w.querySelector(".code").value=prev;
     const ps=div.querySelector(".pieces"), prevP=ps.value;
     ps.innerHTML=p.per10?PRINT_OPTS.map(n=>`<option value="${n}">${n} pcs · ${peso(n/10*p.price)}</option>`).join(""):PIECES_OPTS().map(n=>`<option value="${n}">${n} pcs${piecesAddon(n)?` +${peso(piecesAddon(n))}`:""}</option>`).join("");
+    ps.insertAdjacentHTML("beforeend",'<option value="custom">More… type any amount</option>');
     if(prevP&&[...ps.options].some(x=>x.value===prevP))ps.value=prevP;
+    syncPcs(div);
     div.querySelector(".piecesnote").style.display=p.per10?"none":"";
     div.querySelector(".greetwrap").style.display=p.greeting?"":"none";
     div.querySelector(".greetnote").textContent=p.greetingAddon?`(+${peso(p.greetingAddon)})`:"";
@@ -979,7 +983,7 @@ function addItem(vals){
   div.querySelector(".rm")?.addEventListener("click",()=>{div.remove();recalc();});
   if(vals){prod.value=Object.keys(PRODUCTS).find(k=>PRODUCTS[k].name===vals.product)||Object.keys(PRODUCTS)[0];}
   setCode();
-  if(vals){const c=div.querySelector(".code");if(c)c.value=vals.code||"";const p=div.querySelector(".pieces");if(vals.pieces)p.value=String(vals.pieces);div.querySelector(".sender").value=vals.sender||"";div.querySelector(".greeting").value=vals.greeting||"";div.querySelector(".extra").value=vals.extra||"";div.querySelector(".extraPrice").value=vals.extraPrice||"";recalc();}
+  if(vals){const c=div.querySelector(".code");if(c)c.value=vals.code||"";const p=div.querySelector(".pieces");if(vals.pieces){if([...p.options].some(o=>o.value===String(vals.pieces)))p.value=String(vals.pieces);else{p.value="custom";div.querySelector(".pcsCustom").value=vals.pieces;}syncPcs(div);}div.querySelector(".sender").value=vals.sender||"";div.querySelector(".greeting").value=vals.greeting||"";div.querySelector(".extra").value=vals.extra||"";div.querySelector(".extraPrice").value=vals.extraPrice||"";recalc();}
 }
 function refreshFormCatalog(){
   if(typeof itemsEl==="undefined"||!itemsEl)return;
@@ -995,10 +999,14 @@ function refreshFormCatalog(){
   });
   if(typeof recalc==="function")recalc();
 }
+function pcsVal(div){const ps=div.querySelector(".pieces");return ps.value==="custom"?Number(div.querySelector(".pcsCustom").value)||0:Number(ps.value)||0;}
+function syncPcs(div){const ps=div.querySelector(".pieces"),c=div.querySelector(".pcsc"),custom=ps.value==="custom";ps.hidden=custom;c.hidden=!custom;}
+document.addEventListener("change",e=>{if(!e.target.classList.contains("pieces"))return;const div=e.target.closest(".item");syncPcs(div);if(e.target.value==="custom"){const inp=div.querySelector(".pcsCustom");if(!inp.value)inp.value=250;inp.focus();inp.select();recalc();}});
+document.addEventListener("click",e=>{const b=e.target.closest(".pcsBack");if(!b)return;const div=b.closest(".item"),ps=div.querySelector(".pieces"),v=pcsVal(div);const opts=[...ps.options].map(o=>o.value).filter(x=>x!=="custom");ps.value=opts.includes(String(v))?String(v):opts[opts.length-1];syncPcs(div);recalc();});
 function readItems(){
   return [...itemsEl.querySelectorAll(".item")].map(div=>{
     const p=PRODUCTS[div.querySelector(".product").value];
-    const pieces=Math.max(1,Number(div.querySelector(".pieces").value)||(p.per10?10:BASE_PIECES));
+    const pieces=Math.max(1,pcsVal(div)||(p.per10?10:BASE_PIECES));
     const addon=p.per10?0:piecesAddon(pieces);
     const greeting=p.greeting?div.querySelector(".greeting").value.trim():"";
     const greetAdd=greeting&&p.greetingAddon?p.greetingAddon:0;
