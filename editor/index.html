@@ -1,0 +1,1064 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>base605 Tag Editor</title>
+<link rel="icon" href="../icon-192.png">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout: one working column on phones (sticky card preview over its fields, action bar pinned to the bottom);
+   on wide screens the preview sits left and the fields right. Palette follows the base605 catalog: paper, holly red, pine green. */
+:root{
+  --paper:#FFF8F4; --dot:rgba(200,16,46,.10); --surface:#FFFFFF; --sunk:#F6EEE9;
+  --ink:#2A1C1E; --muted:#7A6A6C; --line:#EADCD6;
+  --red:#C8102E; --red-ink:#FFFFFF; --red-soft:#FBE3E6;
+  --pine:#1E6B3A; --pine-soft:#E2F1E7; --amber:#9A5B00; --amber-soft:#FBEBD2;
+  --focus:#1F5FD1; --shadow:0 1px 2px rgba(60,20,20,.10),0 8px 24px -12px rgba(60,20,20,.28);
+  --ui:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#151917; --dot:rgba(255,120,130,.07); --surface:#1E2421; --sunk:#252C29;
+  --ink:#F3ECE8; --muted:#A79C98; --line:#333B37;
+  --red:#FF5E6E; --red-ink:#1A0B0D; --red-soft:#3A1E22;
+  --pine:#6FCF97; --pine-soft:#1F3328; --amber:#F2B14C; --amber-soft:#3A2D17;
+  --focus:#8AB4FF; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -12px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#151917; --dot:rgba(255,120,130,.07); --surface:#1E2421; --sunk:#252C29;
+  --ink:#F3ECE8; --muted:#A79C98; --line:#333B37;
+  --red:#FF5E6E; --red-ink:#1A0B0D; --red-soft:#3A1E22;
+  --pine:#6FCF97; --pine-soft:#1F3328; --amber:#F2B14C; --amber-soft:#3A2D17;
+  --focus:#8AB4FF; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -12px rgba(0,0,0,.6); color-scheme:dark}
+[hidden]{display:none!important}
+*,*::before,*::after{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45;
+  background-image:radial-gradient(var(--dot) 1.2px,transparent 1.3px);background-size:22px 22px;
+  -webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--paper)}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1180px;margin:0 auto}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--paper);border-bottom:1px solid var(--line)}
+.stripe{height:6px;background:repeating-linear-gradient(135deg,var(--red) 0 14px,var(--surface) 14px 20px,var(--pine) 20px 34px,var(--surface) 34px 40px)}
+.topin{display:flex;align-items:center;gap:12px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--red);font-size:18px;letter-spacing:-.01em;margin-right:auto}
+.brand small{color:var(--muted);font-weight:500;font-size:14px;letter-spacing:0}
+.tabs{display:flex;gap:4px;background:var(--sunk);border-radius:999px;padding:3px}
+.tabs button{border:0;background:transparent;border-radius:999px;padding:7px 14px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.count{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:999px;background:var(--red);color:var(--red-ink);font-size:12px;line-height:20px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* catalog */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-block:16px 6px}
+.seg{display:flex;gap:3px;background:var(--sunk);border-radius:10px;padding:3px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:8px;padding:6px 11px;font-size:13.5px;font-weight:500;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-weight:600}
+.search{flex:1 1 140px;min-width:0;max-width:240px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 11px;font-size:14px;text-transform:uppercase}
+.search::placeholder{text-transform:none;color:var(--muted)}
+.tier{padding-block:18px 8px}
+.tier h2{margin:0;font-size:26px;line-height:1.1;letter-spacing:-.02em;font-weight:700;text-wrap:balance}
+.tier h2 .price{color:var(--red)}
+.tier p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.tier .rule{height:2px;background:var(--red);margin-top:10px;border-radius:2px;opacity:.85}
+.shape{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--pine);text-transform:uppercase;margin:16px 0 8px}
+.grid{display:grid;gap:14px 12px}
+.grid.L{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.grid.P{grid-template-columns:repeat(auto-fill,minmax(98px,1fr))}
+.tile{border:0;padding:0;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.tile img{width:100%;height:auto;display:block;background:#fff;border-radius:4px;box-shadow:var(--shadow);transition:transform .15s}
+.tile:hover img{transform:translateY(-2px)}
+.tile span{font-weight:700;font-size:14px;color:var(--ink);letter-spacing:.02em}
+.empty{color:var(--muted);padding:24px 0}
+
+/* editor */
+.ed{display:grid;grid-template-columns:1fr;gap:0;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.edhead{display:flex;align-items:center;gap:10px;padding-block:12px;flex-wrap:wrap}
+.back{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer}
+.code{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.pill{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 9px;background:var(--red-soft);color:var(--red)}
+.pill.g{background:var(--pine-soft);color:var(--pine)}
+.saved{margin-left:auto;font-size:13px;color:var(--muted)}
+.stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--hh,64px));z-index:5;background:var(--paper);padding-block:6px 10px;display:flex;justify-content:center}
+.stage .frame{position:relative;line-height:0}
+.stage{min-width:0}
+.stage canvas{max-width:100%;display:block;border-radius:3px;box-shadow:var(--shadow);background:#fff;touch-action:manipulation;cursor:pointer}
+.hint{font-size:12.5px;color:var(--muted);text-align:center;margin:-2px 0 8px}
+.loading{position:absolute;left:8px;bottom:8px;font:600 11px var(--ui);background:var(--surface);color:var(--muted);border-radius:6px;padding:3px 7px;line-height:1.4;box-shadow:var(--shadow)}
+.panel{display:flex;flex-direction:column;gap:14px;min-width:0;padding-block:6px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px}
+.box h3{margin:0;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--muted);min-width:0}
+input.t,textarea.t{border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:9px 11px;font-size:16px;color:var(--ink);width:100%;min-width:0}
+textarea.t{resize:vertical;line-height:1.35;min-height:44px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field.flash textarea,.field.flash input{border-color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+.fhead{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted)}
+.fhead b{color:var(--ink)}
+.fit{font-size:12px;font-weight:600;color:var(--amber);background:var(--amber-soft);border-radius:6px;padding:1px 7px}
+.ctrls{display:flex;align-items:center;gap:6px;margin-left:auto}
+.ib{border:1px solid var(--line);background:var(--surface);border-radius:8px;min-width:32px;height:32px;padding:0 8px;cursor:pointer;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center}
+.ib:disabled{opacity:.4;cursor:default}
+.pct{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--muted);min-width:38px;text-align:center}
+.runs{display:grid;grid-template-columns:minmax(70px,.4fr) 1fr;gap:8px}
+details.other summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);list-style:none}
+details.other summary::before{content:"▸ ";}
+details.other[open] summary::before{content:"▾ ";}
+.lockrow{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;font-size:14px;padding-top:10px}
+.lockrow .txt{white-space:pre-wrap;color:var(--ink);min-width:0}
+.lockrow .lab{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.link{border:0;background:none;color:var(--red);font-weight:600;cursor:pointer;padding:4px 2px;font-size:13px;white-space:nowrap}
+.note{font-size:12.5px;color:var(--muted);margin:0}
+.actions{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));padding-top:10px}
+.actin{display:flex;gap:8px}
+.btn{flex:1;border-radius:10px;padding:11px 10px;font-weight:700;font-size:14.5px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);white-space:nowrap}
+.btn.primary{background:var(--red);border-color:var(--red);color:var(--red-ink)}
+.btn.pine{background:var(--pine);border-color:var(--pine);color:var(--surface)}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* drafts */
+/* orders (connected to the order app) */
+.ogrid{display:grid;gap:18px;padding-block:8px 40px}
+@media (min-width:900px){.ogrid{grid-template-columns:1fr 1fr}}
+.ogrp h4{margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gc,var(--muted))}
+.orow{width:100%;text-align:left;display:grid;grid-template-columns:1fr auto;gap:4px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;cursor:pointer;font:inherit;color:var(--ink)}
+.orow:hover{border-color:var(--gc,var(--line))}
+.orow b{font-size:15px}.orow i{font-style:normal;color:var(--muted)}
+.orow .rt{font-size:12.5px;color:var(--muted);text-align:right}
+.orow .chips{display:flex;gap:5px;flex-wrap:wrap}
+.orow .chips span{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--ink)}
+.orow .sub{font-size:12px;color:var(--muted);text-align:right}
+.orow .cn{grid-column:1/-1;font-size:12.5px;color:var(--red);font-weight:600}
+.obox{border-color:var(--pine)}
+.obox .oh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.obox .oh b{font-size:16px}.obox .oh span{font-size:12px;color:var(--muted)}
+.obox .cnb{background:var(--red-soft);color:var(--red);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600}
+.olist{display:flex;flex-direction:column;gap:4px}
+.olist button{display:flex;align-items:center;gap:8px;border:0;background:none;border-radius:10px;padding:7px 8px;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+.olist button[aria-current="true"]{background:var(--pine-soft)}
+.olist .n{width:22px;height:22px;flex:0 0 22px;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--line);color:var(--muted)}
+.olist button[aria-current="true"] .n{background:var(--pine);border-color:var(--pine);color:#fff}
+.olist .n.ok{background:var(--pine-soft);border-color:var(--pine);color:var(--pine)}
+.olist .tx{flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.olist .tx em{font-style:normal;color:var(--muted)}
+.olist .up{font-size:10.5px;font-weight:700;color:var(--amber);background:var(--amber-soft);border-radius:999px;padding:1px 7px}
+.obtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.obtns .wide{grid-column:1/-1}
+.obtns .btn{flex:none}
+.ochg{display:flex;gap:6px}.ochg input{flex:1}
+.dhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-block:16px 4px}
+.dhead h2{margin:0 auto 0 0;font-size:26px;letter-spacing:-.02em}
+.dlist{display:flex;flex-direction:column;gap:10px;padding-block:8px 40px}
+.drow{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.drow .th{width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:var(--sunk);border-radius:8px;cursor:pointer;border:0;padding:4px}
+.drow .th img{max-width:100%;max-height:100%;border-radius:2px;box-shadow:var(--shadow)}
+.drow .who{min-width:0;cursor:pointer}
+.drow .who b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drow .who span{font-size:13px;color:var(--muted)}
+.dside{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.status{border:0;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.st-draft{background:var(--sunk);color:var(--muted)}
+.st-sent{background:var(--amber-soft);color:var(--amber)}
+.st-approved{background:var(--pine-soft);color:var(--pine)}
+.st-printed{background:var(--red-soft);color:var(--red)}
+.confirm{display:flex;gap:6px;align-items:center;font-size:13px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:var(--paper);
+  padding:9px 14px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) 16px}
+.modal .in{background:var(--surface);border-radius:var(--r);padding:16px;max-width:560px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:100%;overflow:auto}
+.modal img{width:100%;height:auto;border-radius:4px}
+
+@media (min-width:900px){
+  .ed{grid-template-columns:minmax(0,1.25fr) minmax(320px,1fr);gap:28px;align-items:start}
+  .edhead{grid-column:1/-1}
+  .stage{grid-column:1;grid-row:2}
+  .hint{grid-column:1;grid-row:3;align-self:start}
+  .ed>.panel{grid-column:2;grid-row:2/span 2}
+  .stage{top:calc(env(safe-area-inset-top,0px) + var(--hh,64px) + 12px)}
+}
+@media (max-width:430px){.brand small{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="stripe" aria-hidden="true"></div>
+  <div class="wrap topin">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--pine)" d="M12 11c-2-4-6-6-9-5 2 1 2 3 1 4 2 0 3 1 3 3 1-1 3-2 5-2Zm0 0c2-4 6-6 9-5-2 1-2 3-1 4-2 0-3 1-3 3-1-1-3-2-5-2Z"/><circle cx="9.5" cy="15" r="2.6" fill="var(--red)"/><circle cx="14.5" cy="15" r="2.6" fill="var(--red)"/><circle cx="12" cy="19" r="2.6" fill="var(--red)"/></svg>
+      base605 <small>Tag editor</small>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button id="tabOr" role="tab" aria-selected="true">Orders<span class="count" id="orCount" hidden>0</span></button>
+      <button id="tabCat" role="tab" aria-selected="false">Designs</button>
+      <button id="tabDr" role="tab" aria-selected="false">Drafts<span class="count" id="drCount" hidden>0</span></button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section id="vOr" class="wrap">
+    <div class="dhead"><h2>Orders</h2><a class="back" href="../" style="text-decoration:none;color:inherit">← Order app</a></div>
+    <p class="note" id="orNote">Loading orders…</p>
+    <div class="ogrid" id="orList"></div>
+  </section>
+
+  <section id="vCat" class="wrap" hidden>
+    <div class="filters">
+      <div class="seg" id="fTier" role="group" aria-label="Tier">
+        <button data-v="all" aria-pressed="true">All</button><button data-v="basic" aria-pressed="false">Basic</button><button data-v="standard" aria-pressed="false">Standard</button><button data-v="generic" aria-pressed="false">Generic</button>
+      </div>
+      <div class="seg" id="fShape" role="group" aria-label="Shape">
+        <button data-v="all" aria-pressed="true">Both</button><button data-v="L" aria-pressed="false">Landscape</button><button data-v="P" aria-pressed="false">Portrait</button>
+      </div>
+      <input id="q" class="search" type="search" placeholder="Find a code, e.g. SP14" autocomplete="off" aria-label="Find a design by code">
+    </div>
+    <div id="catList"></div>
+  </section>
+
+  <section id="vEd" class="wrap" hidden>
+    <div class="ed">
+      <div class="edhead">
+        <button class="back" id="btnBack" type="button">← Designs</button>
+        <span class="code" id="edCode">SP14</span>
+        <span class="pill" id="edTier">Standard ₱270</span>
+        <span class="saved" id="edSaved"></span>
+      </div>
+      <div class="stage" id="stage"><div class="frame"><canvas id="cv" width="1050" height="600" aria-label="Tag preview"></canvas><span class="loading" id="fontsLoading" hidden>Loading fonts…</span></div></div>
+      <p class="hint" id="edHint">Tap any text on the tag to edit it.</p>
+      <div class="panel">
+        <div class="box obox" id="oBox" hidden></div>
+        <div class="box" id="custBox">
+          <h3>Order</h3>
+          <div class="row2">
+            <label class="f">Customer<input class="t" id="cust" type="text" autocomplete="off" placeholder="Who ordered"></label>
+            <label class="f">Note<input class="t" id="note" type="text" autocomplete="off" placeholder="Qty, pickup, etc."></label>
+          </div>
+        </div>
+        <div class="box">
+          <h3 id="fieldsTitle">On the tag</h3>
+          <p class="note" id="tierNote"></p>
+          <div id="fields" class="panel" style="padding:0"></div>
+        </div>
+        <details class="box other" id="otherBox">
+          <summary id="otherSum">Other text on this tag</summary>
+          <div id="others"></div>
+        </details>
+        <p class="note" id="subNote" hidden></p>
+      </div>
+    </div>
+    <div class="actions"><div class="wrap actin">
+      <button class="btn" id="btnSave" type="button">Save draft</button>
+      <button class="btn pine" id="btnPreview" type="button">Draft image</button>
+      <button class="btn primary" id="btnPrint" type="button">Print file</button>
+    </div></div>
+  </section>
+
+  <section id="vDr" class="wrap" hidden>
+    <div class="dhead">
+      <h2>Drafts</h2>
+      <div class="seg" id="fStatus" role="group" aria-label="Status">
+        <button data-v="all" aria-pressed="true">All</button><button data-v="draft" aria-pressed="false">Draft</button><button data-v="sent" aria-pressed="false">Sent</button><button data-v="approved" aria-pressed="false">Approved</button><button data-v="printed" aria-pressed="false">Printed</button>
+      </div>
+      <button class="btn primary" id="btnBatch" type="button" style="flex:0 0 auto">Print files for approved</button>
+    </div>
+    <p class="note" id="storeNote"></p>
+    <div class="dlist" id="dList"></div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="modal" id="modal" hidden><div class="in"><b id="mTitle">Save this image</b><p class="note" id="mText">Press and hold the image to save or share it.</p><img id="mImg" alt=""><button class="btn" id="mClose" type="button">Close</button></div></div>
+
+<script>/* base605 tag renderer: draws a card (background art + live text) onto a canvas.
+   Shared by the editor page and the verification harness. */
+(function (g) {
+  "use strict";
+  var FALLBACK = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  var probe = document.createElement("canvas").getContext("2d");
+  var HAS_LS = "letterSpacing" in probe;
+
+  function fontStr(f, size) {
+    return (f.style === "italic" ? "italic " : "") + f.weight + " " + size.toFixed(3) + 'px "' + f.family + '", ' + FALLBACK;
+  }
+  function setFont(ctx, f, size, ls) {
+    ctx.font = fontStr(f, size);
+    if (HAS_LS) ctx.letterSpacing = (ls || 0).toFixed(3) + "px";
+  }
+  function measure(ctx, t, ls) {
+    var w = ctx.measureText(t).width;
+    if (!HAS_LS && ls) w += ls * Array.from(t).length;
+    return w;
+  }
+  function fill(ctx, t, x, y, ls) {
+    if (HAS_LS || !ls) { ctx.fillText(t, x, y); return; }
+    var cx = x;
+    Array.from(t).forEach(function (ch) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + ls; });
+  }
+
+  function layerText(layer, st) {
+    if (st && typeof st.text === "string") return st.text;
+    return layer.text;
+  }
+  function runTexts(layer, st) {
+    return layer.runs.map(function (r, i) {
+      return st && st.runs && typeof st.runs[i] === "string" ? st.runs[i] : r.t;
+    });
+  }
+  function isPristine(layer, st) {
+    if (!st) return true;
+    if ((st.scale || 1) !== 1) return false;
+    if (layer.runs) return false;
+    return st.text === undefined || st.text === layer.text;
+  }
+  function cleanLines(text) {
+    return text.replace(/\r/g, "").split("\n").map(function (s) { return s.replace(/\s+$/, ""); });
+  }
+
+  /* Lay out one flowing layer. Returns {lines:[{t,x,y,w}], k, fitted, box} in card (or local) coords. */
+  function layoutFlow(ctx, layer, st) {
+    var fl = layer.flow, us = (st && st.scale) || 1;
+    var lines = cleanLines(layerText(layer, st));
+    var k = us;
+    function widths(kk) {
+      setFont(ctx, layer, layer.size * kk, layer.ls * kk);
+      return lines.map(function (t) { return measure(ctx, t, layer.ls * kk); });
+    }
+    var avail = (fl.minY != null && fl.maxY != null) ? fl.maxY - fl.minY : Infinity;
+    function fit(ls_) {
+      lines = ls_;
+      var kk = us, w = widths(kk), m = Math.max.apply(null, w.concat([0])), f = false;
+      if (fl.maxW && m > fl.maxW) { kk = kk * fl.maxW / m; f = true; }
+      var bh = (lines.length - 1) * fl.lh * kk + (fl.asc + fl.desc) * kk;
+      if (bh > avail) { kk = kk * avail / bh; f = true; }
+      return { k: kk, fitted: f };
+    }
+    var r = fit(lines);
+    /* A long single line that had to shrink a lot: try breaking it into two balanced lines. */
+    if (r.fitted && lines.length === 1 && r.k < us * 0.8 && avail !== Infinity && lines[0].indexOf(" ") > 0) {
+      var one = lines[0], best = null;
+      setFont(ctx, layer, layer.size, layer.ls);
+      for (var p = one.indexOf(" "); p > 0; p = one.indexOf(" ", p + 1)) {
+        var a = one.slice(0, p).trim(), b = one.slice(p + 1).trim();
+        if (!a || !b) continue;
+        var m2 = Math.max(measure(ctx, a, layer.ls), measure(ctx, b, layer.ls));
+        if (!best || m2 < best.m) best = { m: m2, l: [a, b] };
+      }
+      if (best) {
+        var r2 = fit(best.l);
+        if (r2.k > r.k * 1.12) r = r2; else lines = [one];
+      }
+    }
+    var k = r.k, fitted = r.fitted, ws = widths(k), n = lines.length;
+    var blockH = (n - 1) * fl.lh * k + (fl.asc + fl.desc) * k;
+    var oTop = fl.y0 - fl.asc, oBot = fl.y0 + (fl.n0 - 1) * fl.lh + fl.desc;
+    var top = fl.v === "top" ? oTop : fl.v === "bottom" ? oBot - blockH : (oTop + oBot) / 2 - blockH / 2;
+    if (fl.minY != null) top = Math.max(top, fl.minY);
+    if (fl.maxY != null) top = Math.min(top, fl.maxY - blockH);
+    var out = [], minX = Infinity, maxX = -Infinity;
+    lines.forEach(function (t, i) {
+      var w = ws[i], x = fl.align === "left" ? fl.ax : fl.align === "right" ? fl.ax - w : fl.ax - w / 2;
+      var y = top + fl.asc * k + i * fl.lh * k;
+      out.push({ t: t, x: x, y: y, w: w });
+      if (t) { minX = Math.min(minX, x); maxX = Math.max(maxX, x + w); }
+    });
+    if (minX === Infinity) { minX = fl.ax - 20; maxX = fl.ax + 20; }
+    return { lines: out, k: k / us, scale: k, fitted: fitted, box: [minX, top, maxX, top + blockH] };
+  }
+
+  function layoutRuns(ctx, layer, st) {
+    var fl = layer.flow, us = (st && st.scale) || 1, texts = runTexts(layer, st);
+    var k = us;
+    function widths(kk) {
+      return layer.runs.map(function (r, i) { setFont(ctx, r, r.size * kk, r.ls * kk); return measure(ctx, texts[i], r.ls * kk); });
+    }
+    var ws = widths(k), total = ws.reduce(function (a, b) { return a + b; }, 0), fitted = false;
+    if (fl.maxW && total > fl.maxW) { k = k * fl.maxW / total; fitted = true; ws = widths(k); total = ws.reduce(function (a, b) { return a + b; }, 0); }
+    var blockH = (fl.asc + fl.desc) * k;
+    var oTop = fl.y0 - fl.asc, oBot = fl.y0 + fl.desc;
+    var top = fl.v === "top" ? oTop : fl.v === "bottom" ? oBot - blockH : (oTop + oBot) / 2 - blockH / 2;
+    var y = top + fl.asc * k;
+    var x = fl.align === "left" ? fl.ax : fl.align === "right" ? fl.ax - total : fl.ax - total / 2;
+    var parts = layer.runs.map(function (r, i) { var p = { t: texts[i], x: x, y: y, w: ws[i], run: r }; x += ws[i]; return p; });
+    var x0 = parts.length ? parts[0].x : fl.ax;
+    return { parts: parts, k: k / us, scale: k, fitted: fitted, box: [x0, top, x0 + total, top + blockH] };
+  }
+
+  function toCard(tf, box) {
+    if (!tf) return box;
+    var pts = [[box[0], box[1]], [box[2], box[1]], [box[0], box[3]], [box[2], box[3]]].map(function (p) {
+      return [tf[0] * p[0] + tf[2] * p[1] + tf[4], tf[1] * p[0] + tf[3] * p[1] + tf[5]];
+    });
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    return [Math.min.apply(null, xs), Math.min.apply(null, ys), Math.max.apply(null, xs), Math.max.apply(null, ys)];
+  }
+
+  /* Draw all text layers. state: {layers:{index:{text, scale, runs}}}. Returns per-layer info (boxes, fit). */
+  function drawText(ctx, card, state) {
+    var info = [];
+    var ls = (state && state.layers) || {};
+    card.layers.forEach(function (layer, i) {
+      var st = ls[i];
+      ctx.save();
+      ctx.globalAlpha = layer.alpha == null ? 1 : layer.alpha;
+      if (layer.tf) ctx.transform(layer.tf[0], layer.tf[1], layer.tf[2], layer.tf[3], layer.tf[4], layer.tf[5]);
+      ctx.textBaseline = "alphabetic";
+      ctx.textAlign = "left";
+      var res;
+      if (layer.runs) {
+        res = layoutRuns(ctx, layer, st);
+        res.parts.forEach(function (p) {
+          setFont(ctx, p.run, p.run.size * res.scale, p.run.ls * res.scale);
+          ctx.fillStyle = p.run.fill; ctx.globalAlpha = p.run.alpha == null ? 1 : p.run.alpha;
+          if (p.t) fill(ctx, p.t, p.x, p.y, p.run.ls * res.scale);
+        });
+      } else if (!layer.flow || (!layer.force && isPristine(layer, st))) {
+        setFont(ctx, layer, layer.size, layer.ls);
+        ctx.fillStyle = layer.fill;
+        var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        layer.orig.forEach(function (o) {
+          fill(ctx, o.t, o.x, o.y, layer.ls);
+          var w = measure(ctx, o.t, layer.ls);
+          minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x + w);
+          minY = Math.min(minY, o.y - layer.size * 0.8); maxY = Math.max(maxY, o.y + layer.size * 0.25);
+        });
+        res = { k: 1, fitted: false, box: [minX, minY, maxX, maxY] };
+      } else {
+        res = layoutFlow(ctx, layer, st);
+        setFont(ctx, layer, layer.size * res.scale, layer.ls * res.scale);
+        ctx.fillStyle = layer.fill;
+        res.lines.forEach(function (l) { if (l.t) fill(ctx, l.t, l.x, l.y, layer.ls * res.scale); });
+      }
+      ctx.restore();
+      info.push({ box: toCard(layer.tf, res.box), k: res.k, fitted: res.fitted });
+    });
+    return info;
+  }
+
+  /* mode: "print" -> Cutter slot size (1085x622 / 622x1085), card scaled to fill.
+           "card"  -> native card size times `scale`. */
+  function render(canvas, card, state, bg, opts) {
+    opts = opts || {};
+    var W = card.w, H = card.h, ctx = canvas.getContext("2d");
+    var CW, CH, s, ox = 0, oy = 0;
+    if (opts.mode === "print") {
+      CW = W > H ? 1085 : 622; CH = W > H ? 622 : 1085;
+      s = Math.max(CW / W, CH / H); ox = (CW - W * s) / 2; oy = (CH - H * s) / 2;
+    } else {
+      s = opts.scale || 1; CW = Math.round(W * s); CH = Math.round(H * s);
+    }
+    if (canvas.width !== CW) canvas.width = CW;
+    if (canvas.height !== CH) canvas.height = CH;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, CW, CH);
+    ctx.setTransform(s, 0, 0, s, ox, oy);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    if (bg) ctx.drawImage(bg, 0, 0, W, H);
+    var info = drawText(ctx, card, state);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    return info;
+  }
+
+  /* Fonts a card needs, as {family, weight, style, text}. */
+  function cardFonts(card) {
+    var out = {};
+    function add(f, t) {
+      var key = f.family + "|" + f.weight + "|" + f.style;
+      if (!out[key]) out[key] = { family: f.family, weight: f.weight, style: f.style, text: "" };
+      out[key].text += t;
+    }
+    card.layers.forEach(function (l) {
+      if (l.runs) l.runs.forEach(function (r) { add(r, r.t); });
+      else add(l, l.text);
+    });
+    return Object.keys(out).map(function (k) { return out[k]; });
+  }
+
+  g.TagRender = { render: render, drawText: drawText, cardFonts: cardFonts, fontStr: fontStr, layoutFlow: layoutFlow, hasLetterSpacing: HAS_LS };
+})(window);
+</script>
+<script>
+(function(){
+"use strict";
+var CARDS={"BL1":{"code":"BL1","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Montserrat","weight":700,"style":"normal","size":32.0,"ls":0.0,"fill":"#2D2F32","alpha":1.0,"tf":null,"text":"From, Marie","orig":[{"x":771.56,"y":535.97,"t":"From, Marie"}],"flow":{"align":"right","ax":970.95,"y0":535.97,"lh":40.0,"n0":1,"size0":32.0,"asc":26,"desc":6.4,"box":[771.56,509.97,970.95,542.37],"maxW":935.0,"minY":408,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BL2":{"code":"BL2","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","runs":[{"t":"Love, ","role":"l","family":"Abhaya Libre","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0},{"t":"Gail, Jun, and Cherry","role":"n","family":"Abhaya Libre","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"#E3143B","alpha":1.0}],"tf":null,"orig":null,"flow":{"align":"center","ax":525.0,"y0":539.5,"lh":50.0,"n0":1,"size0":40.0,"asc":28.0,"desc":8.0,"box":[306.27,511.5,743.73,547.5],"maxW":978.0,"minY":469,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BL3":{"code":"BL3","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Phudu","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"#2D2F32","alpha":1.0,"tf":null,"text":"With Joy, Misty gallardo","orig":[{"x":306.43,"y":537.0,"t":"With Joy, Misty gallardo"}],"flow":{"align":"center","ax":525.0,"y0":537.0,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[306.43,508.0,744.63,545.0],"maxW":978.0,"minY":438,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BL4":{"code":"BL4","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"ADLaM Display","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"FROM,\nDAYNE LACSAMANA","orig":[{"x":581.0,"y":443.7,"t":"FROM,"},{"x":581.0,"y":495.7,"t":"DAYNE LACSAMANA"}],"flow":{"align":"left","ax":581.0,"y0":443.7,"lh":52.0,"n0":2,"size0":40.0,"asc":29,"desc":8.0,"box":[581.0,414.7,976.74,503.7],"maxW":433.0,"minY":170,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"ADLaM Display","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"TO:","orig":[{"x":581.0,"y":155.7,"t":"TO:"}],"flow":{"align":"left","ax":581.0,"y0":155.7,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[581.0,126.7,646.43,163.7],"maxW":433.0,"minY":21.6,"maxY":401,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL5":{"code":"BL5","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Mallanna","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"With love, Miguel","orig":[{"x":383.32,"y":525.82,"t":"With love, Miguel"}],"flow":{"align":"center","ax":525.0,"y0":525.82,"lh":50.0,"n0":1,"size0":40.0,"asc":28.0,"desc":8,"box":[383.32,497.82,666.72,533.82],"maxW":978.0,"minY":423,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BL6":{"code":"BL6","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Livvic","weight":500,"style":"normal","size":35.0,"ls":0.0,"fill":"#BF3939","alpha":1.0,"tf":null,"text":"From Lala Panganiban","orig":[{"x":344.99,"y":551.21,"t":"From Lala Panganiban"}],"flow":{"align":"center","ax":525.0,"y0":551.21,"lh":43.75,"n0":1,"size0":35.0,"asc":26,"desc":8,"box":[344.99,525.21,705.0,559.21],"maxW":978.0,"minY":478,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BL7":{"code":"BL7","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"ADLaM Display","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#C81909","alpha":1.0,"tf":null,"text":"FROM,\nOLIVIA MAE","orig":[{"x":561.0,"y":443.7,"t":"FROM,"},{"x":561.0,"y":495.7,"t":"OLIVIA MAE"}],"flow":{"align":"left","ax":561.0,"y0":443.7,"lh":52.0,"n0":2,"size0":40.0,"asc":29,"desc":8.0,"box":[561.0,414.7,790.94,503.7],"maxW":453.0,"minY":170,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"ADLaM Display","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#C81909","alpha":1.0,"tf":null,"text":"TO:","orig":[{"x":561.0,"y":155.7,"t":"TO:"}],"flow":{"align":"left","ax":561.0,"y0":155.7,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[561.0,126.7,626.43,163.7],"maxW":453.0,"minY":21.6,"maxY":401,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL8":{"code":"BL8","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Margarine","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#10294C","alpha":1.0,"tf":null,"text":"Patricia, Jordan, Alex, & Camille Ramos","orig":[{"x":180.12,"y":535.64,"t":"Patricia, Jordan, Alex, & Camille Ramos"}],"flow":{"align":"center","ax":525.0,"y0":535.64,"lh":50.0,"n0":1,"size0":40.0,"asc":33,"desc":8.0,"box":[180.12,502.64,869.44,543.64],"maxW":978.0,"minY":447,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Margarine","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#10294C","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":64.27,"y":102.64,"t":"To:"}],"flow":{"align":"left","ax":64.27,"y0":102.64,"lh":50.0,"n0":1,"size0":40.0,"asc":30,"desc":8.0,"box":[64.27,72.64,114.73,110.64],"maxW":949.7,"minY":21.6,"maxY":578.4,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL9":{"code":"BL9","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Playpen Sans","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#FA5C2F","alpha":1.0,"tf":null,"text":"Love,\nCatt and Logan","orig":[{"x":90.0,"y":450.6,"t":"Love,"},{"x":90.0,"y":510.6,"t":"Catt and Logan"}],"flow":{"align":"left","ax":90.0,"y0":450.6,"lh":60.0,"n0":2,"size0":40.0,"asc":33,"desc":12,"box":[90.0,417.6,392.8,522.6],"maxW":544.0,"minY":170,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Playpen Sans","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#3196BA","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":90.0,"y":155.6,"t":"To:"}],"flow":{"align":"left","ax":90.0,"y0":155.6,"lh":50.0,"n0":1,"size0":40.0,"asc":31,"desc":8.0,"box":[90.0,124.6,146.04,163.6],"maxW":561.0,"minY":21.6,"maxY":406,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL10":{"code":"BL10","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"d","family":"Playfair Display","weight":400,"style":"normal","size":160.0,"ls":0.0,"fill":"#EC5858","alpha":1.0,"tf":null,"text":"M  RRY","orig":[{"x":268.12,"y":259.98,"t":"M  RRY"}],"flow":null,"label":"Design text 1","edit":false,"lock":true},{"role":"n","family":"Playfair Display","weight":400,"style":"normal","size":30.0,"ls":0.0,"fill":"#0B0B0B","alpha":1.0,"tf":null,"text":"CHRISTIAN RUFINO","orig":[{"x":387.45,"y":541.47,"t":"CHRISTIAN RUFINO"}],"flow":{"align":"center","ax":525.0,"y0":541.47,"lh":37.5,"n0":1,"size0":30.0,"asc":22,"desc":6.0,"box":[387.45,519.47,662.49,547.47],"maxW":978.0,"minY":437,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"d","family":"Pinyon Script","weight":400,"style":"normal","size":200.0,"ls":0.0,"fill":"#2C6148","alpha":1.0,"tf":null,"text":"E","orig":[{"x":375.46,"y":262.9,"t":"E"}],"flow":null,"label":"Design text 2","edit":false,"lock":true},{"role":"d","family":"Playfair Display","weight":400,"style":"normal","size":160.0,"ls":0.0,"fill":"#EC5858","alpha":1.0,"tf":null,"text":"HRISTM  S","orig":[{"x":80.08,"y":420.98,"t":"   HRISTM  S"}],"flow":null,"label":"Design text 3","edit":false,"lock":true},{"role":"d","family":"Petit Formal Script","weight":400,"style":"normal","size":200.0,"ls":0.0,"fill":"#2C6148","alpha":1.0,"tf":null,"text":"C","orig":[{"x":105.49,"y":428.54,"t":"C"}],"flow":null,"label":"Design text 4","edit":false,"lock":true},{"role":"d","family":"Pinyon Script","weight":400,"style":"normal","size":170.0,"ls":0.0,"fill":"#2C6148","alpha":1.0,"tf":null,"text":"A","orig":[{"x":739.43,"y":420.71,"t":"A"}],"flow":null,"label":"Design text 5","edit":false,"lock":true}]},"BL11":{"code":"BL11","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"t","family":"National Park","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#2061A1","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":76.0,"y":188.1,"t":"To:"}],"flow":{"align":"left","ax":76.0,"y0":188.1,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[76.0,160.1,125.2,196.1],"maxW":495.0,"minY":21.6,"maxY":344,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"National Park","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#2061A1","alpha":1.0,"tf":null,"text":"From: Ysabelle\nRamirez","orig":[{"x":76.0,"y":388.1,"t":"From: Ysabelle"},{"x":76.0,"y":441.1,"t":"          Ramirez"}],"flow":{"align":"left","ax":76.0,"y0":388.1,"lh":53.0,"n0":2,"size0":40.0,"asc":30,"desc":8.0,"box":[76.0,358.1,327.96,449.1],"maxW":412.0,"minY":202,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BL12":{"code":"BL12","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Didact Gothic","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Teresa, Mark, Julia & Lucas","orig":[{"x":289.13,"y":544.62,"t":"Teresa, Mark, Julia & Lucas"}],"flow":{"align":"center","ax":525.0,"y0":544.62,"lh":50.0,"n0":1,"size0":40.0,"asc":30,"desc":8.0,"box":[289.13,514.62,745.97,552.62],"maxW":978.0,"minY":259,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Didact Gothic","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":64.09,"y":397.62,"t":"To:"}],"flow":{"align":"left","ax":64.09,"y0":397.62,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[64.09,369.62,111.89,405.62],"maxW":949.9,"minY":196,"maxY":578.4,"v":"middle"},"label":"To line","edit":false,"lock":true}]},"BL13":{"code":"BL13","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Oleo Script Swash Caps","weight":700,"style":"normal","size":45.0,"ls":0.0,"fill":"#693050","alpha":1.0,"tf":null,"text":"Lourdes and Noel","orig":[{"x":613.39,"y":543.06,"t":"Lourdes and Noel"}],"flow":{"align":"right","ax":940.63,"y0":543.06,"lh":56.25,"n0":1,"size0":45.0,"asc":34,"desc":9.0,"box":[613.39,509.06,940.63,552.06],"maxW":604.6,"minY":21.6,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BL14":{"code":"BL14","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Noto Serif","weight":700,"style":"italic","size":40.0,"ls":0.0,"fill":"#A02A27","alpha":1.0,"tf":null,"text":"Christopher and Annie","orig":[{"x":317.48,"y":539.54,"t":"Christopher and Annie"}],"flow":{"align":"center","ax":525.0,"y0":539.54,"lh":50.0,"n0":1,"size0":40.0,"asc":31,"desc":10,"box":[317.48,508.54,780.16,549.54],"maxW":978.0,"minY":465,"maxY":578.4,"v":"bottom"},"force":true,"label":"Name","edit":true,"lock":false}]},"BL15":{"code":"BL15","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Overlock","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"#0E6F48","alpha":1.0,"tf":null,"text":"Toni and family","orig":[{"x":604.69,"y":529.74,"t":"Toni and family"}],"flow":{"align":"right","ax":857.29,"y0":529.74,"lh":50.0,"n0":1,"size0":40.0,"asc":30,"desc":10,"box":[604.69,499.74,857.29,539.74],"maxW":505.3,"minY":21.6,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Overlock","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"#0E6F48","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":440.0,"y":120.74,"t":"To:"}],"flow":{"align":"left","ax":440.0,"y0":120.74,"lh":50.0,"n0":1,"size0":40.0,"asc":28.0,"desc":8.0,"box":[440.0,92.74,488.12,128.74],"maxW":574.0,"minY":21.6,"maxY":578.4,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL16":{"code":"BL16","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Parkinsans","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#01A054","alpha":1.0,"tf":null,"text":"Raizza Lee","orig":[{"x":777.94,"y":557.0,"t":"Raizza Lee"}],"flow":{"align":"right","ax":982.26,"y0":557.0,"lh":50.0,"n0":1,"size0":40.0,"asc":31,"desc":8.0,"box":[777.94,526.0,982.26,565.0],"maxW":946.3,"minY":452,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Parkinsans","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#01A054","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":73.0,"y":99.0,"t":"To:"}],"flow":{"align":"left","ax":73.0,"y0":99.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[73.0,71.0,126.24,107.0],"maxW":941.0,"minY":21.6,"maxY":578.4,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL17":{"code":"BL17","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Rethink Sans","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"#324F37","alpha":1.0,"tf":null,"text":"Victor Sison","orig":[{"x":181.4,"y":521.64,"t":"Victor Sison"}],"flow":{"align":"center","ax":289,"y0":521.64,"lh":50.0,"n0":1,"size0":40.0,"asc":30,"desc":8.0,"box":[181.4,491.64,396.64,529.64],"maxW":506,"minY":21.6,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Rethink Sans","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"#324F37","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":78.0,"y":131.64,"t":"To:"}],"flow":{"align":"left","ax":78.0,"y0":131.64,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[78.0,103.64,129.84,139.64],"maxW":576.0,"minY":21.6,"maxY":578.4,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL18":{"code":"BL18","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Paytone One","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#B62025","alpha":1.0,"tf":null,"text":"Ricki and Peter","orig":[{"x":610.41,"y":541.6,"t":"Ricki and Peter"}],"flow":{"align":"right","ax":911.57,"y0":541.6,"lh":50.0,"n0":1,"size0":40.0,"asc":31,"desc":8.0,"box":[610.41,510.6,911.57,549.6],"maxW":532.6,"minY":21.6,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Paytone One","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#B62025","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":525.0,"y":111.6,"t":"To:"}],"flow":{"align":"left","ax":525.0,"y0":111.6,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[525.0,83.6,581.52,119.6],"maxW":489.0,"minY":21.6,"maxY":578.4,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL19":{"code":"BL19","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Comic Neue","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"#492B13","alpha":1.0,"tf":null,"text":"Anna and Timothy","orig":[{"x":147.56,"y":517.0,"t":"Anna and Timothy"}],"flow":{"align":"center","ax":304,"y0":517.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8,"box":[147.56,489.0,460.39,525.0],"maxW":536,"minY":21.6,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Comic Neue","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"#492B13","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":68.0,"y":128.0,"t":"To:"}],"flow":{"align":"left","ax":68.0,"y0":128.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28.0,"desc":8.0,"box":[68.0,100.0,114.72,136.0],"maxW":550.0,"minY":21.6,"maxY":578.4,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BL20":{"code":"BL20","tier":"basic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Nova Round","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#D20A11","alpha":1.0,"tf":null,"text":"DINO & CHING","orig":[{"x":391.86,"y":544.26,"t":"DINO & CHING"}],"flow":{"align":"center","ax":525.0,"y0":544.26,"lh":50.0,"n0":1,"size0":40.0,"asc":31,"desc":8.0,"box":[391.86,513.26,672.14,552.26],"maxW":978.0,"minY":459,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP1":{"code":"BP1","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Alexandria","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"#2D2F32","alpha":1.0,"tf":null,"text":"STAN TAN & FAMILY","orig":[{"x":121.3,"y":976.91,"t":"STAN TAN & FAMILY"}],"flow":{"align":"center","ax":300.0,"y0":976.91,"lh":45.0,"n0":1,"size0":36.0,"asc":26,"desc":7.2,"box":[121.3,950.91,476.73,984.11],"maxW":528.0,"minY":707,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP2":{"code":"BP2","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"t","family":"Montserrat Alternates","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#104372","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":52.41,"y":583.84,"t":"To:"}],"flow":{"align":"left","ax":52.41,"y0":583.84,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[52.41,554.84,108.61,591.84],"maxW":511.6,"minY":373,"maxY":1028.4,"v":"middle"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Montserrat Alternates","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#104372","alpha":1.0,"tf":null,"text":"From: Riley Santos","orig":[{"x":109.14,"y":983.84,"t":"From: Riley Santos"}],"flow":{"align":"center","ax":300.0,"y0":983.84,"lh":50.0,"n0":1,"size0":40.0,"asc":31,"desc":8,"box":[109.14,952.84,490.9,991.84],"maxW":528.0,"minY":397,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP3":{"code":"BP3","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"t","family":"Belanosima","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#AD3824","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":43.0,"y":102.86,"t":"To:"}],"flow":{"align":"left","ax":43.0,"y0":102.86,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[43.0,74.86,91.98,110.86],"maxW":521.0,"minY":21.6,"maxY":641,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Belanosima","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#556D2C","alpha":1.0,"tf":null,"text":"From: Josh Perry & Family","orig":[{"x":84.04,"y":983.86,"t":"From: Josh Perry & Family"}],"flow":{"align":"center","ax":300.0,"y0":983.86,"lh":50.0,"n0":1,"size0":40.0,"asc":32,"desc":8.0,"box":[84.04,951.86,515.74,991.86],"maxW":528.0,"minY":836,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP4":{"code":"BP4","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Karma","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#111111","alpha":1.0,"tf":null,"text":"Carlo & Janelle","orig":[{"x":167.15,"y":996.35,"t":"Carlo & Janelle"}],"flow":{"align":"center","ax":300.0,"y0":996.35,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[167.15,967.35,430.94,1004.35],"maxW":528.0,"minY":967.4,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"l","family":"Karma","weight":500,"style":"normal","size":32.0,"ls":0.0,"fill":"#111111","alpha":1.0,"tf":null,"text":"HAPPY HOLIDAYS FROM","orig":[{"x":125.14,"y":956.35,"t":"HAPPY HOLIDAYS FROM"}],"flow":{"align":"center","ax":300.0,"y0":956.35,"lh":40.0,"n0":1,"size0":32.0,"asc":23,"desc":6.4,"box":[125.14,933.35,472.98,962.75],"maxW":528.0,"minY":782,"maxY":962.8,"v":"bottom"},"label":"Sign-off","edit":false,"lock":false}]},"BP5":{"code":"BP5","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Gluten","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#E55933","alpha":1.0,"tf":null,"text":"Ella Santos","orig":[{"x":183.36,"y":982.15,"t":"Ella Santos"}],"flow":{"align":"center","ax":300.0,"y0":982.15,"lh":50.0,"n0":1,"size0":40.0,"asc":28.0,"desc":8.0,"box":[183.36,954.15,416.62,990.15],"maxW":528.0,"minY":870,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP6":{"code":"BP6","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Inter","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#BA2545","alpha":1.0,"tf":null,"text":"Kristine Dizon","orig":[{"x":167.79,"y":988.64,"t":"Kristine Dizon"}],"flow":{"align":"center","ax":300.0,"y0":988.64,"lh":50.0,"n0":1,"size0":40.0,"asc":31,"desc":8.0,"box":[167.79,957.64,433.48,996.64],"maxW":528.0,"minY":957.6,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"l","family":"Inter","weight":400,"style":"normal","size":32.0,"ls":8.96,"fill":"#BA2545","alpha":1.0,"tf":null,"text":"JOY & CHEER,","orig":[{"x":143.19,"y":940.64,"t":"JOY & CHEER,"}],"flow":{"align":"center","ax":300.0,"y0":940.64,"lh":40.0,"n0":1,"size0":32.0,"asc":24,"desc":6.4,"box":[143.19,916.64,468.13,947.04],"maxW":528.0,"minY":563,"maxY":947.0,"v":"bottom"},"label":"Sign-off","edit":false,"lock":false}]},"BP7":{"code":"BP7","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"t","family":"Inria Serif","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#202E17","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":47.15,"y":829.06,"t":"To:"}],"flow":{"align":"left","ax":47.15,"y0":829.06,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[47.15,801.06,99.87,837.06],"maxW":516.9,"minY":584,"maxY":948,"v":"bottom"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Inria Serif","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#202E17","alpha":1.0,"tf":null,"text":"From, Kuya Ben & Ate Liza","orig":[{"x":63.32,"y":991.06,"t":"From, Kuya Ben & Ate Liza"}],"flow":{"align":"center","ax":300.0,"y0":991.06,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":9,"box":[63.32,962.06,536.72,1000.06],"maxW":528.0,"minY":843,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP8":{"code":"BP8","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Gochi Hand","weight":400,"style":"normal","size":48.0,"ls":0.0,"fill":"#7D9238","alpha":1.0,"tf":null,"text":"From, The Perezes","orig":[{"x":118.34,"y":978.22,"t":"From, The Perezes"}],"flow":{"align":"center","ax":300.0,"y0":978.22,"lh":60.0,"n0":1,"size0":48.0,"asc":33.6,"desc":12,"box":[118.34,944.62,482.38,990.22],"maxW":528.0,"minY":743,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP9":{"code":"BP9","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Bpmf Iansui","weight":400,"style":"normal","size":40.0,"ls":-2.0,"fill":"#E0192E","alpha":1.0,"tf":null,"text":"From: Xavi & Ami","orig":[{"x":152.02,"y":299.7,"t":"From: Xavi & Ami"}],"flow":{"align":"center","ax":300.0,"y0":299.7,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[152.02,270.7,447.02,307.7],"maxW":528.0,"minY":21.6,"maxY":374,"v":"top"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Bpmf Iansui","weight":400,"style":"normal","size":40.0,"ls":-2.0,"fill":"#E0192E","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":48.23,"y":124.7,"t":"To:"}],"flow":{"align":"left","ax":48.23,"y0":124.7,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[48.23,95.7,101.79,132.7],"maxW":515.8,"minY":21.6,"maxY":424,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BP10":{"code":"BP10","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"t","family":"Fredoka","weight":400,"style":"normal","size":35.0,"ls":0.0,"fill":"#3C4D5C","alpha":1.0,"tf":null,"text":"To","orig":[{"x":55.31,"y":87.92,"t":"To"}],"flow":{"align":"left","ax":55.31,"y0":87.92,"lh":43.75,"n0":1,"size0":35.0,"asc":25,"desc":7.0,"box":[55.31,62.92,93.7,94.92],"maxW":508.7,"minY":21.6,"maxY":263,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","runs":[{"t":"With hugs, ","role":"l","family":"Fredoka","weight":400,"style":"normal","size":30.0,"ls":0.0,"fill":"#3C4D5C","alpha":1.0},{"t":"The Garcias","role":"n","family":"Fredoka","weight":500,"style":"normal","size":36.0,"ls":0.0,"fill":"#3C4D5C","alpha":1.0}],"tf":null,"orig":null,"flow":{"align":"center","ax":300.0,"y0":987.28,"lh":45.0,"n0":1,"size0":36.0,"asc":26,"desc":7.2,"box":[130.34,961.28,470.63,994.48],"maxW":528.0,"minY":907,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP11":{"code":"BP11","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Itim","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#BF2B27","alpha":1.0,"tf":null,"text":"From: Joshua Santos","orig":[{"x":121.75,"y":991.0,"t":"From: Joshua Santos"}],"flow":{"align":"center","ax":300.0,"y0":991.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28.0,"desc":8.0,"box":[121.75,963.0,477.55,999.0],"maxW":528.0,"minY":497,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Itim","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#0A2822","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":67.0,"y":766.0,"t":"To:"}],"flow":{"align":"left","ax":67.0,"y0":766.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28.0,"desc":8.0,"box":[67.0,738.0,115.76,774.0],"maxW":497.0,"minY":21.6,"maxY":1028.4,"v":"bottom"},"label":"To line","edit":false,"lock":true}]},"BP12":{"code":"BP12","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Dancing Script","weight":500,"style":"normal","size":45.0,"ls":0.0,"fill":"#EA0000","alpha":1.0,"tf":null,"text":"Sam & Ysabelle Mejias","orig":[{"x":111.04,"y":987.4,"t":"Sam & Ysabelle Mejias"}],"flow":{"align":"center","ax":300.0,"y0":987.4,"lh":56.25,"n0":1,"size0":45.0,"asc":33,"desc":13,"box":[111.04,954.4,488.01,1000.4],"maxW":528.0,"minY":563,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP13":{"code":"BP13","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"l","family":"Fredoka","weight":500,"style":"normal","size":25.0,"ls":3.75,"fill":"black","alpha":1.0,"tf":null,"text":"FROM OUR FUR-MILY","orig":[{"x":147.44,"y":958.23,"t":"FROM OUR FUR-MILY"}],"flow":{"align":"center","ax":300.0,"y0":958.23,"lh":31.25,"n0":1,"size0":25.0,"asc":18,"desc":5.0,"box":[147.44,940.23,456.32,963.23],"maxW":528.0,"minY":806,"maxY":963.2,"v":"bottom"},"label":"Sign-off","edit":false,"lock":false},{"role":"n","family":"Fredoka","weight":500,"style":"normal","size":32.0,"ls":4.8,"fill":"black","alpha":1.0,"tf":null,"text":"THE RICARS","orig":[{"x":189.29,"y":995.31,"t":"THE RICARS"}],"flow":{"align":"center","ax":300.0,"y0":995.31,"lh":40.0,"n0":1,"size0":32.0,"asc":23,"desc":6.4,"box":[189.29,972.31,414.48,1001.71],"maxW":528.0,"minY":972,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP14":{"code":"BP14","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Fredoka","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#243A4C","alpha":1.0,"tf":null,"text":"Rai and Michelle","orig":[{"x":157.3,"y":989.76,"t":"Rai and Michelle"}],"flow":{"align":"center","ax":300.0,"y0":989.76,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[157.3,960.76,449.02,997.76],"maxW":528.0,"minY":785,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Fredoka","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#243A4C","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":65.09,"y":104.76,"t":"To:"}],"flow":{"align":"left","ax":65.09,"y0":104.76,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[65.09,76.76,117.89,112.76],"maxW":498.9,"minY":21.6,"maxY":395,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BP15":{"code":"BP15","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Fredoka","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#EF593C","alpha":1.0,"tf":null,"text":"Rose and Cherry","orig":[{"x":151.35,"y":989.76,"t":"Rose and Cherry"}],"flow":{"align":"center","ax":300.0,"y0":989.76,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":9,"box":[151.35,960.76,449.03,998.76],"maxW":528.0,"minY":832,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Fredoka","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#EF593C","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":60.09,"y":105.76,"t":"To:"}],"flow":{"align":"left","ax":60.09,"y0":105.76,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[60.09,77.76,112.89,113.76],"maxW":503.9,"minY":21.6,"maxY":1028.4,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BP16":{"code":"BP16","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Funnel Display","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#55664C","alpha":1.0,"tf":null,"text":"Dela Vega Sisters","orig":[{"x":134.32,"y":1002.0,"t":"Dela Vega Sisters"}],"flow":{"align":"center","ax":300.0,"y0":1002.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":9,"box":[134.32,974.0,464.72,1011.0],"maxW":528.0,"minY":538,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP17":{"code":"BP17","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"DynaPuff","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#FD2477","alpha":1.0,"tf":null,"text":"Mary Jane","orig":[{"x":192.3,"y":985.6,"t":"Mary Jane"}],"flow":{"align":"center","ax":300.0,"y0":985.6,"lh":50.0,"n0":1,"size0":40.0,"asc":30,"desc":8,"box":[192.3,955.6,400.7,993.6],"maxW":528.0,"minY":841,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"DynaPuff","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#FD2477","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":63.17,"y":114.6,"t":"To:"}],"flow":{"align":"left","ax":63.17,"y0":114.6,"lh":50.0,"n0":1,"size0":40.0,"asc":30,"desc":8.0,"box":[63.17,84.6,120.85,122.6],"maxW":500.8,"minY":21.6,"maxY":209,"v":"top"},"label":"To line","edit":false,"lock":true}]},"BP18":{"code":"BP18","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Google Sans Code","weight":500,"style":"normal","size":35.0,"ls":0.0,"fill":"#B21414","alpha":1.0,"tf":null,"text":"Jameson and Kelly","orig":[{"x":120.62,"y":1002.9,"t":"Jameson and Kelly"}],"flow":{"align":"center","ax":300.0,"y0":1002.9,"lh":43.75,"n0":1,"size0":35.0,"asc":26,"desc":8,"box":[120.62,976.9,477.61,1010.9],"maxW":528.0,"minY":647,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Google Sans Code","weight":500,"style":"normal","size":35.0,"ls":0.0,"fill":"#B21414","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":60.52,"y":632.9,"t":"To:"}],"flow":{"align":"left","ax":60.52,"y0":632.9,"lh":43.75,"n0":1,"size0":35.0,"asc":26,"desc":7.0,"box":[60.52,606.9,123.52,639.9],"maxW":503.5,"minY":482,"maxY":963,"v":"middle"},"label":"To line","edit":false,"lock":true}]},"BP19":{"code":"BP19","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Francois One","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#FF402C","alpha":1.0,"tf":null,"text":"Kat and James","orig":[{"x":197.04,"y":995.7,"t":"Kat and James"}],"flow":{"align":"center","ax":300.0,"y0":995.7,"lh":50.0,"n0":1,"size0":40.0,"asc":30,"desc":8.0,"box":[197.04,965.7,431.96,1003.7],"maxW":528.0,"minY":827,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"BP20":{"code":"BP20","tier":"basic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Funnel Sans","weight":500,"style":"normal","size":40.0,"ls":0.0,"fill":"#009640","alpha":1.0,"tf":null,"text":"Christine and Vincent","orig":[{"x":104.46,"y":992.0,"t":"Christine and Vincent"}],"flow":{"align":"center","ax":300.0,"y0":992.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[104.46,964.0,494.66,1000.0],"maxW":528.0,"minY":659,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL1":{"code":"SL1","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Caveat Brush","weight":400,"style":"normal","size":120.0,"ls":0.0,"fill":"#D72A40","alpha":1.0,"tf":[0.998223,-0.059583,0.059583,0.998223,444.0,196.009],"text":"Maligayang\nPasko sa inyo!","orig":[{"x":62.96,"y":100.46,"t":"Maligayang"},{"x":32.25,"y":215.46,"t":"Pasko sa inyo!"}],"flow":{"align":"center","ax":274,"y0":100.46,"lh":115.0,"n0":2,"size0":120.0,"asc":89,"desc":30,"box":[32.25,11.46,625.89,245.46],"maxW":520,"minY":null,"maxY":null},"force":true,"label":"Message","edit":true,"lock":false},{"role":"n","family":"Balsamiq Sans","weight":400,"style":"normal","size":32.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Mula sa Santiago Family","orig":[{"x":553.0,"y":513.6,"t":"Mula sa Santiago Family"}],"flow":{"align":"center","ax":727.9,"y0":513.6,"lh":40.0,"n0":1,"size0":32.0,"asc":24,"desc":7,"box":[553.0,489.6,902.76,520.6],"maxW":572.2,"minY":21.6,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL2":{"code":"SL2","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Montserrat","weight":400,"style":"normal","size":48.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"WISHING YOU HOLIDAY JOY","orig":[{"x":180.09,"y":473.71,"t":"WISHING YOU HOLIDAY JOY"}],"flow":{"align":"center","ax":525.0,"y0":473.71,"lh":60.0,"n0":1,"size0":48.0,"asc":34,"desc":9.6,"box":[180.09,439.71,868.65,483.31],"maxW":978.0,"minY":190,"maxY":496,"v":"bottom"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Montserrat","weight":600,"style":"normal","size":32.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"JUNE ALCANTARA","orig":[{"x":372.92,"y":532.97,"t":"JUNE ALCANTARA"}],"flow":{"align":"center","ax":525.0,"y0":532.97,"lh":40.0,"n0":1,"size0":32.0,"asc":23,"desc":6.4,"box":[372.92,509.97,675.8,539.37],"maxW":978.0,"minY":488,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL3":{"code":"SL3","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Montserrat","weight":500,"style":"normal","size":48.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"HAPPIEST HOLIDAYS TO YOU","orig":[{"x":166.14,"y":487.71,"t":"HAPPIEST HOLIDAYS TO YOU"}],"flow":{"align":"center","ax":525.0,"y0":487.71,"lh":60.0,"n0":1,"size0":48.0,"asc":34,"desc":9.6,"box":[166.14,453.71,882.54,497.31],"maxW":978.0,"minY":197,"maxY":510,"v":"bottom"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Montserrat","weight":400,"style":"normal","size":32.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"FROM MAY SANTOS","orig":[{"x":362.86,"y":546.97,"t":"FROM MAY SANTOS"}],"flow":{"align":"center","ax":525.0,"y0":546.97,"lh":40.0,"n0":1,"size0":32.0,"asc":23,"desc":6.4,"box":[362.86,523.97,685.96,553.37],"maxW":978.0,"minY":502,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL4":{"code":"SL4","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Outfit","weight":400,"style":"normal","size":64.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Merry Christmas\nfrom Jade and Joey!","orig":[{"x":473.28,"y":294.18,"t":"Merry Christmas "},{"x":421.59,"y":375.18,"t":"from Jade and Joey!"}],"flow":{"align":"center","ax":710.54,"y0":294.18,"lh":81.0,"n0":2,"size0":64.0,"asc":47,"desc":13,"box":[421.59,247.18,1002.91,388.18],"maxW":606.9,"minY":21.6,"maxY":578.4,"v":"middle"},"label":"Message","edit":true,"lock":false}]},"SL5":{"code":"SL5","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"t","family":"Grandstander","weight":400,"style":"normal","size":30.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To","orig":[{"x":451.0,"y":117.01,"t":"To"}],"flow":{"align":"left","ax":451.0,"y0":117.01,"lh":37.5,"n0":1,"size0":30.0,"asc":21,"desc":6.0,"box":[451.0,96.01,482.52,123.01],"maxW":563.0,"minY":21.6,"maxY":222,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Grandstander","weight":400,"style":"normal","size":30.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"From Leo & Hannah Corpuz","orig":[{"x":520.62,"y":483.01,"t":"From Leo & Hannah Corpuz"}],"flow":{"align":"left","ax":520.62,"y0":483.01,"lh":37.5,"n0":1,"size0":30.0,"asc":22,"desc":7,"box":[520.62,461.01,911.33,490.01],"maxW":493.4,"minY":377,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"m","family":"Grandstander","weight":400,"style":"normal","size":64.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Stuffed with cheer,\njust for you!","orig":[{"x":407.31,"y":282.96,"t":"Stuffed with cheer, "},{"x":520.22,"y":346.96,"t":"just for you!"}],"flow":{"align":"center","ax":711.97,"y0":282.96,"lh":64.0,"n0":2,"size0":64.0,"asc":48,"desc":17,"box":[407.31,234.96,1000.05,363.96],"maxW":604.1,"minY":131,"maxY":447,"v":"middle"},"label":"Message","edit":true,"lock":false}]},"SL6":{"code":"SL6","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Oooh Baby","weight":400,"style":"normal","size":170.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"The Manalos","orig":[{"x":105.64,"y":392.88,"t":"The Manalos"}],"flow":{"align":"center","ax":525.0,"y0":392.88,"lh":212.5,"n0":1,"size0":170.0,"asc":134,"desc":34.0,"box":[105.64,258.88,944.26,426.88],"maxW":978.0,"minY":217,"maxY":438,"v":"middle"},"label":"Name","edit":true,"lock":false},{"role":"m","family":"Manjari","weight":400,"style":"normal","size":55.0,"ls":0.0,"fill":"#ED4657","alpha":1.0,"tf":null,"text":"wish you a wonderful Christmas!","orig":[{"x":138.49,"y":490.07,"t":"wish you a wonderful Christmas!"}],"flow":{"align":"center","ax":525.0,"y0":490.07,"lh":68.75,"n0":1,"size0":55.0,"asc":38.5,"desc":14,"box":[138.49,451.57,938.11,504.07],"maxW":978.0,"minY":417,"maxY":578.4,"v":"bottom"},"label":"Message","edit":true,"lock":false}]},"SL7":{"code":"SL7","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Handlee","weight":400,"style":"normal","size":55.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Celebrate every win, every love,\nevery lesson. This year mattered.","orig":[{"x":79.0,"y":355.66,"t":"Celebrate every win, every love, "},{"x":79.0,"y":421.66,"t":"every lesson. This year mattered."}],"flow":{"align":"left","ax":79.0,"y0":355.66,"lh":66.0,"n0":2,"size0":55.0,"asc":45,"desc":15,"box":[79.0,310.66,808.08,436.66],"maxW":835.0,"minY":146,"maxY":490,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Handlee","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"#1F4D31","alpha":1.0,"tf":null,"text":"Love, Ash & Ollie Carreon","orig":[{"x":79.0,"y":531.09,"t":"Love, Ash & Ollie Carreon"}],"flow":{"align":"left","ax":79.0,"y0":531.09,"lh":45.0,"n0":1,"size0":36.0,"asc":27,"desc":10,"box":[79.0,504.09,450.38,541.09],"maxW":935.0,"minY":449,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL8":{"code":"SL8","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Libre Baskerville","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"#F1612C","alpha":1.0,"tf":null,"text":"EDWIN","orig":[{"x":451.72,"y":510.1,"t":"EDWIN"}],"flow":{"align":"center","ax":525.0,"y0":510.1,"lh":45.0,"n0":1,"size0":36.0,"asc":28,"desc":7.2,"box":[451.72,482.1,598.31,517.3],"maxW":978.0,"minY":482.1,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"m","family":"Libre Baskerville","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"#015861","alpha":1.0,"tf":null,"text":"MERRY AND BRIGHT ALWAYS,","orig":[{"x":223.2,"y":465.1,"t":"MERRY AND BRIGHT ALWAYS,"}],"flow":{"align":"center","ax":525.0,"y0":465.1,"lh":45.0,"n0":1,"size0":36.0,"asc":29,"desc":7.2,"box":[223.2,436.1,832.14,472.3],"maxW":978.0,"minY":234,"maxY":472.3,"v":"bottom"},"label":"Message","edit":true,"lock":false}]},"SL9":{"code":"SL9","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"d","family":"Pinyon Script","weight":400,"style":"normal","size":128.0,"ls":0.0,"fill":"#B72D3A","alpha":1.0,"tf":null,"text":"erry\nhristmas","orig":[{"x":240.33,"y":399.43,"t":"erry "},{"x":549.52,"y":399.43,"t":"hristmas"}],"flow":null,"label":"Design text 1","edit":false,"lock":true},{"role":"d","family":"Pinyon Script","weight":400,"style":"normal","size":150.0,"ls":0.0,"fill":"#B72D3A","alpha":1.0,"tf":null,"text":"M\nC\n!","orig":[{"x":100.0,"y":399.43,"t":"M"},{"x":455.33,"y":399.43,"t":"C"},{"x":921.9,"y":399.43,"t":"!"}],"flow":null,"label":"Design text 2","edit":false,"lock":true},{"role":"m","family":"Goudy Bookletter 1911","weight":400,"style":"normal","size":30.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Bells are ringing and hearts are singing,","orig":[{"x":298.15,"y":279.24,"t":"Bells are ringing and hearts are singing,"}],"flow":{"align":"center","ax":525.0,"y0":279.24,"lh":37.5,"n0":1,"size0":30.0,"asc":22,"desc":8,"box":[298.15,257.24,750.85,287.24],"maxW":978.0,"minY":235,"maxY":287.2,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Goudy Bookletter 1911","weight":400,"style":"normal","size":35.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"JOJO MARQUEZ","orig":[{"x":390.41,"y":543.37,"t":"JOJO MARQUEZ"}],"flow":{"align":"center","ax":525.0,"y0":543.37,"lh":43.75,"n0":1,"size0":35.0,"asc":26,"desc":8,"box":[390.41,517.37,658.59,551.37],"maxW":978.0,"minY":462,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL10":{"code":"SL10","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Sansita Swashed","weight":400,"style":"normal","size":55.0,"ls":0.0,"fill":"#F73E79","alpha":1.0,"tf":null,"text":"May your season feel\nsoft, sparkly, and\na little magical","orig":[{"x":486.73,"y":262.1,"t":"May your season feel "},{"x":532.95,"y":328.1,"t":"soft, sparkly, and "},{"x":562.54,"y":394.1,"t":"a little magical"}],"flow":{"align":"center","ax":729.43,"y0":262.1,"lh":66.0,"n0":3,"size0":55.0,"asc":42,"desc":11,"box":[486.73,220.1,963.69,405.1],"maxW":538.9,"minY":21.6,"maxY":448,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Sansita Swashed","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"#B42753","alpha":1.0,"tf":null,"text":"Love, Sophia","orig":[{"x":633.14,"y":489.62,"t":"Love, Sophia"}],"flow":{"align":"center","ax":727.46,"y0":489.62,"lh":45.0,"n0":1,"size0":36.0,"asc":28,"desc":8,"box":[633.14,461.62,821.78,497.62],"maxW":510.9,"minY":418,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL11":{"code":"SL11","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Spectral SC","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Wishing you a bright and joyful season!","orig":[{"x":92.48,"y":421.42,"t":"Wishing you a bright and joyful season!"}],"flow":{"align":"center","ax":525.0,"y0":421.42,"lh":50.0,"n0":1,"size0":40.0,"asc":28.0,"desc":8.0,"box":[92.48,393.42,957.48,429.42],"maxW":978.0,"minY":197,"maxY":504,"v":"bottom"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Spectral SC","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"#B62025","alpha":1.0,"tf":null,"text":"lucas & quinn","orig":[{"x":391.24,"y":539.23,"t":"lucas & quinn"}],"flow":{"align":"center","ax":525.0,"y0":539.23,"lh":45.0,"n0":1,"size0":36.0,"asc":25.2,"desc":7.2,"box":[391.24,514.03,659.69,546.43],"maxW":978.0,"minY":440,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL12":{"code":"SL12","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"BenchNine","weight":400,"style":"normal","size":96.0,"ls":0.0,"fill":"#D03E37","alpha":1.0,"tf":null,"text":"Holiday\nBlessings!","orig":[{"x":186.58,"y":294.97,"t":"Holiday"},{"x":155.36,"y":373.97,"t":"Blessings!"}],"flow":{"align":"center","ax":291.88,"y0":294.97,"lh":79.0,"n0":2,"size0":96.0,"asc":70,"desc":19.2,"box":[155.36,224.97,428.36,393.17],"maxW":511.8,"minY":21.6,"maxY":455,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"BenchNine","weight":400,"style":"normal","size":55.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Tita Baby and Family","orig":[{"x":129.48,"y":508.46,"t":"Tita Baby and Family"}],"flow":{"align":"center","ax":291.33,"y0":508.46,"lh":68.75,"n0":1,"size0":55.0,"asc":39,"desc":11.0,"box":[129.48,469.46,453.17,519.46],"maxW":510.7,"minY":402,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"BenchNine","weight":400,"style":"normal","size":55.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":72.39,"y":126.46,"t":"To:"}],"flow":{"align":"left","ax":72.39,"y0":126.46,"lh":68.75,"n0":1,"size0":55.0,"asc":39,"desc":11.0,"box":[72.39,87.46,117.59,137.46],"maxW":941.6,"minY":21.6,"maxY":578.4,"v":"top"},"label":"To line","edit":false,"lock":true}]},"SL13":{"code":"SL13","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Balsamiq Sans","weight":400,"style":"normal","size":65.0,"ls":0.0,"fill":"#37764E","alpha":1.0,"tf":null,"text":"Wishing You a\nMerry Christmas!","orig":[{"x":184.72,"y":284.5,"t":"Wishing You a"},{"x":137.08,"y":354.5,"t":"Merry Christmas!"}],"flow":{"align":"center","ax":387.58,"y0":284.5,"lh":70.0,"n0":2,"size0":65.0,"asc":48,"desc":14,"box":[137.08,236.5,638.1,368.5],"maxW":703.2,"minY":21.6,"maxY":474,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Balsamiq Sans","weight":400,"style":"normal","size":50.0,"ls":0.0,"fill":"#5C7F69","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":73.48,"y":132.0,"t":"To:"}],"flow":{"align":"left","ax":73.48,"y0":132.0,"lh":62.5,"n0":1,"size0":50.0,"asc":36,"desc":10.0,"box":[73.48,96.0,136.53,142.0],"maxW":769.5,"minY":21.6,"maxY":474,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Balsamiq Sans","weight":400,"style":"normal","size":50.0,"ls":0.0,"fill":"#5C7F69","alpha":1.0,"tf":null,"text":"Love, the Salazar Family","orig":[{"x":73.0,"y":525.0,"t":"Love, the Salazar Family"}],"flow":{"align":"left","ax":73.0,"y0":525.0,"lh":62.5,"n0":1,"size0":50.0,"asc":37,"desc":11,"box":[73.0,488.0,613.4,536.0],"maxW":683.0,"minY":381,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL14":{"code":"SL14","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Arya","weight":400,"style":"normal","size":70.0,"ls":15.4,"fill":"#DF273E","alpha":1.0,"tf":null,"text":"SEASON’S GREETINGS!","orig":[{"x":71.15,"y":405.74,"t":"SEASON’S GREETINGS!"}],"flow":{"align":"center","ax":525.0,"y0":405.74,"lh":87.5,"n0":1,"size0":70.0,"asc":49.0,"desc":14.0,"box":[71.15,356.74,992.49,419.74],"maxW":978.0,"minY":299,"maxY":481,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Arya","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#DF273E","alpha":1.0,"tf":null,"text":"TO:","orig":[{"x":74.02,"y":285.22,"t":"TO:"}],"flow":{"align":"left","ax":74.02,"y0":285.22,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[74.02,253.72,128.02,294.22],"maxW":940.0,"minY":171,"maxY":347,"v":"middle"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Arya","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#DF273E","alpha":1.0,"tf":null,"text":"WITH LOVE, MIGUEL AND MARIA","orig":[{"x":239.41,"y":524.22,"t":"WITH LOVE, MIGUEL AND MARIA"}],"flow":{"align":"center","ax":525.0,"y0":524.22,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[239.41,492.72,809.65,533.22],"maxW":978.0,"minY":420,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL15":{"code":"SL15","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Bona Nova SC","weight":400,"style":"normal","size":60.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Maligayang Pasko\nsa inyo!","orig":[{"x":453.4,"y":287.92,"t":"Maligayang Pasko"},{"x":605.36,"y":351.92,"t":"sa inyo!"}],"flow":{"align":"center","ax":713.03,"y0":287.92,"lh":64.0,"n0":2,"size0":60.0,"asc":42.0,"desc":12.0,"box":[453.4,245.92,972.7,363.92],"maxW":601.9,"minY":139,"maxY":474,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Bona Nova SC","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":453.4,"y":124.94,"t":"To:"}],"flow":{"align":"left","ax":453.4,"y0":124.94,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[453.4,93.44,517.57,133.94],"maxW":560.6,"minY":21.6,"maxY":233,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Bona Nova SC","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Torres Family","orig":[{"x":560.38,"y":517.94,"t":"Torres Family"}],"flow":{"align":"center","ax":712.48,"y0":517.94,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[560.38,486.44,864.58,526.94],"maxW":603.0,"minY":366,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL16":{"code":"SL16","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Bpmf Huninn","weight":400,"style":"normal","size":60.0,"ls":0.0,"fill":"#AC2428","alpha":1.0,"tf":null,"text":"Merry and\nbright holidays\nto you!","orig":[{"x":609.86,"y":258.8,"t":"Merry and"},{"x":546.2,"y":322.8,"t":"bright holidays"},{"x":657.09,"y":386.8,"t":"to you!"}],"flow":{"align":"center","ax":754.49,"y0":258.8,"lh":64.0,"n0":3,"size0":60.0,"asc":45,"desc":13,"box":[546.2,213.8,962.78,399.8],"maxW":519.0,"minY":140,"maxY":472,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Bpmf Huninn","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#214F73","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":494.05,"y":127.1,"t":"To:"}],"flow":{"align":"left","ax":494.05,"y0":127.1,"lh":56.25,"n0":1,"size0":45.0,"asc":33,"desc":9.0,"box":[494.05,94.1,558.98,136.1],"maxW":520.0,"minY":21.6,"maxY":264,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Bpmf Huninn","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#214F73","alpha":1.0,"tf":null,"text":"Torres Family","orig":[{"x":611.23,"y":520.1,"t":"Torres Family"}],"flow":{"align":"left","ax":611.23,"y0":520.1,"lh":56.25,"n0":1,"size0":45.0,"asc":34,"desc":10,"box":[611.23,486.1,894.78,530.1],"maxW":402.8,"minY":413,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL17":{"code":"SL17","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"DM Sans","weight":400,"style":"normal","size":150.0,"ls":0.0,"fill":"#CC3737","alpha":1.0,"tf":null,"text":"Jack and Jill","orig":[{"x":106.7,"y":380.65,"t":"Jack and Jill"}],"flow":{"align":"center","ax":525.0,"y0":380.65,"lh":187.5,"n0":1,"size0":150.0,"asc":109,"desc":30.0,"box":[106.7,271.65,944.45,410.65],"maxW":978.0,"minY":198,"maxY":460,"v":"middle"},"label":"Name","edit":true,"lock":false},{"role":"m","family":"DM Sans","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#CC3737","alpha":1.0,"tf":null,"text":"are sending holiday wishes your way <3","orig":[{"x":161.3,"y":502.64,"t":"are sending holiday wishes your way <3"}],"flow":{"align":"center","ax":525.0,"y0":502.64,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":10,"box":[161.3,473.64,889.74,512.64],"maxW":978.0,"minY":396,"maxY":578.4,"v":"bottom"},"label":"Message","edit":true,"lock":false}]},"SL18":{"code":"SL18","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Cal Sans","weight":400,"style":"normal","size":85.0,"ls":0.0,"fill":"#C63030","alpha":1.0,"tf":null,"text":"Wishing You a\nJoyful Christmas","orig":[{"x":399.86,"y":284.25,"t":"Wishing You a"},{"x":355.45,"y":375.25,"t":"Joyful Christmas"}],"flow":{"align":"center","ax":663.45,"y0":284.25,"lh":91.0,"n0":2,"size0":85.0,"asc":63,"desc":19,"box":[355.45,221.25,971.7,394.25],"maxW":701.1,"minY":121,"maxY":453,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Cal Sans","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#214F73","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":344.2,"y":106.75,"t":"To:"}],"flow":{"align":"left","ax":344.2,"y0":106.75,"lh":56.25,"n0":1,"size0":45.0,"asc":32,"desc":9.0,"box":[344.2,74.75,399.78,115.75],"maxW":669.8,"minY":21.6,"maxY":298,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Cal Sans","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#214F73","alpha":1.0,"tf":null,"text":"Kanna & Blake","orig":[{"x":520.24,"y":499.75,"t":"Kanna & Blake"}],"flow":{"align":"center","ax":662.98,"y0":499.75,"lh":56.25,"n0":1,"size0":45.0,"asc":33,"desc":9.0,"box":[520.24,466.75,805.72,508.75],"maxW":702.0,"minY":406,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL19":{"code":"SL19","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Caladea","weight":400,"style":"normal","size":70.0,"ls":0.0,"fill":"#BF4737","alpha":1.0,"tf":null,"text":"Peace & Joy\nthis Christmas!","orig":[{"x":598.69,"y":285.25,"t":"Peace & Joy"},{"x":545.3,"y":360.25,"t":"this Christmas!"}],"flow":{"align":"center","ax":761.99,"y0":285.25,"lh":75.0,"n0":2,"size0":70.0,"asc":49,"desc":16,"box":[545.3,236.25,978.74,376.25],"maxW":504.0,"minY":123,"maxY":499,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Caladea","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#BF4737","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":508.31,"y":108.62,"t":"To:"}],"flow":{"align":"left","ax":508.31,"y0":108.62,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[508.31,77.12,563.71,117.62],"maxW":505.7,"minY":21.6,"maxY":297,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Caladea","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#BF4737","alpha":1.0,"tf":null,"text":"Warren, Anne, and Jamie","orig":[{"x":534.37,"y":544.62,"t":"Warren, Anne, and Jamie"}],"flow":{"align":"center","ax":762.88,"y0":544.62,"lh":56.25,"n0":1,"size0":45.0,"asc":32,"desc":9,"box":[534.37,512.62,991.39,553.62],"maxW":502.2,"minY":374,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SL20":{"code":"SL20","tier":"standard","orient":"L","w":1050,"h":600,"layers":[{"role":"m","family":"Diphylleia","weight":400,"style":"normal","size":90.0,"ls":0.0,"fill":"#B02429","alpha":1.0,"tf":null,"text":"Maligayang\nPasko!","orig":[{"x":55.0,"y":291.24,"t":"Maligayang"},{"x":55.0,"y":387.24,"t":"Pasko!"}],"flow":{"align":"left","ax":55.0,"y0":291.24,"lh":96.0,"n0":2,"size0":90.0,"asc":65,"desc":20,"box":[55.0,226.24,509.32,407.24],"maxW":524.0,"minY":126,"maxY":481,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Diphylleia","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#B02429","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":55.12,"y":111.62,"t":"To:"}],"flow":{"align":"left","ax":55.12,"y0":111.62,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[55.12,80.12,117.9,120.62],"maxW":958.9,"minY":21.6,"maxY":213,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Diphylleia","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#B02429","alpha":1.0,"tf":null,"text":"Raymond and Aimee","orig":[{"x":55.47,"y":527.62,"t":"Raymond and Aimee"}],"flow":{"align":"left","ax":55.47,"y0":527.62,"lh":56.25,"n0":1,"size0":45.0,"asc":33,"desc":10,"box":[55.47,494.62,470.5,537.62],"maxW":566.5,"minY":403,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP1":{"code":"SP1","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Pacifico","weight":400,"style":"normal","size":48.0,"ls":0.0,"fill":"#D34646","alpha":1.0,"tf":null,"text":"Merry Christmas\n& Happy New Year","orig":[{"x":117.95,"y":507.9,"t":"Merry Christmas"},{"x":94.3,"y":566.9,"t":"& Happy New Year"}],"flow":{"align":"center","ax":300.0,"y0":507.9,"lh":59.0,"n0":2,"size0":48.0,"asc":46,"desc":22,"box":[94.3,461.9,504.8,588.9],"maxW":528.0,"minY":454,"maxY":594,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Merienda","weight":400,"style":"normal","size":32.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"FROM: BJORN","orig":[{"x":187.83,"y":937.16,"t":"FROM: BJORN"}],"flow":{"align":"center","ax":300.0,"y0":937.16,"lh":40.0,"n0":1,"size0":32.0,"asc":28,"desc":6.4,"box":[187.83,909.16,411.22,943.56],"maxW":528.0,"minY":818,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"t","family":"Merienda","weight":400,"style":"normal","size":32.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"TO:","orig":[{"x":46.0,"y":100.16,"t":"TO:"}],"flow":{"align":"left","ax":46.0,"y0":100.16,"lh":40.0,"n0":1,"size0":32.0,"asc":27,"desc":6.4,"box":[46.0,73.16,96.46,106.56],"maxW":518.0,"minY":21.6,"maxY":327,"v":"top"},"label":"To line","edit":false,"lock":true}]},"SP2":{"code":"SP2","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Montserrat","weight":700,"style":"normal","size":32.0,"ls":0.0,"fill":"#4C762D","alpha":1.0,"tf":null,"text":"Dominic Roldan","orig":[{"x":165.27,"y":969.97,"t":"Dominic Roldan"}],"flow":{"align":"center","ax":300.0,"y0":969.97,"lh":40.0,"n0":1,"size0":32.0,"asc":26,"desc":6.4,"box":[165.27,943.97,433.68,976.37],"maxW":528.0,"minY":795,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"m","family":"Bricolage Grotesque","weight":400,"style":"normal","size":55.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"May your Christmas\nbe joyful and bright","orig":[{"x":38.36,"y":705.15,"t":"May your Christmas"},{"x":48.13,"y":771.15,"t":"be joyful and bright"}],"flow":{"align":"center","ax":300.0,"y0":705.15,"lh":66.0,"n0":2,"size0":55.0,"asc":40,"desc":11,"box":[38.36,665.15,560.75,782.15],"maxW":528.0,"minY":410,"maxY":930,"v":"bottom"},"label":"Message","edit":true,"lock":false}]},"SP3":{"code":"SP3","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Radio Canada Big","weight":400,"style":"normal","size":55.0,"ls":0.0,"fill":"#E75243","alpha":1.0,"tf":null,"text":"Sending you love\nthis Christmas,","orig":[{"x":90.17,"y":833.98,"t":"Sending you love"},{"x":116.33,"y":905.98,"t":"this Christmas,"}],"flow":{"align":"center","ax":300.0,"y0":833.98,"lh":72.0,"n0":2,"size0":55.0,"asc":40,"desc":11,"box":[90.17,793.98,507.84,916.98],"maxW":528.0,"minY":565,"maxY":927,"v":"bottom"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Radio Canada Big","weight":700,"style":"normal","size":36.0,"ls":0.0,"fill":"#3C3D3D","alpha":1.0,"tf":null,"text":"The Magat Family","orig":[{"x":154.03,"y":967.92,"t":"The Magat Family"}],"flow":{"align":"center","ax":300.0,"y0":967.92,"lh":45.0,"n0":1,"size0":36.0,"asc":27,"desc":7.2,"box":[154.03,940.92,446.03,975.12],"maxW":528.0,"minY":928,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP4":{"code":"SP4","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Manrope","weight":400,"style":"normal","size":32.0,"ls":0.0,"fill":"#FF5747","alpha":1.0,"tf":null,"text":"Aimee Legaspi","orig":[{"x":192.69,"y":989.26,"t":"Aimee Legaspi"}],"flow":{"align":"center","ax":300.0,"y0":989.26,"lh":40.0,"n0":1,"size0":32.0,"asc":24,"desc":9,"box":[192.69,965.26,406.24,998.26],"maxW":528.0,"minY":920,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"m","family":"Dancing Script","weight":400,"style":"normal","size":75.0,"ls":0.0,"fill":"#30A5FF","alpha":1.0,"tf":null,"text":"Here’s to a\nsweet and bright\nChristmas!","orig":[{"x":161.67,"y":720.0,"t":"Here’s to a"},{"x":76.2,"y":810.0,"t":"sweet and bright"},{"x":153.69,"y":900.0,"t":"Christmas!"}],"flow":{"align":"center","ax":300.0,"y0":720.0,"lh":90.0,"n0":3,"size0":75.0,"asc":54,"desc":21,"box":[76.2,666.0,521.92,921.0],"maxW":528.0,"minY":500,"maxY":951,"v":"bottom"},"label":"Message","edit":true,"lock":false}]},"SP5":{"code":"SP5","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Elsie","weight":400,"style":"normal","size":48.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"may your days be","orig":[{"x":62.0,"y":567.0,"t":"may your days be"}],"flow":{"align":"left","ax":62.0,"y0":567.0,"lh":60.0,"n0":1,"size0":48.0,"asc":34,"desc":12,"box":[62.0,533.0,430.3,579.0],"maxW":502.0,"minY":499,"maxY":592,"v":"middle"},"label":"Message 1","edit":true,"lock":false},{"role":"l","family":"Elsie","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"warm wishes from","orig":[{"x":62.0,"y":879.37,"t":"warm wishes from"}],"flow":{"align":"left","ax":62.0,"y0":879.37,"lh":45.0,"n0":1,"size0":36.0,"asc":26,"desc":7.2,"box":[62.0,853.37,360.8,886.57],"maxW":502.0,"minY":765,"maxY":886.6,"v":"bottom"},"label":"Sign-off","edit":false,"lock":false},{"role":"m","family":"Elsie","weight":400,"style":"normal","size":92.0,"ls":0.0,"fill":"#CE2240","alpha":1.0,"tf":null,"text":"merry\n& bright","orig":[{"x":62.0,"y":651.28,"t":"merry"},{"x":62.0,"y":730.28,"t":"& bright"}],"flow":{"align":"left","ax":62.0,"y0":651.28,"lh":79.0,"n0":2,"size0":92.0,"asc":65,"desc":22,"box":[62.0,586.28,391.73,752.28],"maxW":502.0,"minY":586.3,"maxY":839,"v":"middle"},"label":"Message 2","edit":true,"lock":false},{"role":"n","family":"Elsie","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#CE2240","alpha":1.0,"tf":null,"text":"janelle & harvey","orig":[{"x":62.0,"y":925.59,"t":"janelle & harvey"}],"flow":{"align":"left","ax":62.0,"y0":925.59,"lh":56.25,"n0":1,"size0":45.0,"asc":32,"desc":11,"box":[62.0,893.59,379.66,936.59],"maxW":502.0,"minY":893,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP6":{"code":"SP6","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Arima","weight":400,"style":"normal","size":60.0,"ls":0.0,"fill":"#BB7F06","alpha":1.0,"tf":null,"text":"A Blessed\nChristmas to You\nand Your Family","orig":[{"x":173.58,"y":726.39,"t":"A Blessed"},{"x":74.38,"y":786.39,"t":"Christmas to You"},{"x":83.93,"y":846.39,"t":"and Your Family"}],"flow":{"align":"center","ax":300.0,"y0":726.39,"lh":60.0,"n0":3,"size0":60.0,"asc":44,"desc":14,"box":[74.38,682.39,524.68,860.39],"maxW":528.0,"minY":503,"maxY":915,"v":"bottom"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Arima","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"#643C20","alpha":1.0,"tf":null,"text":"The Quimbo Family","orig":[{"x":146.32,"y":956.23,"t":"The Quimbo Family"}],"flow":{"align":"center","ax":300.0,"y0":956.23,"lh":45.0,"n0":1,"size0":36.0,"asc":27,"desc":9,"box":[146.32,929.23,451.74,965.23],"maxW":528.0,"minY":873,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP7":{"code":"SP7","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Abhaya Libre","weight":400,"style":"normal","size":60.0,"ls":0.0,"fill":"#76825D","alpha":1.0,"tf":null,"text":"Wishing You a\nWarm & Bright\nHoliday","orig":[{"x":125.56,"y":763.0,"t":"Wishing You a"},{"x":119.24,"y":823.0,"t":"Warm & Bright"},{"x":202.12,"y":883.0,"t":"Holiday"}],"flow":{"align":"center","ax":300.0,"y0":763.0,"lh":60.0,"n0":3,"size0":60.0,"asc":42.0,"desc":12,"box":[119.24,721.0,479.76,895.0],"maxW":528.0,"minY":589,"maxY":923,"v":"bottom"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Rouge Script","weight":400,"style":"normal","size":48.0,"ls":0.0,"fill":"#962B31","alpha":1.0,"tf":null,"text":"Patrick & Alona Cruz","orig":[{"x":128.41,"y":974.12,"t":"Patrick & Alona Cruz"}],"flow":{"align":"center","ax":300.0,"y0":974.12,"lh":60.0,"n0":1,"size0":48.0,"asc":37,"desc":11,"box":[128.41,937.12,468.64,985.12],"maxW":528.0,"minY":908,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP8":{"code":"SP8","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Figtree","weight":400,"style":"normal","size":60.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"May your days\nbe merry, bright,\nand full of wonder.","orig":[{"x":105.85,"y":563.0,"t":"May your days"},{"x":78.37,"y":633.0,"t":"be merry, bright,"},{"x":50.06,"y":703.0,"t":"and full of wonder."}],"flow":{"align":"center","ax":300.0,"y0":563.0,"lh":70.0,"n0":3,"size0":60.0,"asc":43,"desc":13,"box":[50.06,520.0,548.0,716.0],"maxW":528.0,"minY":361,"maxY":918,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Figtree","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"#C23A47","alpha":1.0,"tf":null,"text":"JULIAN & MARA SANTIAGO","orig":[{"x":78.45,"y":957.6,"t":"JULIAN & MARA SANTIAGO"}],"flow":{"align":"center","ax":300.0,"y0":957.6,"lh":45.0,"n0":1,"size0":36.0,"asc":26,"desc":7.2,"box":[78.45,931.6,537.56,964.8],"maxW":528.0,"minY":717,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP9":{"code":"SP9","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Mynerve","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Scott, Olive, and Julia","orig":[{"x":78.14,"y":984.09,"t":"Scott, Olive, and Julia"}],"flow":{"align":"center","ax":300.0,"y0":984.09,"lh":45.0,"n0":1,"size0":36.0,"asc":29,"desc":7.2,"box":[78.14,955.09,419.6,991.29],"maxW":528.0,"minY":831,"maxY":1028.4,"v":"bottom"},"force":true,"label":"Name","edit":true,"lock":false},{"role":"t","family":"Mynerve","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":44.19,"y":816.09,"t":"To:"}],"flow":{"align":"left","ax":44.19,"y0":816.09,"lh":45.0,"n0":1,"size0":36.0,"asc":29,"desc":7.2,"box":[44.19,787.09,86.45,823.29],"maxW":519.8,"minY":643,"maxY":941,"v":"bottom"},"force":true,"label":"To line","edit":false,"lock":true},{"role":"m","family":"Mynerve","weight":400,"style":"normal","size":60.0,"ls":0.0,"fill":"#345126","alpha":1.0,"tf":null,"text":"Celebrate the\nseason with joy\nand love","orig":[{"x":80.1,"y":541.81,"t":"Celebrate the "},{"x":44.44,"y":611.81,"t":"season with joy "},{"x":159.55,"y":681.81,"t":"and love"}],"flow":{"align":"center","ax":300.0,"y0":541.81,"lh":70.0,"n0":3,"size0":60.0,"asc":50,"desc":18,"box":[44.44,491.81,441.28,699.81],"maxW":528.0,"minY":401,"maxY":773,"v":"middle"},"force":true,"label":"Message","edit":true,"lock":false}]},"SP10":{"code":"SP10","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"DM Serif Display","weight":400,"style":"normal","size":60.0,"ls":0.0,"fill":"#E35F41","alpha":1.0,"tf":null,"text":"To a holiday filled\nwith meaningful\nmoments and great\ncelebrations.","orig":[{"x":67.74,"y":647.53,"t":"To a holiday filled "},{"x":83.47,"y":712.53,"t":"with meaningful "},{"x":43.13,"y":777.53,"t":"moments and great "},{"x":128.65,"y":842.53,"t":"celebrations."}],"flow":{"align":"center","ax":300.0,"y0":647.53,"lh":65.0,"n0":4,"size0":60.0,"asc":43,"desc":15,"box":[43.13,604.53,557.33,857.53],"maxW":528.0,"minY":231,"maxY":933,"v":"bottom"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"DM Serif Display","weight":400,"style":"italic","size":32.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Dennis & Kristine Bautista","orig":[{"x":120.31,"y":969.72,"t":"Dennis & Kristine Bautista"}],"flow":{"align":"center","ax":300.0,"y0":969.72,"lh":40.0,"n0":1,"size0":32.0,"asc":23,"desc":6.4,"box":[120.31,946.72,482.78,976.12],"maxW":528.0,"minY":857,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP11":{"code":"SP11","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Domine","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#F4432D","alpha":1.0,"tf":null,"text":"The simplest moments\noften shine the brightest.\n\nHere’s to more of them!","orig":[{"x":78.97,"y":700.2,"t":"The simplest moments "},{"x":60.01,"y":750.2,"t":"often shine the brightest."},{"x":74.27,"y":850.2,"t":"Here’s to more of them!"}],"flow":{"align":"center","ax":300.0,"y0":700.2,"lh":50.0,"n0":4,"size0":40.0,"asc":32,"desc":8,"box":[60.01,668.2,539.13,858.2],"maxW":528.0,"minY":479,"maxY":929,"v":"bottom"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"Domine","weight":400,"style":"normal","size":30.0,"ls":0.0,"fill":"#3A573E","alpha":1.0,"tf":null,"text":"Yvette, Kier, Trixie, and Finn","orig":[{"x":94.54,"y":966.9,"t":"Yvette, Kier, Trixie, and Finn"}],"flow":{"align":"center","ax":300.0,"y0":966.9,"lh":37.5,"n0":1,"size0":30.0,"asc":24,"desc":6.0,"box":[94.54,942.9,505.27,972.9],"maxW":528.0,"minY":864,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP12":{"code":"SP12","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Playfair Display","weight":400,"style":"normal","size":96.0,"ls":0.0,"fill":"#D94343","alpha":1.0,"tf":null,"text":"happy\nholidays","orig":[{"x":65.0,"y":685.89,"t":"happy"},{"x":65.0,"y":785.89,"t":"holidays"}],"flow":{"align":"left","ax":65.0,"y0":685.89,"lh":100.0,"n0":2,"size0":96.0,"asc":76,"desc":19.2,"box":[65.0,609.89,422.31,805.09],"maxW":499.0,"minY":425,"maxY":805.1,"v":"bottom"},"label":"Message 1","edit":true,"lock":false},{"role":"m","family":"Playfair Display","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"to you and your family!","orig":[{"x":65.0,"y":843.62,"t":"to you and your family!"}],"flow":{"align":"left","ax":65.0,"y0":843.62,"lh":50.0,"n0":1,"size0":40.0,"asc":32,"desc":8,"box":[65.0,811.62,478.2,851.62],"maxW":499.0,"minY":811.6,"maxY":912,"v":"bottom"},"label":"Message 2","edit":true,"lock":false},{"role":"l","family":"Playfair Display","weight":400,"style":"normal","size":24.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"FROM","orig":[{"x":65.0,"y":943.97,"t":"FROM"}],"flow":{"align":"left","ax":65.0,"y0":943.97,"lh":30.0,"n0":1,"size0":24.0,"asc":18,"desc":4.8,"box":[65.0,925.97,132.7,948.77],"maxW":499.0,"minY":865,"maxY":948.8,"v":"bottom"},"label":"Sign-off","edit":false,"lock":false},{"role":"n","family":"Playfair Display","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Dave Potenciano & Family","orig":[{"x":65.0,"y":983.96,"t":"Dave Potenciano & Family"}],"flow":{"align":"left","ax":65.0,"y0":983.96,"lh":45.0,"n0":1,"size0":36.0,"asc":29,"desc":7.2,"box":[65.0,954.96,490.02,991.16],"maxW":499.0,"minY":955.0,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP13":{"code":"SP13","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"t","family":"Courgette","weight":400,"style":"normal","size":35.0,"ls":0.0,"fill":"#94591E","alpha":1.0,"tf":null,"text":"Dear","orig":[{"x":43.0,"y":652.3,"t":"Dear"}],"flow":{"align":"left","ax":43.0,"y0":652.3,"lh":43.75,"n0":1,"size0":35.0,"asc":27,"desc":7.0,"box":[43.0,625.3,114.79,659.3],"maxW":521.0,"minY":543,"maxY":716,"v":"middle"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Courgette","weight":400,"style":"normal","size":35.0,"ls":0.0,"fill":"#556D2C","alpha":1.0,"tf":null,"text":"From: Roselle and Evan Santos","orig":[{"x":63.31,"y":998.3,"t":"From: Roselle and Evan Santos"}],"flow":{"align":"center","ax":300.0,"y0":998.3,"lh":43.75,"n0":1,"size0":35.0,"asc":29,"desc":7.0,"box":[63.31,969.3,536.34,1005.3],"maxW":528.0,"minY":911,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"m","family":"Courgette","weight":400,"style":"normal","size":80.0,"ls":-4.0,"fill":"#C67F26","alpha":1.0,"tf":null,"text":"Have a blessed\nChristmas!","orig":[{"x":66.3,"y":796.12,"t":"Have a blessed"},{"x":127.84,"y":896.12,"t":"Christmas!"}],"flow":{"align":"center","ax":300.0,"y0":796.12,"lh":100.0,"n0":2,"size0":80.0,"asc":66,"desc":16.0,"box":[66.3,730.12,530.38,912.12],"maxW":528.0,"minY":666,"maxY":955,"v":"bottom"},"label":"Message","edit":true,"lock":false}]},"SP14":{"code":"SP14","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Didact Gothic","weight":400,"style":"normal","size":70.0,"ls":0.0,"fill":"#BE6348","alpha":1.0,"tf":null,"text":"Maligayang\nPasko!","orig":[{"x":126.03,"y":610.34,"t":"Maligayang"},{"x":207.78,"y":702.34,"t":"Pasko!"}],"flow":{"align":"center","ax":300.0,"y0":610.34,"lh":92.0,"n0":2,"size0":70.0,"asc":51,"desc":14,"box":[126.03,559.34,482.12,716.34],"maxW":528.0,"minY":508,"maxY":921,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Didact Gothic","weight":400,"style":"normal","size":48.0,"ls":0.0,"fill":"#BE6348","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":52.0,"y":115.24,"t":"To:"}],"flow":{"align":"left","ax":52.0,"y0":115.24,"lh":60.0,"n0":1,"size0":48.0,"asc":33.6,"desc":9.6,"box":[52.0,81.64,109.36,124.84],"maxW":512.0,"minY":21.6,"maxY":1028.4,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Didact Gothic","weight":400,"style":"normal","size":48.0,"ls":0.0,"fill":"#BE6348","alpha":1.0,"tf":null,"text":"Hannah & Gabriel","orig":[{"x":121.45,"y":970.24,"t":"Hannah & Gabriel"}],"flow":{"align":"center","ax":300.0,"y0":970.24,"lh":60.0,"n0":1,"size0":48.0,"asc":35,"desc":9.6,"box":[121.45,935.24,478.62,979.84],"maxW":528.0,"minY":717,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP15":{"code":"SP15","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Phudu","weight":400,"style":"normal","size":96.0,"ls":0.0,"fill":"#D94343","alpha":1.0,"tf":null,"text":"happy\nholidays","orig":[{"x":46.0,"y":671.6,"t":"happy"},{"x":46.0,"y":771.6,"t":"holidays"}],"flow":{"align":"left","ax":46.0,"y0":671.6,"lh":100.0,"n0":2,"size0":96.0,"asc":69,"desc":19.2,"box":[46.0,602.6,422.9,790.8],"maxW":518.0,"minY":182,"maxY":790.8,"v":"bottom"},"label":"Message 1","edit":true,"lock":false},{"role":"m","family":"Phudu","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"to you and your family!","orig":[{"x":46.0,"y":829.5,"t":"to you and your family!"}],"flow":{"align":"left","ax":46.0,"y0":829.5,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[46.0,800.5,477.76,837.5],"maxW":518.0,"minY":787,"maxY":896,"v":"bottom"},"label":"Message 2","edit":true,"lock":false},{"role":"l","family":"Phudu","weight":400,"style":"normal","size":30.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"FROM","orig":[{"x":46.0,"y":932.38,"t":"FROM"}],"flow":{"align":"left","ax":46.0,"y0":932.38,"lh":37.5,"n0":1,"size0":30.0,"asc":22,"desc":6.0,"box":[46.0,910.38,116.95,938.38],"maxW":518.0,"minY":843,"maxY":938.4,"v":"bottom"},"label":"Sign-off","edit":false,"lock":false},{"role":"n","family":"Phudu","weight":400,"style":"normal","size":36.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"john miguel","orig":[{"x":46.0,"y":976.85,"t":"john miguel"}],"flow":{"align":"left","ax":46.0,"y0":976.85,"lh":45.0,"n0":1,"size0":36.0,"asc":26,"desc":7.2,"box":[46.0,950.85,242.49,984.05],"maxW":518.0,"minY":946,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP16":{"code":"SP16","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"DM Mono","weight":400,"style":"normal","size":70.0,"ls":0.0,"fill":"#B62025","alpha":1.0,"tf":null,"text":"HAPPY\nHOLIDAYS","orig":[{"x":195.07,"y":647.37,"t":"HAPPY"},{"x":132.11,"y":738.37,"t":"HOLIDAYS"}],"flow":{"align":"center","ax":300.0,"y0":647.37,"lh":91.0,"n0":2,"size0":70.0,"asc":50,"desc":14.0,"box":[132.11,597.37,468.11,752.37],"maxW":528.0,"minY":554,"maxY":947,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"n","family":"DM Mono","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"#B62025","alpha":1.0,"tf":null,"text":"-ABBY","orig":[{"x":240.04,"y":988.64,"t":"-ABBY"}],"flow":{"align":"center","ax":300.0,"y0":988.64,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[240.04,960.64,360.04,996.64],"maxW":528.0,"minY":752,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP17":{"code":"SP17","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Gowun Batang","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Merry Christmas and a\nbright New Year","orig":[{"x":70.3,"y":616.12,"t":"Merry Christmas and a "},{"x":136.0,"y":681.12,"t":"bright New Year"}],"flow":{"align":"center","ax":300.0,"y0":616.12,"lh":65.0,"n0":2,"size0":45.0,"asc":36,"desc":9.0,"box":[70.3,580.12,523.0,690.12],"maxW":528.0,"minY":347,"maxY":920,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Gowun Batang","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":79.07,"y":336.12,"t":"To:"}],"flow":{"align":"left","ax":79.07,"y0":336.12,"lh":56.25,"n0":1,"size0":45.0,"asc":35,"desc":9.0,"box":[79.07,301.12,142.97,345.12],"maxW":484.9,"minY":173,"maxY":566,"v":"middle"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Gowun Batang","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Chito and Mari","orig":[{"x":146.47,"y":970.12,"t":"Chito and Mari"}],"flow":{"align":"center","ax":300.0,"y0":970.12,"lh":56.25,"n0":1,"size0":45.0,"asc":36,"desc":9.0,"box":[146.47,934.12,442.57,979.12],"maxW":528.0,"minY":699,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP18":{"code":"SP18","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Imprima","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Wishing you a\nChristmas that’s merry\nand bright","orig":[{"x":162.32,"y":394.3,"t":"Wishing you a "},{"x":80.05,"y":446.3,"t":"Christmas that’s merry "},{"x":197.1,"y":498.3,"t":"and bright"}],"flow":{"align":"center","ax":300.0,"y0":394.3,"lh":52.0,"n0":3,"size0":45.0,"asc":32,"desc":11,"box":[80.05,362.3,519.52,509.3],"maxW":528.0,"minY":111,"maxY":618,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Funnel Sans","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":41.03,"y":96.88,"t":"To:"}],"flow":{"align":"left","ax":41.03,"y0":96.88,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[41.03,65.38,100.95,105.88],"maxW":523.0,"minY":21.6,"maxY":400,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Funnel Sans","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Toni","orig":[{"x":258.12,"y":975.88,"t":"Toni"}],"flow":{"align":"center","ax":300.0,"y0":975.88,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[258.12,944.38,342.86,984.88],"maxW":528.0,"minY":882,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"SP19":{"code":"SP19","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"t","family":"Funnel Sans","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#2D4551","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":64.03,"y":410.88,"t":"To:"}],"flow":{"align":"left","ax":64.03,"y0":410.88,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[64.03,379.38,123.95,419.88],"maxW":500.0,"minY":274,"maxY":605,"v":"middle"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Funnel Sans","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#2D4551","alpha":1.0,"tf":null,"text":"Jed and Joey","orig":[{"x":169.39,"y":906.88,"t":"Jed and Joey"}],"flow":{"align":"center","ax":300.0,"y0":906.88,"lh":56.25,"n0":1,"size0":45.0,"asc":32,"desc":9,"box":[169.39,874.88,422.52,915.88],"maxW":528.0,"minY":721,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"m","family":"Funnel Sans","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"#2D4551","alpha":1.0,"tf":null,"text":"Wishing you a joyful\nChristmas","orig":[{"x":95.06,"y":650.88,"t":"Wishing you a joyful "},{"x":193.59,"y":706.88,"t":"Christmas"}],"flow":{"align":"center","ax":300.0,"y0":650.88,"lh":56.0,"n0":2,"size0":45.0,"asc":32,"desc":10,"box":[95.06,618.88,496.31,716.88],"maxW":528.0,"minY":425,"maxY":861,"v":"middle"},"label":"Message","edit":true,"lock":false}]},"SP20":{"code":"SP20","tier":"standard","orient":"P","w":600,"h":1050,"layers":[{"role":"m","family":"Grandstander","weight":400,"style":"normal","size":60.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Sending you\nthe warmest\nChristmas\nwishes","orig":[{"x":113.86,"y":569.02,"t":"Sending you "},{"x":106.94,"y":629.02,"t":"the warmest "},{"x":147.05,"y":689.02,"t":"Christmas "},{"x":198.2,"y":749.02,"t":"wishes"}],"flow":{"align":"center","ax":300.0,"y0":569.02,"lh":60.0,"n0":4,"size0":60.0,"asc":44,"desc":16,"box":[106.94,525.02,484.91,765.02],"maxW":528.0,"minY":421,"maxY":899,"v":"middle"},"label":"Message","edit":true,"lock":false},{"role":"t","family":"Grandstander","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":80.01,"y":407.02,"t":"To:"}],"flow":{"align":"left","ax":80.01,"y0":407.02,"lh":56.25,"n0":1,"size0":45.0,"asc":31.5,"desc":9.0,"box":[80.01,375.52,139.97,416.02],"maxW":484.0,"minY":211,"maxY":512,"v":"middle"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Grandstander","weight":400,"style":"normal","size":45.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Kitty and Ryan","orig":[{"x":130.27,"y":946.02,"t":"Kitty and Ryan"}],"flow":{"align":"center","ax":300.0,"y0":946.02,"lh":56.25,"n0":1,"size0":45.0,"asc":33,"desc":12,"box":[130.27,913.02,455.73,958.02],"maxW":528.0,"minY":765,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"GL1":{"code":"GL1","tier":"generic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Edu SA Beginner","weight":400,"style":"normal","size":64.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"-Tracy Dizon","orig":[{"x":690.0,"y":527.2,"t":"-Tracy Dizon"}],"flow":{"align":"right","ax":984.14,"y0":527.2,"lh":80.0,"n0":1,"size0":64.0,"asc":50,"desc":23,"box":[690.0,477.2,984.14,550.2],"maxW":720.1,"minY":298,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"GL2":{"code":"GL2","tier":"generic","orient":"L","w":1050,"h":600,"layers":[{"role":"l","family":"Playwrite US Trad","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"from","orig":[{"x":490.46,"y":463.48,"t":"from"}],"flow":{"align":"center","ax":543.12,"y0":463.48,"lh":50.0,"n0":1,"size0":40.0,"asc":41,"desc":21,"box":[490.46,422.48,595.78,484.48],"maxW":941.8,"minY":21.6,"maxY":484.5,"v":"bottom"},"label":"Sign-off","edit":false,"lock":false},{"role":"n","family":"Libre Bodoni","weight":400,"style":"normal","size":48.0,"ls":0.0,"fill":"#C72F2F","alpha":1.0,"tf":null,"text":"The Sison Family","orig":[{"x":338.0,"y":534.85,"t":"The Sison Family"}],"flow":{"align":"center","ax":525.0,"y0":534.85,"lh":60.0,"n0":1,"size0":48.0,"asc":37,"desc":16,"box":[338.0,497.85,711.92,550.85],"maxW":978.0,"minY":497,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"GL3":{"code":"GL3","tier":"generic","orient":"L","w":1050,"h":600,"layers":[{"role":"d","family":"Playwrite US Trad","weight":400,"style":"normal","size":280.0,"ls":0.0,"fill":"black","alpha":0.05,"tf":[0.992433,-0.122787,0.122787,0.992433,-21.0,107.382],"text":"for you","orig":[{"x":122.23,"y":249.36,"t":"for you"}],"flow":null,"label":"Design text","edit":false,"lock":true},{"role":"n","family":"Lexend","weight":400,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"JAE & MINNIE","orig":[{"x":380.0,"y":557.0,"t":"JAE & MINNIE"}],"flow":{"align":"center","ax":525.0,"y0":557.0,"lh":50.0,"n0":1,"size0":40.0,"asc":29,"desc":8.0,"box":[380.0,528.0,668.0,565.0],"maxW":978.0,"minY":21.6,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"GL4":{"code":"GL4","tier":"generic","orient":"L","w":1050,"h":600,"layers":[{"role":"n","family":"Alegreya","weight":400,"style":"normal","size":35.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"DON CRUZ & FAMILY","orig":[{"x":365.0,"y":559.74,"t":"DON CRUZ & FAMILY"}],"flow":{"align":"center","ax":525.0,"y0":559.74,"lh":43.75,"n0":1,"size0":35.0,"asc":24.5,"desc":7.0,"box":[365.0,535.24,685.81,566.74],"maxW":978.0,"minY":511,"maxY":578.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"GP1":{"code":"GP1","tier":"generic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"EB Garamond","weight":400,"style":"normal","size":35.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"MAXINE & RALPH","orig":[{"x":150.0,"y":979.41,"t":"MAXINE & RALPH"}],"flow":{"align":"center","ax":300.0,"y0":979.41,"lh":43.75,"n0":1,"size0":35.0,"asc":25,"desc":7.0,"box":[150.0,954.41,449.01,986.41],"maxW":528.0,"minY":360,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false}]},"GP2":{"code":"GP2","tier":"generic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Playwrite US Trad","weight":400,"style":"normal","size":60.0,"ls":1.2,"fill":"#2F66B3","alpha":1.0,"tf":[0.998282,-0.058585,0.058585,0.998282,-51.0,962.594],"text":"Austin Manuel","orig":[{"x":143.4,"y":50.72,"t":"Austin Manuel"}],"flow":{"align":"right","ax":648.78,"y0":50.72,"lh":75.0,"n0":1,"size0":60.0,"asc":62,"desc":12.0,"box":[143.4,-11.28,648.78,62.72],"maxW":515.5,"minY":null,"maxY":null},"label":"Name","edit":true,"lock":false},{"role":"l","family":"Overpass","weight":400,"style":"normal","size":25.0,"ls":10.75,"fill":"black","alpha":1.0,"tf":[0.998897,-0.046963,0.046963,0.998897,132.0,927.79],"text":"FROM","orig":[{"x":0.0,"y":16.75,"t":"FROM"}],"flow":{"align":"left","ax":0.0,"y0":16.75,"lh":31.25,"n0":1,"size0":25.0,"asc":18,"desc":5.0,"box":[0.0,-1.25,111.91,21.75],"maxW":114.2,"minY":null,"maxY":null},"label":"Sign-off","edit":false,"lock":false}]},"GP3":{"code":"GP3","tier":"generic","orient":"P","w":600,"h":1050,"layers":[{"role":"d","family":"Google Sans Code","weight":800,"style":"normal","size":2000.0,"ls":0.0,"fill":"#FFE5C4","alpha":1.0,"tf":[0.946855,0.321659,-0.321659,0.946855,370.436,-533.0],"text":"8","orig":[{"x":0.39,"y":1932.0,"t":"8"}],"flow":null,"label":"Design text","edit":false,"lock":true},{"role":"t","family":"Lexend","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"To:","orig":[{"x":64.94,"y":124.0,"t":"To:"}],"flow":{"align":"left","ax":64.94,"y0":124.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8.0,"box":[64.94,96.0,123.06,132.0],"maxW":499.1,"minY":21.6,"maxY":842,"v":"top"},"label":"To line","edit":false,"lock":true},{"role":"n","family":"Lexend","weight":800,"style":"normal","size":55.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Laarnie","orig":[{"x":65.0,"y":953.0,"t":"Laarnie"}],"flow":{"align":"left","ax":65.0,"y0":953.0,"lh":68.75,"n0":1,"size0":55.0,"asc":45,"desc":11.0,"box":[65.0,908.0,284.45,964.0],"maxW":499.0,"minY":905,"maxY":1028.4,"v":"bottom"},"label":"Name","edit":true,"lock":false},{"role":"l","family":"Lexend","weight":700,"style":"normal","size":40.0,"ls":0.0,"fill":"black","alpha":1.0,"tf":null,"text":"Love,","orig":[{"x":65.0,"y":884.0,"t":"Love,"}],"flow":{"align":"left","ax":65.0,"y0":884.0,"lh":50.0,"n0":1,"size0":40.0,"asc":28,"desc":8,"box":[65.0,856.0,172.12,892.0],"maxW":499.0,"minY":138,"maxY":894,"v":"bottom"},"label":"Sign-off","edit":false,"lock":false}]},"GP4":{"code":"GP4","tier":"generic","orient":"P","w":600,"h":1050,"layers":[{"role":"n","family":"Fraunces","weight":400,"style":"normal","size":50.0,"ls":-3.0,"fill":"black","alpha":1.0,"tf":null,"text":"Drew & Cassie","orig":[{"x":150.28,"y":972.58,"t":"Drew & Cassie"}],"flow":{"align":"center","ax":300.0,"y0":972.58,"lh":62.5,"n0":1,"size0":50.0,"asc":36,"desc":10.0,"box":[150.28,936.58,448.35,982.58],"maxW":528.0,"minY":936.6,"maxY":982.6,"v":"bottom"},"label":"Name","edit":true,"lock":false}]}};
+var CODES=Object.keys(CARDS);
+var TIERS={basic:{name:"Basic",price:"₱220",note:"We print your name. The message stays as shown."},
+  standard:{name:"Standard",price:"₱270",note:"You can change the message and the name."},
+  generic:{name:"Generic",price:"₱220",note:"For any occasion. We print your name."}};
+var ROLE={n:"Name",m:"Message",l:"Sign-off",t:"To line",d:"Design text"};
+var SUBS={SL1:"The headline uses Caveat Brush in place of Railway Gank (not on Google Fonts).",
+  SP9:"This tag uses Mynerve in place of Figma Hand (not on Google Fonts).",
+  BL14:"The name uses Noto Serif Italic in place of Noto Serif Tamil Slanted."};
+var GF_AXES={"Noto Serif":{axes:"ital,wdth,wght",tuples:["1,87.5,700"]}};
+var STATUSES=["draft","sent","approved","printed"];
+var $=function(id){return document.getElementById(id)};
+
+/* ---------- fonts ---------- */
+var famSpec={};
+CODES.forEach(function(c){TagRender.cardFonts(CARDS[c]).forEach(function(f){
+  var s=famSpec[f.family]||(famSpec[f.family]={});s[(f.style==="italic"?1:0)+","+f.weight]=1;})});
+var linked={};
+function linkFamily(fam){
+  if(linked[fam])return linked[fam];
+  var spec;
+  if(GF_AXES[fam]){spec=GF_AXES[fam].axes+"@"+GF_AXES[fam].tuples.join(";")}
+  else{var t=Object.keys(famSpec[fam]).map(function(k){return k.split(",").map(Number)}).sort(function(a,b){return a[0]-b[0]||a[1]-b[1]});
+    var ital=t.some(function(x){return x[0]===1});
+    spec=ital?"ital,wght@"+t.map(function(x){return x[0]+","+x[1]}).join(";"):"wght@"+t.map(function(x){return x[1]}).join(";")}
+  var href="https://fonts.googleapis.com/css2?family="+encodeURIComponent(fam).replace(/%20/g,"+")+":"+spec+"&display=block";
+  linked[fam]=new Promise(function(res){var l=document.createElement("link");l.rel="stylesheet";l.href=href;l.onload=function(){res(true)};l.onerror=function(){res(false)};document.head.appendChild(l)});
+  return linked[fam];
+}
+function ensureFonts(card,extra){
+  var fs=TagRender.cardFonts(card);
+  return Promise.all(fs.map(function(f){return linkFamily(f.family).then(function(){
+    return document.fonts.load(TagRender.fontStr(f,40),(f.text||"")+(extra||"")+"AaZz").catch(function(){})})}));
+}
+
+/* ---------- backgrounds ---------- */
+var bgCache={};
+function loadBg(code){
+  if(!bgCache[code])bgCache[code]=new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im)};im.onerror=function(){delete bgCache[code];rej(new Error("bg"))};im.src="bg/"+code+".webp"});
+  return bgCache[code];
+}
+
+/* ---------- capabilities ---------- */
+/* Shared with the order app: same Cloudflare Worker, same orders, drafts kept in the same storage. */
+var SCRIPT_URL="https://base605-api.touchbeise.workers.dev/?k=HatdogWatd0g!";
+function apiUrl(q){return SCRIPT_URL+(SCRIPT_URL.indexOf("?")>=0?"&":"?")+q}
+function apiGet(q){return fetch(apiUrl(q+"&t="+Date.now())).then(function(r){if(!r.ok)throw new Error("api "+r.status);return r.json()})}
+function apiPost(body){return fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){if(!r.ok)throw new Error("api "+r.status);return r.json()})}
+var wdb=(function(){
+  var cache={},subs=[],timer=0;
+  function list(){return Object.keys(cache).map(function(id){var d=Object.assign({},cache[id]);d.id=id;return d}).sort(function(a,b){return (b.updatedAt||0)-(a.updatedAt||0)})}
+  function emit(){var docs=list().map(function(d){return{id:d.id,data:function(){var x=Object.assign({},d);delete x.id;return x}}});subs.forEach(function(s){s({docs:docs})})}
+  function pull(){return apiGet("only=drafts").then(function(j){cache=j.drafts||{};emit()})}
+  var coll={
+    doc:function(id){return{
+      set:function(body){cache[id]=body;emit();return apiPost({action:"draft_set",id:id,body:body})},
+      get:function(){return Promise.resolve({exists:!!cache[id],data:function(){return Object.assign({},cache[id])}})},
+      delete:function(){delete cache[id];emit();return apiPost({action:"draft_del",id:id})}}},
+    orderBy:function(){return coll},limit:function(){return coll},
+    onSnapshot:function(cb,err){subs.push(cb);emit();if(!timer)timer=setInterval(function(){if(!document.hidden)pull().catch(function(){})},20000);return function(){}}};
+  return{pull:pull,collection:function(){return coll}};
+})();
+var dbP=SCRIPT_URL?wdb.pull().then(function(){return wdb},function(){return null}):Promise.resolve(null);
+var dlP=Promise.resolve(null);
+var db=null, drafts=[], useLocal=false;
+function lsGet(){try{return JSON.parse(localStorage.getItem("b605drafts")||"[]")}catch(e){return []}}
+function lsSet(a){try{localStorage.setItem("b605drafts",JSON.stringify(a))}catch(e){}}
+
+/* ---------- toast / modal ---------- */
+var tt;function toast(m){var t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(function(){t.hidden=true},2600)}
+$("mClose").onclick=function(){$("modal").hidden=true;var u=$("mImg").src;if(u.indexOf("blob:")===0)URL.revokeObjectURL(u)};
+
+/* ---------- views ---------- */
+var view="cat";
+function show(v){view=v;$("vCat").hidden=v!=="cat";$("vEd").hidden=v!=="ed";$("vDr").hidden=v!=="dr";$("vOr").hidden=v!=="or";
+  var tabFor=v==="ed"?(octx?"or":"cat"):v;
+  $("tabOr").setAttribute("aria-selected",String(tabFor==="or"));$("tabCat").setAttribute("aria-selected",String(tabFor==="cat"));$("tabDr").setAttribute("aria-selected",String(tabFor==="dr"));
+  window.scrollTo(0,0);if(v==="ed")sizeStage()}
+$("tabCat").onclick=function(){if(view==="ed")leaveEditor();octx=null;show("cat")};
+$("tabOr").onclick=function(){if(view==="ed")leaveEditor();octx=null;show("or");renderOrders()};
+$("tabDr").onclick=function(){if(view==="ed")leaveEditor();show("dr");renderDrafts()};
+
+/* ---------- catalog ---------- */
+var fil={tier:"all",shape:"all",q:""};
+function seg(id,key,after){$(id).addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
+  [].forEach.call($(id).querySelectorAll("button"),function(x){x.setAttribute("aria-pressed",String(x===b))});fil[key]=b.dataset.v;after()})}
+seg("fTier","tier",renderCat);seg("fShape","shape",renderCat);
+$("q").addEventListener("input",function(e){fil.q=e.target.value.trim().toUpperCase().replace(/\s+/g,"");renderCat()});
+function renderCat(){
+  var host=$("catList");host.textContent="";var any=false;
+  ["basic","standard","generic"].forEach(function(t){
+    if(fil.tier!=="all"&&fil.tier!==t)return;
+    var codes=CODES.filter(function(c){var k=CARDS[c];return k.tier===t&&(fil.shape==="all"||k.orient===fil.shape)&&(!fil.q||c.indexOf(fil.q)===0)});
+    if(!codes.length)return;any=true;
+    var sec=document.createElement("div");sec.className="tier";
+    sec.innerHTML='<h2>'+TIERS[t].name+' <span class="price">'+TIERS[t].price+'</span></h2><p>'+TIERS[t].note+'</p><div class="rule"></div>';
+    ["P","L"].forEach(function(o){
+      var cs=codes.filter(function(c){return CARDS[c].orient===o});if(!cs.length)return;
+      var h=document.createElement("div");h.className="shape";h.textContent=o==="P"?"Portrait":"Landscape";sec.appendChild(h);
+      var g=document.createElement("div");g.className="grid "+o;
+      cs.forEach(function(c){var b=document.createElement("button");b.className="tile";b.type="button";b.setAttribute("aria-label","Open "+c);
+        var im=document.createElement("img");im.loading="lazy";im.alt="";im.src="th/"+c+".webp";im.width=o==="L"?360:206;im.height=o==="L"?206:360;
+        var s=document.createElement("span");s.textContent=c;b.appendChild(im);b.appendChild(s);b.onclick=function(){openEditor(c,null)};g.appendChild(b)});
+      sec.appendChild(g)});
+    host.appendChild(sec)});
+  if(!any){var p=document.createElement("p");p.className="empty";p.textContent="No design matches that code.";host.appendChild(p)}
+}
+
+/* ---------- editor ---------- */
+var cur=null; // {code, card, state, draftId, customer, note, status, unlocked:{}, dirty}
+var cv=$("cv"), lastInfo=[], raf=0, saveTimer=0;
+function freshState(){return {layers:{}}}
+function openEditor(code,draft){
+  var card=CARDS[code];
+  cur={code:code,card:card,state:draft?JSON.parse(JSON.stringify({layers:draft.layers||{}})):freshState(),
+    draftId:draft?draft.id:null,customer:draft?draft.customer||"":"",note:draft?draft.note||"":"",status:draft?draft.status||"draft":"draft",
+    unlocked:draft&&draft.unlocked?Object.assign({},draft.unlocked):{},dirty:false,bg:null,createdAt:draft?draft.createdAt:null,order:draft&&draft.order?draft.order:null};
+  $("edCode").textContent=code;
+  var T=TIERS[card.tier];$("edTier").textContent=T.name+" "+T.price;$("edTier").className="pill"+(card.tier==="standard"?"":" g");
+  $("tierNote").textContent=T.note;
+  $("cust").value=cur.customer;$("note").value=cur.note;
+  $("subNote").hidden=!SUBS[code];$("subNote").textContent=SUBS[code]||"";
+  $("edSaved").textContent=cur.draftId?(cur.order&&cur.order.no?"Order "+cur.order.no+" · saved":"Saved"):"";
+  if(!(draft&&draft.order&&octx&&String(octx.order.id)===String(draft.order.id)))octx=null;
+  $("btnBack").textContent=octx?"← Orders":"← Designs";$("custBox").hidden=!!octx;
+  buildFields();show("ed");renderOrderBox();
+  $("fontsLoading").hidden=false;
+  loadBg(code).then(function(im){if(cur&&cur.code===code){cur.bg=im;schedule()}}).catch(function(){toast("The tag artwork didn't load. Check your connection and reopen it.")});
+  ensureFonts(card).then(function(){if(cur&&cur.code===code){$("fontsLoading").hidden=true;schedule()}});
+  schedule();
+}
+function leaveEditor(){if(cur&&cur.dirty&&cur.draftId)flushSave();cur=null}
+$("btnBack").onclick=function(){leaveEditor();if(octx){octx=null;show("or");renderOrders()}else show("cat")};
+
+function editable(i){var l=cur.card.layers[i];return l.edit||!!cur.unlocked[i]}
+function lstate(i){return cur.state.layers[i]||(cur.state.layers[i]={})}
+function buildFields(){
+  var host=$("fields"),oh=$("others");host.textContent="";oh.textContent="";var nOther=0;
+  cur.card.layers.forEach(function(l,i){
+    if(l.role==="d")return;
+    if(editable(i))host.appendChild(fieldFor(l,i));
+    else{nOther++;oh.appendChild(lockedRow(l,i))}});
+  $("otherBox").hidden=nOther===0;
+  $("otherSum").textContent="Other text on this tag ("+nOther+")";
+}
+function textOf(l,i){var s=cur.state.layers[i];if(l.runs)return l.runs.map(function(r,j){return s&&s.runs&&typeof s.runs[j]==="string"?s.runs[j]:r.t}).join("");return s&&typeof s.text==="string"?s.text:l.text}
+function lockedRow(l,i){
+  var d=document.createElement("div");d.className="lockrow";
+  var t=document.createElement("div");t.className="txt";var lab=document.createElement("span");lab.className="lab";lab.textContent=ROLE[l.role]+(l.role==="t"?"":" · locked for "+TIERS[cur.card.tier].name);
+  t.appendChild(lab);t.appendChild(document.createTextNode(textOf(l,i)));
+  var b=document.createElement("button");b.type="button";b.className="link";b.textContent="Edit anyway";
+  b.onclick=function(){cur.unlocked[i]=true;markDirty();buildFields();focusField(i)};
+  d.appendChild(t);d.appendChild(b);d.dataset.i=i;return d;
+}
+function fieldFor(l,i){
+  var w=document.createElement("div");w.className="field";w.dataset.i=i;
+  var h=document.createElement("div");h.className="fhead";
+  var name=l.label||ROLE[l.role];if(!l.edit)name=ROLE[l.role];
+  h.innerHTML="<b></b><span class=\"fit\" hidden></span>";h.querySelector("b").textContent=name;
+  var c=document.createElement("div");c.className="ctrls";
+  var minus=btn("−","Smaller text"),pct=document.createElement("span"),plus=btn("+","Bigger text"),reset=btn("↺","Reset to the design");
+  pct.className="pct";c.appendChild(minus);c.appendChild(pct);c.appendChild(plus);c.appendChild(reset);h.appendChild(c);w.appendChild(h);
+  function upd(){var s=(cur.state.layers[i]||{}).scale||1;pct.textContent=Math.round(s*100)+"%";minus.disabled=s<=0.6;plus.disabled=s>=1.4}
+  minus.onclick=function(){var s=lstate(i);s.scale=Math.max(0.6,Math.round(((s.scale||1)-0.05)*100)/100);upd();changed()};
+  plus.onclick=function(){var s=lstate(i);s.scale=Math.min(1.4,Math.round(((s.scale||1)+0.05)*100)/100);upd();changed()};
+  if(l.runs){
+    var g=document.createElement("div");g.className="runs";
+    l.runs.forEach(function(r,j){var inp=document.createElement("input");inp.className="t";inp.type="text";inp.id="f"+i+"_"+j;inp.autocomplete="off";
+      inp.setAttribute("aria-label",ROLE[r.role]);inp.placeholder=ROLE[r.role];
+      var s=cur.state.layers[i];inp.value=s&&s.runs&&typeof s.runs[j]==="string"?s.runs[j]:r.t;
+      inp.oninput=function(){var st=lstate(i);st.runs=st.runs||l.runs.map(function(x){return x.t});st.runs[j]=inp.value;changed(inp.value)};
+      g.appendChild(inp)});
+    w.appendChild(g);
+    reset.onclick=function(){delete cur.state.layers[i];buildFields();changed()};
+  }else{
+    var ta=document.createElement("textarea");ta.className="t";ta.id="f"+i;ta.spellcheck=false;ta.autocomplete="off";
+    var s0=cur.state.layers[i];ta.value=s0&&typeof s0.text==="string"?s0.text:l.text;
+    function rows(){ta.rows=Math.max(1,ta.value.split("\n").length)}rows();
+    ta.oninput=function(){lstate(i).text=ta.value;rows();changed(ta.value)};
+    w.appendChild(ta);
+    reset.onclick=function(){delete cur.state.layers[i];ta.value=l.text;rows();upd();changed()};
+  }
+  upd();return w;
+}
+function btn(t,label){var b=document.createElement("button");b.type="button";b.className="ib";b.textContent=t;b.setAttribute("aria-label",label);b.title=label;return b}
+function focusField(i){
+  var f=document.querySelector('.field[data-i="'+i+'"]');
+  if(!f){var o=$("otherBox");o.open=true;f=document.querySelector('.lockrow[data-i="'+i+'"]');if(f)f.scrollIntoView({block:"center",behavior:"smooth"});return}
+  var inp=f.querySelector("textarea,input");f.classList.add("flash");setTimeout(function(){f.classList.remove("flash")},900);
+  if(inp){inp.focus({preventScroll:true});f.scrollIntoView({block:"center",behavior:"smooth"})}
+}
+function changed(newText){markDirty();schedule();if(newText)ensureFonts(cur.card,newText).then(schedule)}
+function markDirty(){if(!cur)return;cur.dirty=true;if(cur.draftId){$("edSaved").textContent="Saving…";clearTimeout(saveTimer);saveTimer=setTimeout(flushSave,1200)}else $("edSaved").textContent="Not saved"}
+$("cust").addEventListener("input",function(e){cur.customer=e.target.value;markDirty()});
+$("note").addEventListener("input",function(e){cur.note=e.target.value;markDirty()});
+
+/* preview */
+var stageMax=0;
+function setHH(){var h=document.querySelector(".top");if(h)document.documentElement.style.setProperty("--hh",h.offsetHeight+"px")}
+function sizeStage(){
+  setHH();if(!cur)return;var card=cur.card,st=$("stage");
+  var wide=window.innerWidth>=900;
+  cv.style.width="0px";cv.style.height="0px";
+  var availW=st.clientWidth||Math.max(120,window.innerWidth-32);
+  var availH=wide?window.innerHeight-170:window.innerHeight*(card.orient==="P"?0.42:0.34);
+  var w=Math.max(120,Math.min(availW,availH*card.w/card.h));
+  cv.style.width=w+"px";cv.style.height=(w*card.h/card.w)+"px";stageMax=w;schedule();
+}
+window.addEventListener("resize",sizeStage);
+function schedule(){if(raf)return;raf=requestAnimationFrame(function(){raf=0;draw()})}
+function draw(){
+  if(!cur)return;var dpr=Math.min(3,window.devicePixelRatio||1);
+  var scale=Math.min(2,(stageMax||cur.card.w*.5)*dpr/cur.card.w);
+  lastInfo=TagRender.render(cv,cur.card,cur.state,cur.bg,{mode:"card",scale:scale});
+  cur.card.layers.forEach(function(l,i){var f=document.querySelector('.field[data-i="'+i+'"] .fit');if(!f)return;
+    var inf=lastInfo[i];if(inf&&inf.fitted){f.hidden=false;f.textContent="Shrunk to "+Math.round(inf.k*100)+"% to fit"}else f.hidden=true});
+}
+cv.addEventListener("click",function(e){
+  if(!cur)return;var r=cv.getBoundingClientRect();var x=(e.clientX-r.left)/r.width*cur.card.w,y=(e.clientY-r.top)/r.height*cur.card.h;
+  var best=-1,bd=1e9;
+  cur.card.layers.forEach(function(l,i){if(l.role==="d"||!lastInfo[i])return;var b=lastInfo[i].box,p=18;
+    if(x>=b[0]-p&&x<=b[2]+p&&y>=b[1]-p&&y<=b[3]+p){var d=Math.abs((b[1]+b[3])/2-y);if(d<bd){bd=d;best=i}}});
+  if(best>=0)focusField(best);
+});
+
+/* ---------- export ---------- */
+var CRC=(function(){var t=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function withDpi(buf){var src=new Uint8Array(buf),ch=new Uint8Array(21),dv=new DataView(ch.buffer);
+  dv.setUint32(0,9);ch.set([112,72,89,115],4);dv.setUint32(8,11811);dv.setUint32(12,11811);ch[16]=1;dv.setUint32(17,crc32(ch.subarray(4,17)));
+  var out=new Uint8Array(src.length+21);out.set(src.subarray(0,33),0);out.set(ch,33);out.set(src.subarray(33),54);return out}
+function blobOf(c){return new Promise(function(res,rej){c.toBlob(function(b){b?res(b):rej(new Error("render"))},"image/png")})}
+function slug(s){return (s||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)}
+function renderFile(code,state,kind){
+  var card=CARDS[code];
+  return Promise.all([loadBg(code),ensureFonts(card,allText(card,state))]).then(function(r){
+    var c=document.createElement("canvas");
+    if(kind==="print"){TagRender.render(c,card,state,r[0],{mode:"print"});return blobOf(c).then(function(b){return b.arrayBuffer()}).then(function(a){return new Blob([withDpi(a)],{type:"image/png"})})}
+    TagRender.render(c,card,state,r[0],{mode:"card",scale:1});watermark(c);return blobOf(c)});
+}
+function allText(card,state){var t="";Object.keys(state.layers||{}).forEach(function(k){var s=state.layers[k];if(s.text)t+=s.text;if(s.runs)t+=s.runs.join("")});return t}
+function watermark(c){var x=c.getContext("2d");x.save();x.translate(c.width/2,c.height/2);x.rotate(-0.42);
+  x.font="600 30px Inter, system-ui, sans-serif";x.textAlign="center";
+  var step=Math.max(c.width,c.height);
+  for(var yy=-step;yy<=step;yy+=110)for(var xx=-step;xx<=step;xx+=250){var o=((yy/110)%2)*125;
+    x.fillStyle="rgba(255,255,255,.22)";x.fillText("base605",xx+o+1,yy+1);x.fillStyle="rgba(60,40,40,.13)";x.fillText("base605",xx+o,yy)}
+  x.restore();
+  x.font="700 22px Inter, system-ui, sans-serif";x.textAlign="right";x.fillStyle="rgba(200,16,46,.85)";x.fillText("DRAFT PREVIEW",c.width-16,c.height-14)}
+function offer(name,blob){
+  return dlP.then(function(dl){
+    if(dl)return dl.save({filename:name,data:blob}).then(function(){toast("Saved "+name)},function(e){
+      var code=e&&e.code;if(code==="declined")return toast("Save cancelled.");if(code==="rate_limited")return toast("Another save is still open. Finish it, then try again.");fallback(name,blob)});
+    fallback(name,blob)});
+}
+function fallback(name,blob){
+  try{var u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},8000);toast("Saved "+name);return}catch(e){}
+  $("mTitle").textContent=name;$("mImg").src=URL.createObjectURL(blob);$("modal").hidden=false}
+$("btnPreview").onclick=function(){if(!cur)return;var c=cur;
+  renderFile(c.code,c.state,"preview").then(function(b){return offer("base605_"+c.code+(slug(c.customer)?"_"+slug(c.customer):"")+"_draft.png",b)}).catch(function(){toast("Couldn't make the image. Try again.")})};
+$("btnPrint").onclick=function(){if(!cur)return;var c=cur;
+  renderFile(c.code,c.state,"print").then(function(b){return offer(c.code+(slug(c.customer)?"_"+slug(c.customer):"")+".png",b)}).catch(function(){toast("Couldn't make the print file. Try again.")})};
+
+/* ---------- drafts store ---------- */
+var saveChain={};
+function docOf(c){var o={code:c.code,customer:c.customer||"",note:c.note||"",status:c.status||"draft",layers:c.state.layers,unlocked:c.unlocked,
+  createdAt:c.createdAt||Date.now(),updatedAt:Date.now()};if(c.order)o.order=c.order;return o}
+function writeDraft(id,body){
+  if(useLocal||!db){var a=lsGet().filter(function(d){return d.id!==id});body.id=id;a.unshift(body);lsSet(a);drafts=a;renderDrafts();return Promise.resolve()}
+  var prev=saveChain[id]||Promise.resolve();
+  var p=prev.catch(function(){}).then(function(){return db.collection("drafts").doc(id).set(body)});
+  saveChain[id]=p;return p;
+}
+function patchDraft(id,patch){
+  var d=drafts.filter(function(x){return x.id===id})[0];if(!d)return Promise.resolve();
+  var body=Object.assign({},d,patch,{updatedAt:Date.now()});delete body.id;return writeDraft(id,body);
+}
+function newId(){return "d"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+$("btnSave").onclick=function(){if(!cur)return;
+  if(!cur.draftId){cur.draftId=newId();cur.createdAt=Date.now()}
+  flushSave(true)};
+function flushSave(announce){
+  clearTimeout(saveTimer);if(!cur||!cur.draftId)return;var c=cur,body=docOf(c);
+  $("edSaved").textContent="Saving…";
+  writeDraft(c.draftId,body).then(function(){c.dirty=false;if(cur===c)$("edSaved").textContent="Saved";if(announce)toast("Draft saved")},
+    function(e){if(cur===c)$("edSaved").textContent="Not saved";toast(e&&e.code==="quota_exceeded"?"The drafts list is full. Delete old drafts, then save again.":"Couldn't save the draft. Try again.")});
+}
+
+var fStatus="all";
+$("fStatus").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
+  [].forEach.call($("fStatus").querySelectorAll("button"),function(x){x.setAttribute("aria-pressed",String(x===b))});fStatus=b.dataset.v;renderDrafts()});
+function ago(t){var s=(Date.now()-t)/1000;if(s<60)return"just now";if(s<3600)return Math.floor(s/60)+" min ago";if(s<86400)return Math.floor(s/3600)+" h ago";
+  return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"})}
+function renderDrafts(){
+  if(typeof renderOrderBox==="function"&&view==="ed")renderOrderBox();if(typeof renderOrders==="function"&&view==="or")renderOrders();
+  var n=drafts.length;$("drCount").hidden=!n;$("drCount").textContent=n;
+  var appr=drafts.filter(function(d){return d.status==="approved"}).length;
+  $("btnBatch").disabled=!appr;$("btnBatch").textContent=appr?"Print files for approved ("+appr+")":"Print files for approved";
+  if(view!=="dr")return;
+  var host=$("dList");host.textContent="";
+  var list=drafts.filter(function(d){return fStatus==="all"||d.status===fStatus});
+  if(!list.length){var p=document.createElement("p");p.className="empty";
+    p.textContent=n?"No drafts with this status.":"No drafts yet. Open a design, type the customer's name, and tap Save draft.";host.appendChild(p);return}
+  list.forEach(function(d){
+    if(!CARDS[d.code])return;
+    var r=document.createElement("div");r.className="drow";
+    var th=document.createElement("button");th.type="button";th.className="th";th.setAttribute("aria-label","Open draft");
+    var im=document.createElement("img");im.src="th/"+d.code+".webp";im.alt="";th.appendChild(im);
+    var who=document.createElement("div");who.className="who";
+    var b=document.createElement("b");b.textContent=d.customer||nameGuess(d)||"No customer name";
+    var s=document.createElement("span");s.textContent=(d.order&&d.order.no?"Order "+d.order.no+" · ":"")+d.code+" · "+ago(d.updatedAt||0)+(d.note?" · "+d.note:"");
+    who.appendChild(b);who.appendChild(s);
+    th.onclick=who.onclick=function(){openEditor(d.code,d)};
+    var side=document.createElement("div");side.className="dside";
+    var st=document.createElement("button");st.type="button";st.className="status st-"+(d.status||"draft");st.textContent=d.status||"draft";
+    st.title="Tap to change status";
+    st.onclick=function(){var nx=STATUSES[(STATUSES.indexOf(d.status||"draft")+1)%STATUSES.length];patchDraft(d.id,{status:nx})};
+    var del=document.createElement("button");del.type="button";del.className="link";del.textContent="Delete";
+    del.onclick=function(){side.replaceChild(confirmBox(d),del)};
+    side.appendChild(st);side.appendChild(del);
+    r.appendChild(th);r.appendChild(who);r.appendChild(side);host.appendChild(r)});
+}
+function nameGuess(d){var card=CARDS[d.code];if(!card)return"";var out="";card.layers.forEach(function(l,i){if(out||l.role!=="n")return;var s=(d.layers||{})[i];
+  if(s&&s.text)out=s.text.replace(/\n/g," ");else if(s&&s.runs)out=s.runs.join("")});return out}
+function confirmBox(d){var w=document.createElement("span");w.className="confirm";w.append("Delete?");
+  var y=document.createElement("button");y.className="link";y.type="button";y.textContent="Yes";
+  var n=document.createElement("button");n.className="link";n.type="button";n.textContent="No";
+  y.onclick=function(){deleteDraft(d.id)};n.onclick=renderDrafts;w.appendChild(y);w.appendChild(n);return w}
+function deleteDraft(id){
+  if(useLocal||!db){var a=lsGet().filter(function(d){return d.id!==id});lsSet(a);drafts=a;renderDrafts();return}
+  db.collection("drafts").doc(id).delete().then(function(){toast("Draft deleted")},function(){toast("Couldn't delete it. Try again.")});
+}
+$("btnBatch").onclick=function(){
+  var list=drafts.filter(function(d){return d.status==="approved"&&CARDS[d.code]});if(!list.length)return;
+  if(!window.JSZip){toast("Zip tools didn't load. Open each draft and use Print file.");return}
+  var zip=new JSZip(),used={},i=0,bt=$("btnBatch");bt.disabled=true;
+  (function next(){
+    if(i>=list.length){bt.textContent="Zipping…";zip.generateAsync({type:"blob"}).then(function(b){
+      var d=new Date();return offer("base605_print_"+d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+".zip",b)}).then(renderDrafts,renderDrafts);return}
+    var d=list[i++];bt.textContent="Building "+i+" of "+list.length+"…";
+    renderFile(d.code,{layers:d.layers||{}},"print").then(function(b){
+      var base=d.code+(slug(d.customer)?"_"+slug(d.customer):""),fn=base,k=2;while(used[fn])fn=base+"-"+(k++);used[fn]=1;zip.file(fn+".png",b)}).then(next,next)})();
+};
+
+/* ---------- orders: "#o.<base64url JSON>" from the base605 order app ---------- */
+var LEAD_WORDS=/^\s*(from|love|with|mula sa|warm wishes|joyful wishes|-)/i;
+var LEAD=/^\s*(with love\s*,|with joy\s*,|with hugs\s*,|joyful wishes from|warm wishes from|mula sa|from\s*[:,]?|love\s*,?|-)\s*/i;
+function caseLike(sample,str){
+  if(/[A-Za-z]/.test(sample)&&sample===sample.toUpperCase())return str.toUpperCase();
+  if(/[A-Za-z]/.test(sample)&&sample===sample.toLowerCase())return str.toLowerCase();
+  return str}
+function splitSample(text){
+  var lines=text.split("\n");
+  if(lines.length>1&&/^\s*(from|love|with love|with hugs|with joy)[\s,:]*$/i.test(lines[0]))return{pre:lines[0]+"\n",name:lines.slice(1).join(" ").trim(),post:""};
+  var t=lines.join(" ").replace(/\s+/g," ").trim(),m=LEAD.exec(t),pre=m?m[0]:"",rest=t.slice(pre.length),post="";
+  if(pre.trim()==="-"&&/-$/.test(rest)){post="-";rest=rest.slice(0,-1)}
+  return{pre:pre,name:rest,post:post}}
+function nameLine(text,input){
+  var s=(input||"").replace(/\s+$/,"").replace(/^\s+/,"");if(!s)return null;
+  if(LEAD_WORDS.test(s))return caseLike(text.replace(/\n/g," "),s);
+  var sp=splitSample(text);return sp.pre+caseLike(sp.name||text,s)+sp.post}
+function balance(text,n){
+  var w=text.replace(/\s+/g," ").trim().split(" ");if(n<=1||w.length<2||text.indexOf("\n")>=0)return text;
+  n=Math.min(n,w.length);var total=w.join(" ").length,target=total/n,lines=[],cur="";
+  w.forEach(function(x){var nx=cur?cur+" "+x:x;if(cur&&nx.length>target*1.12&&lines.length<n-1){lines.push(cur);cur=x}else cur=nx});
+  lines.push(cur);return lines.join("\n")}
+function stateFromOrder(card,code,name,greeting){
+  var st={layers:{}},used={name:false,greeting:false};
+  var nameIdx=-1,msgIdx=-1,big=0;
+  card.layers.forEach(function(l,i){
+    if(l.role==="n"&&nameIdx<0)nameIdx=i;
+    if(l.role==="m"&&!l.runs&&l.size*(l.text.split("\n").length)>big){big=l.size*(l.text.split("\n").length);msgIdx=i}});
+  if(name&&nameIdx>=0){var L=card.layers[nameIdx];
+    if(L.runs){var ri=-1;L.runs.forEach(function(r,j){if(r.role==="n")ri=j});
+      var m=LEAD.exec(name),runs=L.runs.map(function(r){return r.t});
+      if(m&&m[0].trim()&&ri>0){runs[ri-1]=m[0].replace(/\s*$/," ");runs[ri]=caseLike(L.runs[ri].t,name.slice(m[0].length).trim())}
+      else runs[ri]=caseLike(L.runs[ri].t,name.trim());
+      st.layers[nameIdx]={runs:runs}}
+    else{var t=nameLine(L.text,name);if(t!=null)st.layers[nameIdx]={text:t}}
+    used.name=true}
+  if(name&&nameIdx<0&&code==="SL4"){var t4=card.layers[0].text.replace(/from .*?(!?)$/i,function(_,b){return"from "+name.trim()+b});st.layers[0]={text:t4};used.name=true}
+  if(greeting&&card.tier==="standard"&&msgIdx>=0){var ML=card.layers[msgIdx];
+    var base=st.layers[msgIdx]&&st.layers[msgIdx].text||null;
+    if(!(code==="SL4"&&base)){st.layers[msgIdx]={text:balance(greeting.trim(),ML.text.split("\n").length)};used.greeting=true}}
+  return{state:st,used:used}}
+function b64urlJSON(s){s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";
+  var bin=atob(s),bytes=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes))}
+function safeId(x){return String(x||"").replace(/[^A-Za-z0-9_-]/g,"").slice(0,60)}
+function importFromHash(){
+  var m=/^#o\.([A-Za-z0-9_-]+)$/.exec(location.hash||"");if(!m)return;
+  var o;try{o=b64urlJSON(m[1])}catch(e){toast("That order link is incomplete. Open it again from the order app.");return}
+  try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}
+  var full=ORDERS.filter(function(x){return String(x.id)===String(o.id)})[0];
+  if(full){openOrder(full);return}
+  importOrder(o).then(function(ds){if(!ds||!ds.length)return;
+    octx={order:{id:o.id,no:o.no,customer:o.cu||"",status:"drafted",items:(o.items||[]).map(function(i){return{code:i.c,sender:i.n,greeting:i.g,pieces:i.q}})},ids:ds.map(function(d){return d.id}),seen:{}};
+    openEditor(ds[0].code,ds[0])});
+}
+function importOrder(o){
+  var items=(o.items||[]).map(function(it,ix){return{ix:ix,code:String(it.c||"").toUpperCase().replace(/\s+/g,""),name:it.n||"",greeting:it.g||"",pcs:it.q||null}});
+  var known=items.filter(function(it){return CARDS[it.code]}),missing=items.filter(function(it){return it.code&&!CARDS[it.code]});
+  if(!known.length){toast(missing.length?"Design "+missing.map(function(x){return x.code}).join(", ")+" isn't in the tag editor.":"This order has no tag design code.");return Promise.resolve([])}
+  var oid=safeId(o.id||o.no||Date.now());
+  var made=0;
+  var jobs=known.map(function(it){
+    var id="o"+oid+"-"+it.ix;
+    var look=(db&&!useLocal)?db.collection("drafts").doc(id).get().then(function(sn){if(!sn.exists)return null;var x=Object.assign({},sn.data());x.id=id;return x},function(){return null})
+      :Promise.resolve(lsGet().filter(function(d){return d.id===id})[0]||null);
+    return look.then(function(existing){
+    if(existing)return existing;
+    var card=CARDS[it.code],r=stateFromOrder(card,it.code,it.name,it.greeting);
+    var notes=[];if(it.pcs)notes.push(it.pcs+" pcs");if(it.greeting&&!r.used.greeting)notes.push("Greeting: "+it.greeting);
+    var body={code:it.code,customer:o.cu||"",note:notes.join(" · "),status:"draft",layers:r.state.layers,unlocked:{},
+      createdAt:Date.now(),updatedAt:Date.now(),order:{id:String(o.id||""),no:String(o.no||""),item:it.ix}};
+    made++;return writeDraft(id,body).then(function(){body.id=id;return body})})});
+  return Promise.all(jobs).then(function(ds){
+    var msg=made?("Drafted "+made+" tag"+(made>1?"s":"")+" from order "+(o.no||"")):"This order already has a draft. Opened it.";
+    if(missing.length)msg+=" · "+missing.map(function(x){return x.code}).join(", ")+" not found";
+    toast(msg.replace(/ +·/g," ·"));return ds},function(){toast("Couldn't save the draft from this order. Try again.");return []});
+}
+window.addEventListener("hashchange",importFromHash);
+
+
+/* ---------- orders from the order app ---------- */
+var ORDERS=[],ordersLoaded=false,octx=null; // octx: {order, ids:[draft ids in item order], seen:{}}
+var OSTAGES=["new","drafted","for approval","approved","ready to print","printed","messaged for pickup","for ship out","done","cancelled"];
+function ncode(c){return String(c||"").toUpperCase().replace(/\s+/g,"")}
+function codeItems(o){return (o.items||[]).filter(function(i){return i.code})}
+function pad4(n){return String(n||0).padStart(4,"0")}
+function peso(n){return "₱"+Number(n||0).toLocaleString("en-PH")}
+function fmtD(iso){if(!iso)return"";var p=iso.split("-").map(Number);return new Date(p[0],p[1]-1,p[2]).toLocaleDateString("en-PH",{weekday:"short",month:"short",day:"numeric"})}
+function pullOrders(){if(!SCRIPT_URL)return Promise.resolve();return apiGet("o=1").then(function(j){ORDERS=j.orders||[];ordersLoaded=true;
+  if(octx){var f=ORDERS.filter(function(o){return String(o.id)===String(octx.order.id)})[0];if(f)octx.order=f}
+  renderOrders();renderOrderBox()},function(){$("orNote").textContent="Couldn't reach the order app. Check your connection.";})}
+function linkOrder(o){return{id:o.id,no:o.no,cu:o.customer||"",items:codeItems(o).map(function(i){return{c:i.code,n:i.sender||"",g:i.greeting||"",q:i.pieces||null}})}}
+function patchOrder(o,fields){Object.assign(o,fields);renderOrders();return apiPost({action:"patch",id:o.id,fields:fields}).catch(function(){toast("Couldn't update the order. Check your connection.")})}
+function stageAtLeast(o,st){return OSTAGES.indexOf(o.status)>=OSTAGES.indexOf(st)}
+function renderOrders(){
+  var host=$("orList");if(!host)return;
+  if(!SCRIPT_URL){$("orNote").textContent="Not connected to the order app.";return}
+  if(!ordersLoaded)return;
+  var act=ORDERS.filter(function(o){return o.status!=="done"&&o.status!=="cancelled"&&codeItems(o).some(function(i){return CARDS[ncode(i.code)]})});
+  var by=function(a,b){return String(a.releaseDate||"9").localeCompare(String(b.releaseDate||"9"))};
+  var G=[
+    {k:"chg",t:"Changes requested",c:"var(--red)",f:function(o){return !!o.changeNote&&!stageAtLeast(o,"approved")}},
+    {k:"todo",t:"To draft",c:"#5b4b8f",f:function(o){return !o.changeNote&&(o.status==="new"||o.status==="drafted")}},
+    {k:"wait",t:"Waiting for approval",c:"var(--amber)",f:function(o){return !o.changeNote&&o.status==="for approval"}},
+    {k:"appr",t:"Approved · download print files",c:"var(--pine)",f:function(o){return o.status==="approved"}}];
+  var n=act.filter(function(o){return G[0].f(o)||G[1].f(o)}).length;$("orCount").hidden=!n;$("orCount").textContent=n;
+  $("orNote").textContent=act.length?"Live from the order app. Tap an order to draft its tags.":"No open orders with tag designs.";
+  host.textContent="";
+  G.forEach(function(g){var list=act.filter(g.f).sort(by);if(!list.length&&g.k==="chg")return;
+    var sec=document.createElement("div");sec.className="ogrp";sec.style.setProperty("--gc",g.c);
+    sec.innerHTML="<h4>"+g.t+" · "+list.length+"</h4>";
+    if(!list.length){var p=document.createElement("p");p.className="note";p.textContent="Nothing here.";sec.appendChild(p)}
+    list.forEach(function(o){var b=document.createElement("button");b.type="button";b.className="orow";
+      var ci=codeItems(o),done=ci.filter(function(it,ix){return drafts.some(function(d){return d.id==="o"+safeId(o.id)+"-"+ix})}).length;
+      var paid=Number(o.paid)||0,pay=paid>=o.total?"paid":paid>0?"partly paid":"unpaid";
+      b.innerHTML='<div><b></b> <i>#'+pad4(o.no)+'</i></div><div class="rt">'+(o.releaseDate?"release "+fmtD(o.releaseDate):"no release date")+'</div><div class="chips">'+ci.map(function(i){return "<span>"+String(i.code).replace(/</g,"")+"</span>"}).join("")+'</div><div class="sub">'+ci.length+" tag"+(ci.length===1?"":"s")+(done?" · "+done+" drafted":"")+" · "+pay+'</div>'+(o.changeNote?'<div class="cn"></div>':"");
+      b.querySelector("b").textContent=o.customer||"No name";if(o.changeNote)b.querySelector(".cn").textContent="“"+o.changeNote+"”";
+      b.onclick=function(){openOrder(o)};sec.appendChild(b)});
+    host.appendChild(sec)});
+}
+function openOrder(o){
+  importOrder(linkOrder(o)).then(function(ds){if(!ds||!ds.length)return;
+    octx={order:o,ids:ds.map(function(d){return d.id}),seen:{}};
+    if(o.status==="new")patchOrder(o,{status:"drafted",stageAt:new Date().toISOString()});
+    openEditor(ds[0].code,ds[0])});
+}
+function draftById(id){return drafts.filter(function(d){return d.id===id})[0]||null}
+function goItem(k){if(!octx)return;var id=octx.ids[k];if(cur&&cur.dirty&&cur.draftId)flushSave();var d=draftById(id);if(!d)return;octx.seen[cur&&cur.draftId]=1;openEditor(d.code,d)}
+function renderOrderBox(){
+  var box=$("oBox");if(!box)return;if(!octx||view!=="ed"){box.hidden=true;return}
+  var o=octx.order,ci=codeItems(o),k=octx.ids.indexOf(cur&&cur.draftId);box.hidden=false;
+  var rows=octx.ids.map(function(id,i){var d=draftById(id),it=ci[i]||{};var nm=d?(nameGuess(d)||it.sender||""):(it.sender||"");
+    var upd=d&&d.proofAt&&(d.updatedAt||0)>d.proofAt+1500;
+    return '<button type="button" data-k="'+i+'" aria-current="'+(i===k)+'"><span class="n'+(octx.seen[id]&&i!==k?" ok":"")+'">'+(octx.seen[id]&&i!==k?"✓":(i+1))+'</span><span class="tx"><b>'+(d?d.code:ncode(it.code))+'</b> <em></em></span>'+(upd?'<span class="up">updated</span>':"")+'</button>'}).join("");
+  var st=o.status||"new";
+  box.innerHTML='<div class="oh"><b></b><span>#'+pad4(o.no)+' · '+st+'</span></div>'+(o.changeNote?'<div class="cnb"></div>':"")+
+    '<div class="olist">'+rows+'</div>'+
+    '<div class="obtns"><button class="btn" type="button" data-o="prev"'+(k<=0?" disabled":"")+'>← Back</button><button class="btn pine" type="button" data-o="next"'+(k>=octx.ids.length-1?" disabled":"")+'>Next tag →</button>'+
+    '<button class="btn primary wide" type="button" data-o="proof">Make proof sheet ('+octx.ids.length+')</button>'+
+    '<button class="btn" type="button" data-o="chg">Changes requested…</button><button class="btn pine" type="button" data-o="appr"'+(stageAtLeast(o,"approved")?" disabled":"")+'>✓ Mark approved</button>'+
+    '<button class="btn wide" type="button" data-o="print">Download print files ('+octx.ids.length+')</button></div>'+
+    '<div class="ochg" id="oChg" hidden><input class="t" id="oChgIn" type="text" placeholder="e.g. 3: Lolo Ben &amp; Lola Fe"><button class="btn primary" type="button" data-o="chgsave" style="flex:0 0 auto">Save</button></div>'+
+    '<p class="note" style="margin:0">'+(o.releaseDate?"Release "+fmtD(o.releaseDate)+" · ":"")+ci.reduce(function(a,i){return a+(Number(i.pieces)||0)},0)+' tags</p>';
+  box.querySelector(".oh b").textContent=o.customer||"";
+  if(o.changeNote)box.querySelector(".cnb").textContent="Changes requested: “"+o.changeNote+"”";
+  [].forEach.call(box.querySelectorAll(".olist button"),function(b,i){var d=draftById(octx.ids[i]),it=ci[i]||{};b.querySelector("em").textContent=d?(nameGuess(d)||it.sender||""):(it.sender||"")});
+}
+document.addEventListener("click",function(e){
+  var b=e.target.closest("#oBox [data-k],#oBox [data-o]");if(!b||!octx)return;
+  if(b.dataset.k!=null){goItem(+b.dataset.k);return}
+  var k=octx.ids.indexOf(cur&&cur.draftId),a=b.dataset.o,o=octx.order;
+  if(a==="prev")goItem(k-1);else if(a==="next"){octx.seen[cur.draftId]=1;goItem(k+1)}
+  else if(a==="proof")makeProof();
+  else if(a==="print")orderPrintFiles();
+  else if(a==="chg"){var w=$("oChg");w.hidden=!w.hidden;if(!w.hidden)$("oChgIn").focus()}
+  else if(a==="chgsave"){var v=$("oChgIn").value.trim();if(!v)return;patchOrder(o,{changeNote:v,status:"drafted",stageAt:new Date().toISOString()}).then(function(){toast("Saved. Fix the tag, then make the proof sheet again.")});renderOrderBox()}
+  else if(a==="appr"){flushIfDirty();patchOrder(o,{status:"approved",changeNote:"",stageAt:new Date().toISOString()});octx.ids.forEach(function(id){patchDraft(id,{status:"approved"})});toast("Approved · it's now under Make print files in the order app");renderOrderBox()}
+});
+function flushIfDirty(){if(cur&&cur.dirty&&cur.draftId)flushSave()}
+
+/* ---------- proof sheet: every tag of the order on one long image ---------- */
+function cardCanvas(d){var card=CARDS[d.code],st={layers:d.layers||{}};
+  return Promise.all([loadBg(d.code),ensureFonts(card,allText(card,st))]).then(function(r){var c=document.createElement("canvas");TagRender.render(c,card,st,r[0],{mode:"card",scale:1});watermark(c);return c})}
+function rr(x,X,Y,W,H,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+W,Y,X+W,Y+H,r);x.arcTo(X+W,Y+H,X,Y+H,r);x.arcTo(X,Y+H,X,Y,r);x.arcTo(X,Y,X+W,Y,r);x.closePath()}
+function wrapLines(x,text,maxW){var out=[],line="";String(text).split(/\s+/).forEach(function(w){var t=line?line+" "+w:w;if(x.measureText(t).width>maxW&&line){out.push(line);line=w}else line=t});if(line)out.push(line);return out}
+function fit(x,text,maxW){if(x.measureText(text).width<=maxW)return text;while(text.length>1&&x.measureText(text+"…").width>maxW)text=text.slice(0,-1);return text+"…"}
+function makeProof(){
+  if(!octx)return;flushIfDirty();var o=octx.order,ci=codeItems(o);
+  var ds=octx.ids.map(draftById);if(ds.some(function(d){return !d})){toast("Still saving. Try again in a moment.");return}
+  toast("Making the proof sheet…");
+  Promise.all(ds.map(cardCanvas)).then(function(cs){
+    var W=1080,M=48,G=24,CW=(W-2*M-G)/2,CAP=84,MAXH=430,HEAD=156,FOOT=64;
+    var cells=cs.map(function(c,i){var s=Math.min(CW/c.width,MAXH/c.height);return{c:c,w:Math.round(c.width*s),h:Math.round(c.height*s),d:ds[i],it:ci[i]||{}}});
+    var rows=[];for(var i=0;i<cells.length;i+=2)rows.push(cells.slice(i,i+2));
+    var odd=cells.length%2===1,rowH=rows.map(function(r){return Math.max.apply(null,r.map(function(x){return x.h}))+CAP+20});
+    var noteH=odd?0:150,H=HEAD+28+rowH.reduce(function(a,b){return a+b},0)+G*(rows.length-1)+(noteH?G+noteH:0)+28+FOOT;
+    var cv2=document.createElement("canvas");cv2.width=W;cv2.height=H;var x=cv2.getContext("2d");
+    x.fillStyle="#fff";x.fillRect(0,0,W,H);
+    x.fillStyle="#922b2c";x.fillRect(0,0,W,HEAD-6);x.fillStyle="#f9a75d";x.fillRect(0,HEAD-6,W,6);
+    var F="Inter, -apple-system, system-ui, sans-serif";
+    x.fillStyle="#f9a75d";x.font="700 20px "+F;x.textAlign="left";x.fillText("DRAFT FOR APPROVAL",M,52);
+    x.fillStyle="#fff";x.font="700 44px "+F;x.fillText(fit(x,o.customer||"",W-2*M-260),M,108);
+    x.textAlign="right";x.font="700 34px "+F;x.fillText("#"+pad4(o.no),W-M,64);
+    var tags=ci.reduce(function(a,i){return a+(Number(i.pieces)||0)},0);x.fillStyle="#f9a75d";x.font="600 20px "+F;x.fillText(ci.length+" design"+(ci.length===1?"":"s")+(tags?" · "+tags+" tags":""),W-M,102);
+    var y=HEAD+28;
+    rows.forEach(function(r,ri){
+      r.forEach(function(cl,j){var X=M+j*(CW+G),Y=y,idx=ri*2+j,h=rowH[ri];
+        x.fillStyle="#fff";rr(x,X,Y,CW,h,16);x.fill();x.strokeStyle="#ECE6DC";x.lineWidth=2;x.stroke();
+        var ix=X+(CW-cl.w)/2,iy=Y+12;x.save();rr(x,ix,iy,cl.w,cl.h,8);x.clip();x.drawImage(cl.c,ix,iy,cl.w,cl.h);x.restore();
+        x.fillStyle="#24201c";x.beginPath();x.arc(X+22,Y+22,17,0,Math.PI*2);x.fill();x.fillStyle="#fff";x.font="700 18px "+F;x.textAlign="center";x.fillText(String(idx+1),X+22,Y+28);
+        var up=cl.d.proofAt&&(cl.d.updatedAt||0)>cl.d.proofAt+1500;
+        if(up){x.font="700 15px "+F;var tw=x.measureText("UPDATED").width+20;x.fillStyle="#fbebd2";rr(x,X+CW-tw-12,Y+12,tw,26,13);x.fill();x.fillStyle="#9a5b00";x.fillText("UPDATED",X+CW-12-tw/2,Y+31)}
+        var cy=Y+12+Math.max.apply(null,r.map(function(q){return q.h}))+30,card=CARDS[cl.d.code];
+        x.textAlign="left";x.fillStyle="#24201c";x.font="700 22px "+F;x.fillText(cl.d.code,X+16,cy);
+        x.textAlign="right";x.fillStyle="#75706a";x.font="500 17px "+F;x.fillText((TIERS[card.tier]?TIERS[card.tier].name:"")+(cl.it.pieces?" · "+cl.it.pieces+" pcs":""),X+CW-16,cy);
+        var nm=nameGuess(cl.d)||cl.it.sender||"",g=cl.it.greeting||"";x.textAlign="left";x.font="500 17px "+F;
+        x.fillText(fit(x,(nm?"Name: "+nm:"")+(g?(nm?" · ":"")+"“"+g+"”":""),CW-32),X+16,cy+28)});
+      if(r.length===1){var X2=M+CW+G,Y2=y,h2=rowH[ri];drawNote(x,X2,Y2,CW,h2,F)}
+      y+=rowH[ri]+G});
+    if(!odd){drawNote(x,M,y,W-2*M,noteH,F);y+=noteH+G}
+    x.fillStyle="#ECE6DC";x.fillRect(M,H-FOOT,W-2*M,2);x.fillStyle="#75706a";x.font="500 17px "+F;x.textAlign="left";x.fillText("base605 · draft preview, colors may vary slightly in print",M,H-FOOT+38);
+    if(o.releaseDate){x.textAlign="right";x.fillText("release "+fmtD(o.releaseDate),W-M,H-FOOT+38)}
+    return blobOf(cv2)}).then(function(b){
+      var first=String(o.customer||"").replace(/^@/,"").trim().split(/\s+/)[0].replace(/[^\w-]+/g,"")||"order";
+      return offer(pad4(o.no)+"_"+first+"_proof.png",b)}).then(function(){
+      var now=Date.now();octx.ids.forEach(function(id){patchDraft(id,{status:"sent",proofAt:now})});
+      var f={changeNote:""};if(!stageAtLeast(o,"for approval")||o.status==="drafted"||o.status==="new"){f.status="for approval";f.stageAt=new Date().toISOString()}
+      patchOrder(o,f);renderOrderBox()}).catch(function(e){console.error(e);toast("Couldn't make the proof sheet. Try again.")});
+}
+function drawNote(x,X,Y,W,H,F){var g=x.createLinearGradient(X,Y,X+W,Y+H);g.addColorStop(0,"#2f5d44");g.addColorStop(1,"#244a36");x.fillStyle=g;rr(x,X,Y,W,H,16);x.fill();
+  x.fillStyle="#fff";x.textAlign="left";x.font="700 26px "+F;x.fillText("Check the spelling 🎄",X+24,Y+48);
+  x.font="500 19px "+F;var ls=wrapLines(x,"Reply “approved”, or tell us the number to change, e.g. “3: Lolo Ben & Lola Fe”.",W-48);
+  ls.slice(0,4).forEach(function(l,i){x.fillText(l,X+24,Y+84+i*28)})}
+function orderPrintFiles(){
+  if(!octx)return;flushIfDirty();var o=octx.order,ds=octx.ids.map(draftById).filter(Boolean);if(!ds.length)return;
+  if(!window.JSZip){toast("Zip tools didn't load. Use Print file on each tag.");return}
+  var zip=new JSZip(),used={},i=0;toast("Building print files…");
+  (function next(){
+    if(i>=ds.length){zip.generateAsync({type:"blob"}).then(function(b){return offer(pad4(o.no)+"_print_files.zip",b)}).then(function(){toast("Drop these into the Cutter. They link to #"+pad4(o.no)+" by themselves.")});return}
+    var d=ds[i++];renderFile(d.code,{layers:d.layers||{}},"print").then(function(b){var base=pad4(o.no)+"_"+d.code,fn=base,k=2;while(used[fn])fn=base+" ("+(k++)+")";used[fn]=1;zip.file(fn+".png",b)}).then(next,next)})();
+}
+
+/* ---------- boot ---------- */
+renderCat();setHH();show(SCRIPT_URL?"or":"cat");
+var ordersP=pullOrders();setInterval(function(){if(!document.hidden&&view==="or")pullOrders()},30000);
+dbP.then(function(d){
+  db=d;
+  if(!db){useLocal=true;drafts=lsGet();$("storeNote").textContent="Couldn't reach the order app, so drafts are saved in this browser only for now.";renderDrafts();return}
+  $("storeNote").textContent="Drafts sync with the order app on every device.";
+  db.collection("drafts").orderBy("updatedAt","desc").limit(500).onSnapshot(function(s){
+    drafts=s.docs.map(function(x){var o=Object.assign({},x.data());o.id=x.id;return o});renderDrafts()},
+    function(){useLocal=true;drafts=lsGet();$("storeNote").textContent="Sync isn't available right now, so drafts are saved in this browser only.";renderDrafts()});
+}).then(function(){return ordersP}).then(importFromHash);
+})();
+</script>
+
+</body></html>

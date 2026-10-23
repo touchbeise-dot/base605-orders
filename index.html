@@ -423,6 +423,7 @@ input,select,textarea{max-width:100%;min-width:0}
 .trow.dragging{opacity:.4}
 .tnudge{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;border:1px solid #e9b9b5;background:#fff;color:var(--cran);cursor:pointer}
 .tnone{padding:8px 2px;opacity:.6;font-size:13px}
+.tnudge.ttag{border-color:#c9c1e3;color:#5b4b8f}
 @media (min-width:740px){
   .xban{padding:24px 26px}.xban .xt{font-size:32px}
   .tgroups{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));align-items:start}
@@ -504,6 +505,7 @@ input,select,textarea{max-width:100%;min-width:0}
 .sheet .quick .q-re{border-color:#2f5d44;color:#2f5d44}
 .sheet .quick .q-cancel{border-color:#b07a2a;color:#8a5a12}
 .sheet .quick .q-del{border-color:#9a2e36;color:#9a2e36}
+.sheet .quick .q-tag{border-color:#5b4b8f;color:#fff;background:linear-gradient(135deg,#6b5aa3,#5b4b8f)}
 /* sticky day headers */
 .day{position:sticky;top:calc(60px + env(safe-area-inset-top,0px));background:var(--bg);z-index:3;padding-top:6px}
 /* print to paper */
@@ -578,7 +580,7 @@ section.enter-back{animation:inBack .2s ease-out}
 </nav>
 <header>
   <div><h1 id="title">Today</h1></div>
-  <div style="display:flex;gap:10px;align-items:center"><span class="sub" id="storeState"></span><button class="ghost" id="gear" type="button" style="padding:6px 10px;font-size:13px" aria-label="Catalog & settings">⚙ Catalog</button></div>
+  <div style="display:flex;gap:10px;align-items:center"><span class="sub" id="storeState"></span><a class="ghost" href="editor/" target="_blank" rel="noopener" style="padding:6px 10px;font-size:13px;text-decoration:none;border-color:#c9c1e3;color:#5b4b8f;font-weight:600">✎ Tags</a><button class="ghost" id="gear" type="button" style="padding:6px 10px;font-size:13px" aria-label="Catalog & settings">⚙ Catalog</button></div>
 </header>
 <main>
   <section id="tab-today">
@@ -871,7 +873,9 @@ const sheetStore={
     for(let i=0;i<4&&!o.no;i++){await new Promise(r=>setTimeout(r,900));await this.pull();const f=orders.find(x=>x.id===o.id);if(f&&f.no)o.no=f.no;}
     return o;},
   async update(o){const i=orders.findIndex(x=>x.id===o.id);if(i>=0)orders[i]=o;localSave();renderAll();await this.post({action:"update",order:o});},
-  async patch(o,p){Object.assign(o,p);localSave();renderAll();await this.post({action:"update",order:o});},
+  async patch(o,p){Object.assign(o,p);localSave();renderAll();
+    if(IS_GOOGLE){await this.post({action:"update",order:o});return;}
+    try{await this.post({action:"patch",id:o.id,fields:p});}catch(e){await this.post({action:"update",order:o});}},
   async remove(id){orders=orders.filter(x=>x.id!==id);localSave();renderAll();await this.post({action:"delete",id});},
 };
 const dbStore={
@@ -1242,6 +1246,17 @@ $("labelBack").onclick=()=>go(labelPrev||"today");
 $("labelPng").onclick=()=>downloadPng($("labels").firstElementChild,`base605-${labelOrders[0]&&labelOrders[0].no?ono(labelOrders[0].no).slice(1):"order"}-label.png`,$("labelPng"));
 $("labelPrint").onclick=()=>{const st=document.createElement("style");st.textContent="@page{size:2in auto;margin:0}";document.head.appendChild(st);document.body.classList.add("print-labels");const done=()=>{document.body.classList.remove("print-labels");st.remove();window.removeEventListener("afterprint",done);};window.addEventListener("afterprint",done);setTimeout(()=>window.print(),60);};
 
+// ===== TAG EDITOR LINK =====
+const TAG_EDITOR="editor/"; // the Tag Editor lives in the /editor folder next to this file
+function tagEditorLink(o){const items=(o.items||[]).filter(i=>i.code).map(i=>({c:i.code,n:i.sender||"",g:i.greeting||"",q:i.pieces||null}));
+  const bytes=new TextEncoder().encode(JSON.stringify({id:o.id,no:o.no,cu:o.customer||"",items}));let bin="";bytes.forEach(b=>bin+=String.fromCharCode(b));
+  return TAG_EDITOR+"#o."+btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
+async function draftTag(o){
+  const url=tagEditorLink(o),w=window.open(url,"_blank","noopener");
+  if(!w){const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove();}
+  if(o.status==="new")await setStatus(o,"drafted");else toast(`Opened Tag Editor for ${ono(o.no)}`);
+}
+
 // ===== ACTIONS =====
 let sheetView=null; // {type:"order",id} | {type:"customer",key}
 function openOrder(o){sheetView={type:"order",id:o.id};renderSheet();}
@@ -1258,11 +1273,11 @@ function renderSheet(){
     const paid=Number(o.paid)||0;
     el.innerHTML=`<div class="grab"></div>
       <div class="top"><div><h2><small>${ono(o.no)}</small><button data-act="cust" class="x" style="font-size:20px;font-weight:700;color:var(--ink);padding:0;text-decoration:underline dotted var(--mute)">${esc(o.customer)}</button>${o.rush?'<span class="rushtag">RUSH</span>':""}</h2><div class="when">${fmt(o.createdAt)}</div></div><div style="display:flex;align-items:flex-start;gap:4px"><div class="pills" style="flex-direction:column;align-items:flex-end;margin:2px 0 0">${'<span class="status pay-'+payState(o)+'">'+payState(o)+'</span><span class="status '+pill(o.status)+'">'+esc(o.status)+'</span>'}</div><button class="x" data-act="close" aria-label="Close">×</button></div></div>
-      <div class="quick"><button data-act="edit" class="q-edit">Edit</button><button data-act="reorder" class="q-re">Reorder</button><button data-act="cancel" class="q-cancel">${o.status==="cancelled"?"Un-cancel":"Cancel"}</button><button data-act="del" class="q-del">Delete</button></div>
+      <div class="quick">${(o.items||[]).some(i=>i.code)?`<button data-act="drafttag" class="q-tag">✎ Draft tag</button>`:""}<button data-act="edit" class="q-edit">Edit</button><button data-act="reorder" class="q-re">Reorder</button><button data-act="cancel" class="q-cancel">${o.status==="cancelled"?"Un-cancel":"Cancel"}</button><button data-act="del" class="q-del">Delete</button></div>
       ${(()=>{const tg=o.items.reduce((a,i)=>a+(Number(i.pieces)||0),0),bal=Math.max(0,o.total-paid),k=o.releaseDate?dayKey(o.releaseDate):null;
         const t=(cls,n,l)=>`<div class="stile ${cls}"><b>${n}</b><span>${l}</span></div>`;
         return `<div class="stiles">${paid>=o.total?t("s-green","Paid","in full"):t("s-red",peso(bal),paid>0?"balance due":"unpaid")}${k===null?t("s-grey","—","no release date"):k<0?t("s-red",`${-k}d`,"overdue"):k===0?t("s-amber","Today","release"):k===1?t("s-amber","Tmrw","release"):t("s-amber",`${k} days`,"to release")}${t("s-green",`${o.items.length} · ${tg}`,"designs · tags")}${t("s-blue",o.shipping?"J&amp;T":o.bookRider?"Grab":o.pickup&&o.pickup.name?"Grab":"Pickup",o.shipping?"delivery":o.bookRider?"we book":o.pickup&&o.pickup.name?"from "+esc(o.pickup.name):"delivery")}</div>`;})()}
-      <div class="meta"><div><b>Release</b>${o.releaseDate?`<span class="rel ${!CLOSED(o.status)&&dayKey(o.releaseDate)<0?"late":""}">${fmtDate(o.releaseDate)} · ${dayTag(dayKey(o.releaseDate))}</span>`:"not set"}</div><div><b>Contact</b>${o.contact?esc(o.contact):"—"}</div><div><b>Delivery</b>${o.shipping?`J&amp;T · ${peso(o.shipping)}${o.address?`<br><span class="note">${esc(o.address)}</span>`:""}`:o.bookRider?`<span style="color:var(--cran);font-weight:600">We book Grab/Lalamove</span>${o.pickup&&o.pickup.name?` · from ${esc(o.pickup.name)}`:""}${o.address?`<br><span class="note">${esc(o.address)}</span>`:""}`:o.pickup&&o.pickup.name?`Grab/Lalamove from ${esc(o.pickup.name)}`:"Pickup"}</div><div><b>Paying via</b>${o.payment&&PAYMENTS[o.payment]?PAYMENTS[o.payment].label:"—"}</div>${o.notes?`<div style="grid-column:1/-1"><b>Notes</b>${esc(o.notes)}</div>`:""}${(CAT.customers[custKey(o.customer)]||{}).note?`<div style="grid-column:1/-1"><b>Customer note</b>📝 ${esc(CAT.customers[custKey(o.customer)].note)}</div>`:""}</div>
+      <div class="meta"><div><b>Release</b>${o.releaseDate?`<span class="rel ${!CLOSED(o.status)&&dayKey(o.releaseDate)<0?"late":""}">${fmtDate(o.releaseDate)} · ${dayTag(dayKey(o.releaseDate))}</span>`:"not set"}</div><div><b>Contact</b>${o.contact?esc(o.contact):"—"}</div><div><b>Delivery</b>${o.shipping?`J&amp;T · ${peso(o.shipping)}${o.address?`<br><span class="note">${esc(o.address)}</span>`:""}`:o.bookRider?`<span style="color:var(--cran);font-weight:600">We book Grab/Lalamove</span>${o.pickup&&o.pickup.name?` · from ${esc(o.pickup.name)}`:""}${o.address?`<br><span class="note">${esc(o.address)}</span>`:""}`:o.pickup&&o.pickup.name?`Grab/Lalamove from ${esc(o.pickup.name)}`:"Pickup"}</div><div><b>Paying via</b>${o.payment&&PAYMENTS[o.payment]?PAYMENTS[o.payment].label:"—"}</div>${o.notes?`<div style="grid-column:1/-1"><b>Notes</b>${esc(o.notes)}</div>`:""}${o.changeNote?`<div style="grid-column:1/-1"><b>Changes requested</b><span style="color:var(--cran);font-weight:600">“${esc(o.changeNote)}”</span></div>`:""}${(CAT.customers[custKey(o.customer)]||{}).note?`<div style="grid-column:1/-1"><b>Customer note</b>📝 ${esc(CAT.customers[custKey(o.customer)].note)}</div>`:""}</div>
       <ul class="items">${o.items.map(i=>`<li><div>${esc(i.product)}${i.code?` · <b>${esc(i.code)}</b>`:""}${i.pieces?` · ${i.pieces} pcs`:""}<small>${itemNotes(i).join(" · ")}</small></div><div>${peso(i.line)}</div></li>`).join("")}${rushN(o)?`<li><div>${rushLabel(o)}</div><div>${peso(rushFee(o))}</div></li>`:""}${o.shipping?`<li><div>J&amp;T delivery</div><div>${peso(o.shipping)}</div></li>`:""}</ul>
       <div class="tot"><span>Total</span><span>${peso(o.total)}</span></div>
       ${paid>0&&paid<o.total?`<div class="paidbadge" style="text-align:left">${peso(paid)} paid · ${peso(o.total-paid)} balance</div>`:""}
@@ -1325,6 +1340,7 @@ document.body.addEventListener("click",async e=>{
   if(act==="invoice"){closeSheet();showInvoice(o);return;}
   if(act==="balinv"){closeSheet();showInvoice(o,"balance");return;}
   if(act==="deliv"){closeSheet();showDelivery(o);return;}
+  if(act==="drafttag"){draftTag(o);return;}
   if(act==="nudge"){try{await navigator.clipboard.writeText(fillMessage(CAT.messages.nudge,o));toast("Copied nudge");}catch{toast("Copy failed");}return;}
   if(act==="edit"){closeSheet();startEdit(o);return;}
   if(act==="reorder"){closeSheet();startReorder(o);return;}
@@ -1390,7 +1406,9 @@ function trow(o,g){
   const rel=o.releaseDate?dayKey(o.releaseDate):null,lateRel=rel!==null&&rel<0;let right="",late=false,extra="";
   if(g.key==="pay")right=`${peso(o.total-(Number(o.paid)||0))} due`;
   else if(g.key==="chase"){const dd=daysIn(o);late=dd>=2;right=dd>=2?`${dd} days waiting`:dd===1?"1 day":"sent today";if(late)extra=`<button type="button" class="tnudge" data-act="nudge">Nudge</button>`;}
+  else if(g.key==="draft"&&o.changeNote){right="changes: "+o.changeNote;late=true;}
   else if(g.key==="draft"&&o.status==="drafted")right="draft ready · send";
+  else if(g.key==="draft"&&(o.items||[]).some(i=>i.code)){right=o.releaseDate?fmtDate(o.releaseDate):"";extra=`<button type="button" class="tnudge ttag" data-act="drafttag">Draft tag</button>`;}
   else if(g.key==="hand")right=o.status==="messaged for pickup"?"waiting pickup":o.status==="for ship out"?"ship out":(o.shipping?"ship J&T":"message pickup");
   else{late=lateRel;right=o.releaseDate?(lateRel?`${-rel}d overdue`:rel===0?"today":rel===1?"tomorrow":fmtDate(o.releaseDate)):"no date";}
   return `<div class="trow" data-id="${o.id}" draggable="true"><span class="tn">${esc(o.customer)} <i>${ono(o.no)}</i>${rushN(o)?'<span class="rushtag">RUSH</span>':""}</span><span class="tr${late?" late":""}">${right}</span>${extra}</div>`;
