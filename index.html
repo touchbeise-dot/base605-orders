@@ -769,14 +769,14 @@ const QR={bpi:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoCAIAAAD1h/a
 // ===== CATALOG (editable in-app; this is only the starting point) =====
 const DEFAULT_CATALOG={
   products:[
-    {id:"basic",   name:"Basic Tag",    price:220, sets:[{p:"BP",n:18},{p:"BL",n:18}], greeting:true, greetingAddon:20, per10:false},
-    {id:"generic", name:"Generic Tag",  price:220, sets:[{p:"GP",n:18},{p:"GL",n:18}], greeting:true, greetingAddon:20, per10:false},
-    {id:"standard",name:"Standard Tag", price:270, sets:[{p:"SP",n:18},{p:"SL",n:18}], greeting:true,  per10:false},
+    {id:"basic",   name:"Basic Tag",    price:200, sets:[{p:"BP",n:36},{p:"BL",n:36}], greeting:true, greetingAddon:20, per10:false},
+    {id:"generic", name:"Generic Tag",  price:200, sets:[{p:"GP",n:5},{p:"GL",n:4}], greeting:true, greetingAddon:20, per10:false},
+    {id:"standard",name:"Standard Tag", price:250, sets:[{p:"SP",n:36},{p:"SL",n:36}], greeting:true,  per10:false},
     {id:"custom",  name:"Custom Tags (own design)", price:350, sets:[], greeting:true, per10:false},
     {id:"print",   name:"Print Only",   price:50,  sets:[], greeting:false, per10:true},
   ],
   basePieces:30, stepPrice:50, rush:100, ship:60, leadDays:0, customers:{},
-  leadTiers:[{max:60,days:3},{max:90,days:5},{max:120,days:7},{max:0,days:14}],
+  leadTiers:[{max:60,days:2},{max:90,days:3},{max:120,days:4},{max:0,days:5}],
   pickups:[
     {id:"cubao1",name:"Cubao 1",address:"28 MT Dioquino, Project 4, Quezon City",person:"Chloe",phone:"0999 490 4186",maps:"",map:""},
     {id:"cubao2",name:"Cubao 2",address:"GC Residences, 78 12th Ave, Cubao, Quezon City",person:"Bei",phone:"0999 490 4186",maps:"",map:""},
@@ -799,6 +799,18 @@ let CAT=JSON.parse(JSON.stringify(DEFAULT_CATALOG));
 const range=(p,n)=>Array.from({length:n},(_,i)=>p+(i+1));
 let PRODUCTS={}, PAYMENTS={}, RUSH=100, BASE_PIECES=30, STEP_PRICE=50;
 let _catSig="";
+/* one-time update (Nov 2026): new prices, new lead times, 36 designs per set.
+   Only changes values that are still at the old defaults, so manual edits are kept. */
+function migrateCatalog(){
+  if(CAT.rev>=2)return false;
+  const P={basic:[220,200],generic:[220,200],standard:[270,250]},SET={BL:36,BP:36,SL:36,SP:36,GL:4,GP:5};
+  (CAT.products||[]).forEach(p=>{const k=P[p.id]||(/basic/i.test(p.name)?P.basic:/generic/i.test(p.name)?P.generic:/standard/i.test(p.name)?P.standard:null);
+    if(k&&Number(p.price)===k[0])p.price=k[1];
+    (p.sets||[]).forEach(s=>{const want=SET[String(s.p).toUpperCase()];if(want&&Number(s.n)<want)s.n=want;});});
+  const old=JSON.stringify([{max:60,days:3},{max:90,days:5},{max:120,days:7},{max:0,days:14}]);
+  if(!CAT.leadTiers||JSON.stringify(CAT.leadTiers.map(t=>({max:t.max,days:t.days})))===old)CAT.leadTiers=[{max:60,days:2},{max:90,days:3},{max:120,days:4},{max:0,days:5}];
+  CAT.rev=2;return true;
+}
 function applyCatalog(c){
   CAT=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CATALOG)),c||{});
   CAT.messages=Object.assign({},DEFAULT_CATALOG.messages,c&&c.messages||{});
@@ -851,7 +863,7 @@ const nextLocalNo=()=>orders.reduce((m,o)=>Math.max(m,o.no||0),0)+1;
 const CATLS="base605-catalog";
 const localStore={
   name:"this device only",
-  async init(){localLoad();try{const c=localStorage.getItem(CATLS);if(c)applyCatalog(JSON.parse(c));}catch{}loading=false;renderAll();},
+  async init(){localLoad();try{const c=localStorage.getItem(CATLS);if(c)applyCatalog(JSON.parse(c));}catch{}if(migrateCatalog()){try{localStorage.setItem(CATLS,JSON.stringify(CAT));}catch{}}loading=false;renderAll();},
   async saveCatalog(c){applyCatalog(c);localStorage.setItem(CATLS,JSON.stringify(CAT));},
   async add(o){o.id=newId();o.no=nextLocalNo();orders.unshift(o);localSave();renderAll();return o;},
   async update(o){const i=orders.findIndex(x=>x.id===o.id);if(i>=0)orders[i]=o;localSave();renderAll();},
@@ -865,8 +877,10 @@ const sheetStore={
     const r=await fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
     if(!r.ok)throw new Error("sync failed "+r.status);return r.json();
   },
-  async pull(){try{const r=await fetch(SCRIPT_URL+(SCRIPT_URL.includes("?")?"&":"?")+"t="+Date.now());const d=await r.json();const list=Array.isArray(d)?d:(d.orders||[]);if(d.catalog&&d.catalog.products){applyCatalog(d.catalog);try{localStorage.setItem(CATLS,JSON.stringify(CAT));}catch{}}orders=list.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));localSave();}catch(e){console.error(e);localLoad();toast("Couldn't reach the sheet — showing last copy");}loading=false;renderAll();},
-  async init(){localLoad();try{const c=localStorage.getItem(CATLS);if(c)applyCatalog(JSON.parse(c));}catch{}await this.pull();setInterval(()=>this.pull(),60000);},
+  async pull(){try{const r=await fetch(SCRIPT_URL+(SCRIPT_URL.includes("?")?"&":"?")+"t="+Date.now());const d=await r.json();const list=Array.isArray(d)?d:(d.orders||[]);if(d.catalog&&d.catalog.products){this.gotCatalog=true;applyCatalog(d.catalog);try{localStorage.setItem(CATLS,JSON.stringify(CAT));}catch{}}orders=list.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));localSave();}catch(e){console.error(e);localLoad();toast("Couldn't reach the sheet — showing last copy");}loading=false;renderAll();},
+  async init(){localLoad();try{const c=localStorage.getItem(CATLS);if(c)applyCatalog(JSON.parse(c));}catch{}await this.pull();
+    if(this.gotCatalog&&migrateCatalog()){try{await this.saveCatalog(CAT);toast("Prices, lead times and design codes updated");}catch(e){console.error(e)}renderAll();}
+    setInterval(()=>this.pull(),60000);},
   async saveCatalog(c){applyCatalog(c);try{localStorage.setItem(CATLS,JSON.stringify(CAT));}catch{}await this.post({action:"catalog",catalog:CAT});},
   async add(o){o.id=newId();orders.unshift(o);localSave();renderAll();const res=await this.post({action:"add",order:o});
     if(res&&res.no){o.no=res.no;localSave();renderAll();return o;}
