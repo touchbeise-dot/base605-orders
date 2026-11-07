@@ -281,8 +281,7 @@ details.oact .obtns{margin-top:8px}
   <section id="vCat" class="wrap" hidden>
     <div class="filters">
       <div class="seg" id="fTier" role="group" aria-label="Tier">
-        <button data-v="all" aria-pressed="true">All</button><button data-v="basic" aria-pressed="false">Basic</button><button data-v="standard" aria-pressed="false">Standard</button><button data-v="generic" aria-pressed="false">Generic</button>
-      </div>
+        <button data-v="todo" aria-pressed="true">To do</button><button data-v="approved" aria-pressed="false">Approved</button><button data-v="printed" aria-pressed="false">Printed</button><button data-v="all" aria-pressed="false">All</button></div>
       <div class="seg" id="fShape" role="group" aria-label="Shape">
         <button data-v="all" aria-pressed="true">Both</button><button data-v="L" aria-pressed="false">Landscape</button><button data-v="P" aria-pressed="false">Portrait</button>
       </div>
@@ -387,6 +386,7 @@ details.oact .obtns{margin-top:8px}
         <button data-v="all" aria-pressed="true">All</button><button data-v="draft" aria-pressed="false">Draft</button><button data-v="sent" aria-pressed="false">Sent</button><button data-v="approved" aria-pressed="false">Approved</button><button data-v="printed" aria-pressed="false">Printed</button>
       </div>
       <button class="btn primary" id="btnBatch" type="button" style="flex:0 0 auto">Print files for approved</button>
+      <button class="btn" id="btnClearPrinted" type="button" style="flex:0 0 auto" hidden>Delete all printed</button>
     </div>
     <p class="note" id="storeNote"></p>
     <div class="dlist" id="dList"></div>
@@ -1007,7 +1007,7 @@ function fallback(name,blob){
 $("btnPreview").onclick=function(){if(!cur)return;var c=cur;
   renderFile(c.code,c.state,"preview").then(function(b){return offer("base605_"+c.code+(slug(c.customer)?"_"+slug(c.customer):"")+"_draft.png",b)}).catch(function(){toast("Couldn't make the image. Try again.")})};
 $("btnPrint").onclick=function(){if(!cur)return;var c=cur;
-  renderFile(c.code,c.state,"print").then(function(b){return offer(c.code+(slug(c.customer)?"_"+slug(c.customer):"")+".png",b)}).catch(function(){toast("Couldn't make the print file. Try again.")})};
+  renderFile(c.code,c.state,"print").then(function(b){return offer(c.code+(slug(c.customer)?"_"+slug(c.customer):"")+".png",b)}).then(function(){if(c.draftId){c.status="printed";patchDraft(c.draftId,{status:"printed"})}}).catch(function(){toast("Couldn't make the print file. Try again.")})};
 
 /* ---------- drafts store ---------- */
 var saveChain={};
@@ -1034,21 +1034,22 @@ function flushSave(announce){
     function(e){if(cur===c)$("edSaved").textContent="Not saved";toast(e&&e.code==="quota_exceeded"?"The drafts list is full. Delete old drafts, then save again.":"Couldn't save the draft. Try again.")});
 }
 
-var fStatus="all";
+var fStatus="todo";
 $("fStatus").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
   [].forEach.call($("fStatus").querySelectorAll("button"),function(x){x.setAttribute("aria-pressed",String(x===b))});fStatus=b.dataset.v;renderDrafts()});
 function ago(t){var s=(Date.now()-t)/1000;if(s<60)return"just now";if(s<3600)return Math.floor(s/60)+" min ago";if(s<86400)return Math.floor(s/3600)+" h ago";
   return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"})}
 function renderDrafts(){
   if(typeof renderOrderBox==="function"&&view==="ed")renderOrderBox();if(typeof renderOrders==="function"&&view==="or")renderOrders();
-  var n=drafts.length;$("drCount").hidden=!n;$("drCount").textContent=n;
+  var n=drafts.length,todoN=drafts.filter(function(d){return d.status!=="printed"}).length,prN=n-todoN;$("drCount").hidden=!todoN;$("drCount").textContent=todoN;
+  $("btnClearPrinted").hidden=!(fStatus==="printed"&&prN);$("btnClearPrinted").textContent="Delete all printed ("+prN+")";$("btnBatch").hidden=fStatus==="printed";
   var appr=drafts.filter(function(d){return d.status==="approved"}).length;
   $("btnBatch").disabled=!appr;$("btnBatch").textContent=appr?"Print files for approved ("+appr+")":"Print files for approved";
   if(view!=="dr")return;
   var host=$("dList");host.textContent="";
-  var list=drafts.filter(function(d){return fStatus==="all"||d.status===fStatus});
+  var list=drafts.filter(function(d){return fStatus==="all"||(fStatus==="todo"?d.status!=="printed":d.status===fStatus)});
   if(!list.length){var p=document.createElement("p");p.className="empty";
-    p.textContent=n?"No drafts with this status.":"No drafts yet. Open a design, type the customer's name, and tap Save draft.";host.appendChild(p);return}
+    p.textContent=!n?"No drafts yet. Open a design, type the customer's name, and tap Save draft.":fStatus==="todo"?"All caught up. Printed drafts are under Printed.":"No drafts with this status.";host.appendChild(p);return}
   list.forEach(function(d){
     if(!CARDS[d.code])return;
     var r=document.createElement("div");r.className="drow";
@@ -1078,13 +1079,16 @@ function deleteDraft(id){
   if(useLocal||!db){var a=lsGet().filter(function(d){return d.id!==id});lsSet(a);drafts=a;renderDrafts();return}
   db.collection("drafts").doc(id).delete().then(function(){toast("Draft deleted")},function(){toast("Couldn't delete it. Try again.")});
 }
+$("btnClearPrinted").onclick=function(){var b=this,pr=drafts.filter(function(d){return d.status==="printed"});if(!pr.length)return;
+  if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Tap again to delete "+pr.length;setTimeout(function(){delete b.dataset.sure;renderDrafts()},3500);return}
+  delete b.dataset.sure;pr.forEach(function(d){if(useLocal){drafts=drafts.filter(function(x){return x.id!==d.id});lsSet(drafts)}else db.collection("drafts").doc(d.id).delete()});toast(pr.length+" printed draft"+(pr.length===1?"":"s")+" deleted");renderDrafts()};
 $("btnBatch").onclick=function(){
   var list=drafts.filter(function(d){return d.status==="approved"&&CARDS[d.code]});if(!list.length)return;
   if(!window.JSZip){toast("Zip tools didn't load. Open each draft and use Print file.");return}
   var zip=new JSZip(),used={},i=0,bt=$("btnBatch");bt.disabled=true;
   (function next(){
     if(i>=list.length){bt.textContent="Zipping…";zip.generateAsync({type:"blob"}).then(function(b){
-      var d=new Date();return offer("base605_print_"+d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+".zip",b)}).then(renderDrafts,renderDrafts);return}
+      var d=new Date();return offer("base605_print_"+d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+".zip",b)}).then(function(){list.forEach(function(d){patchDraft(d.id,{status:"printed"})});toast(list.length+" draft"+(list.length===1?"":"s")+" moved to Printed");renderDrafts()},renderDrafts);return}
     var d=list[i++];bt.textContent="Building "+i+" of "+list.length+"…";
     renderFile(d.code,stateOf(d),"print").then(function(b){
       var base=d.code+(slug(d.customer)?"_"+slug(d.customer):""),fn=base,k=2;while(used[fn])fn=base+"-"+(k++);used[fn]=1;zip.file(fn+".png",b)}).then(next,next)})();
@@ -1496,7 +1500,7 @@ function orderPrintFiles(){
   if(!window.JSZip){toast("Zip tools didn't load. Use Print file on each tag.");return}
   var zip=new JSZip(),used={},i=0;toast("Building print files…");
   (function next(){
-    if(i>=ds.length){zip.generateAsync({type:"blob"}).then(function(b){return offer(pad4(o.no)+"_print_files.zip",b)}).then(function(){toast("Drop these into the Cutter. They link to #"+pad4(o.no)+" by themselves.")});return}
+    if(i>=ds.length){zip.generateAsync({type:"blob"}).then(function(b){return offer(pad4(o.no)+"_print_files.zip",b)}).then(function(){ds.forEach(function(d){patchDraft(d.id,{status:"printed"})});toast("Saved · drafts moved to Printed. Drop the files into the Cutter.")});return}
     var d=ds[i++];renderFile(d.code,stateOf(d),"print").then(function(b){var base=pad4(o.no)+"_"+d.code,fn=base,k=2;while(used[fn])fn=base+" ("+(k++)+")";used[fn]=1;zip.file(fn+".png",b)}).then(next,next)})();
 }
 
