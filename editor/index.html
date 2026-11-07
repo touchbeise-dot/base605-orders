@@ -78,6 +78,12 @@ button,input,textarea,select{font:inherit;color:inherit}
 /* editor */
 .ed{display:grid;grid-template-columns:1fr;gap:0;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 .edhead{display:flex;align-items:center;gap:10px;padding-block:12px;flex-wrap:wrap}
+.edhead .undo{display:flex;gap:6px;margin-left:auto}
+.edhead .undo .ib{min-width:40px;height:36px;font-size:18px}
+.edhead .saved{order:2}
+/* no double-tap zoom on phones; inputs at 16px so iOS doesn't zoom when typing */
+html,body,button,a,label,input,select,textarea,summary{touch-action:manipulation}
+@media (max-width:899px){input,select,textarea{font-size:16px!important}}
 .back{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer}
 .code{font-size:22px;font-weight:700;letter-spacing:-.01em}
 .pill{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 9px;background:var(--red-soft);color:var(--red)}
@@ -113,6 +119,9 @@ textarea.t{resize:vertical;line-height:1.35;min-height:44px}
 .sw.on{outline:2px solid var(--pine);outline-offset:2px}
 .sw.def{position:relative}.sw.def::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px dashed var(--muted)}
 .swp{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0 2px;background:var(--surface);cursor:pointer}
+.fsel{flex:1;min-width:150px;max-width:260px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font:inherit;font-size:13px;color:var(--ink)}
+.xrow .plain{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--ink);margin-left:auto;white-space:nowrap}
+.xrow .plain input{width:16px;height:16px;accent-color:var(--pine)}
 .adds{display:flex;gap:8px;flex-wrap:wrap}
 .addx{flex:1;min-width:150px;border:1.5px dashed var(--pine);background:var(--pine-soft);color:var(--pine);border-radius:10px;padding:10px;font-weight:700;font-size:14px;cursor:pointer}
 .field.design{padding-bottom:10px;border-bottom:1px dashed var(--line)}
@@ -289,6 +298,7 @@ details.oact .obtns{margin-top:8px}
         <span class="code" id="edCode">SP14</span>
         <span class="pill" id="edTier">Standard ₱250</span>
         <span class="saved" id="edSaved"></span>
+        <span class="undo"><button class="ib" type="button" id="btnUndo" aria-label="Undo" title="Undo (Ctrl/⌘ Z)" disabled>↶</button><button class="ib" type="button" id="btnRedo" aria-label="Redo" title="Redo (Ctrl/⌘ Shift Z)" disabled>↷</button></span>
       </div>
       <div class="stage" id="stage"><div class="frame"><canvas id="cv" width="1050" height="600" aria-label="Tag preview"></canvas><span class="loading" id="fontsLoading" hidden>Loading fonts…</span></div></div>
       <p class="hint" id="edHint">Tap a text to select it · drag to move it</p>
@@ -400,17 +410,37 @@ details.oact .obtns{margin-top:8px}
     ctx.font = fontStr(f, size);
     if (HAS_LS) ctx.letterSpacing = (ls || 0).toFixed(3) + "px";
   }
+  var PLAIN = false; /* set per text while drawing: letters are drawn one by one, so no alternates or ligatures */
   function measure(ctx, t, ls) {
+    if (PLAIN) { var lsp = HAS_LS ? ctx.letterSpacing : null; if (HAS_LS) ctx.letterSpacing = "0px";
+      var ww = 0; Array.from(t).forEach(function (ch) { ww += ctx.measureText(ch).width; }); if (HAS_LS) ctx.letterSpacing = lsp;
+      return ww + (ls || 0) * Math.max(0, Array.from(t).length); }
     var w = ctx.measureText(t).width;
     if (!HAS_LS && ls) w += ls * Array.from(t).length;
     return w;
   }
   function fill(ctx, t, x, y, ls) {
+    if (PLAIN) { var lsp = HAS_LS ? ctx.letterSpacing : null; if (HAS_LS) ctx.letterSpacing = "0px"; var px = x;
+      Array.from(t).forEach(function (ch) { ctx.fillText(ch, px, y); px += ctx.measureText(ch).width + (ls || 0); }); if (HAS_LS) ctx.letterSpacing = lsp; return; }
     if (HAS_LS || !ls) { ctx.fillText(t, x, y); return; }
     var cx = x;
     Array.from(t).forEach(function (ch) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + ls; });
   }
 
+  /* font picked in the editor for one text (st.font / st.fw) */
+  function eff(f, st) {
+    if (!st || !st.font) return f;
+    return { family: st.font, weight: st.fw || 400, style: st.fst || "normal", size: f.size, ls: f.ls, fill: f.fill, alpha: f.alpha };
+  }
+  /* "plain letters": a zero-width non-joiner between letters stops script fonts
+     from swapping in alternate shapes (the second n in "nn") and ligatures */
+  function pt(t, st) {
+    return t; /* plain letters is handled by PLAIN in measure/fill */
+    if (!st || !st.plain || !t) return t;
+    var a = Array.from(t), out = "";
+    for (var i = 0; i < a.length; i++) { out += a[i]; if (i < a.length - 1 && /\S/.test(a[i]) && /\S/.test(a[i + 1])) out += "\u200C"; }
+    return out;
+  }
   function layerText(layer, st) {
     if (st && typeof st.text === "string") return st.text;
     return layer.text;
@@ -423,6 +453,7 @@ details.oact .obtns{margin-top:8px}
   function isPristine(layer, st) {
     if (!st) return true;
     if ((st.scale || 1) !== 1) return false;
+    if (st.font) return false;
     if (layer.runs) return false;
     return st.text === undefined || st.text === layer.text;
   }
@@ -433,10 +464,10 @@ details.oact .obtns{margin-top:8px}
   /* Lay out one flowing layer. Returns {lines:[{t,x,y,w}], k, fitted, box} in card (or local) coords. */
   function layoutFlow(ctx, layer, st) {
     var fl = layer.flow, us = (st && st.scale) || 1;
-    var lines = cleanLines(layerText(layer, st));
+    var lines = cleanLines(pt(layerText(layer, st), st)), F = eff(layer, st);
     var k = us;
     function widths(kk) {
-      setFont(ctx, layer, layer.size * kk, layer.ls * kk);
+      setFont(ctx, F, layer.size * kk, layer.ls * kk);
       return lines.map(function (t) { return measure(ctx, t, layer.ls * kk); });
     }
     var avail = (fl.minY != null && fl.maxY != null) ? fl.maxY - fl.minY : Infinity;
@@ -482,10 +513,10 @@ details.oact .obtns{margin-top:8px}
   }
 
   function layoutRuns(ctx, layer, st) {
-    var fl = layer.flow, us = (st && st.scale) || 1, texts = runTexts(layer, st);
+    var fl = layer.flow, us = (st && st.scale) || 1, texts = runTexts(layer, st).map(function (t) { return pt(t, st); });
     var k = us;
     function widths(kk) {
-      return layer.runs.map(function (r, i) { setFont(ctx, r, r.size * kk, r.ls * kk); return measure(ctx, texts[i], r.ls * kk); });
+      return layer.runs.map(function (r, i) { setFont(ctx, eff(r, st), r.size * kk, r.ls * kk); return measure(ctx, texts[i], r.ls * kk); });
     }
     var ws = widths(k), total = ws.reduce(function (a, b) { return a + b; }, 0), fitted = false;
     if (fl.maxW && total > fl.maxW) { k = k * fl.maxW / total; fitted = true; ws = widths(k); total = ws.reduce(function (a, b) { return a + b; }, 0); }
@@ -514,6 +545,7 @@ details.oact .obtns{margin-top:8px}
     var ls = (state && state.layers) || {};
     card.layers.forEach(function (layer, i) {
       var st = ls[i], dx = (st && st.dx) || 0, dy = (st && st.dy) || 0, col = st && st.fill;
+      PLAIN = !!(st && st.plain);
       ctx.save();
       if (dx || dy) ctx.translate(dx, dy);
       ctx.globalAlpha = layer.alpha == null ? 1 : layer.alpha;
@@ -524,28 +556,30 @@ details.oact .obtns{margin-top:8px}
       if (layer.runs) {
         res = layoutRuns(ctx, layer, st);
         res.parts.forEach(function (p) {
-          setFont(ctx, p.run, p.run.size * res.scale, p.run.ls * res.scale);
+          setFont(ctx, eff(p.run, st), p.run.size * res.scale, p.run.ls * res.scale);
           ctx.fillStyle = col || p.run.fill; ctx.globalAlpha = p.run.alpha == null ? 1 : p.run.alpha;
           if (p.t) fill(ctx, p.t, p.x, p.y, p.run.ls * res.scale);
         });
       } else if (!layer.flow || (!layer.force && isPristine(layer, st))) {
-        setFont(ctx, layer, layer.size, layer.ls);
+        setFont(ctx, eff(layer, st), layer.size, layer.ls);
         ctx.fillStyle = col || layer.fill;
         var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
         layer.orig.forEach(function (o) {
-          fill(ctx, o.t, o.x, o.y, layer.ls);
-          var w = measure(ctx, o.t, layer.ls);
+          var ot = pt(o.t, st);
+          fill(ctx, ot, o.x, o.y, layer.ls);
+          var w = measure(ctx, ot, layer.ls);
           minX = Math.min(minX, o.x); maxX = Math.max(maxX, o.x + w);
           minY = Math.min(minY, o.y - layer.size * 0.8); maxY = Math.max(maxY, o.y + layer.size * 0.25);
         });
         res = { k: 1, fitted: false, box: [minX, minY, maxX, maxY] };
       } else {
         res = layoutFlow(ctx, layer, st);
-        setFont(ctx, layer, layer.size * res.scale, layer.ls * res.scale);
+        setFont(ctx, eff(layer, st), layer.size * res.scale, layer.ls * res.scale);
         ctx.fillStyle = col || layer.fill;
         res.lines.forEach(function (l) { if (l.t) fill(ctx, l.t, l.x, l.y, layer.ls * res.scale); });
       }
       ctx.restore();
+      PLAIN = false;
       var bx = toCard(layer.tf, res.box);
       if (dx || dy) bx = [bx[0] + dx, bx[1] + dy, bx[2] + dx, bx[3] + dy];
       info.push({ box: bx, k: res.k, fitted: res.fitted });
@@ -579,14 +613,17 @@ details.oact .obtns{margin-top:8px}
   }
 
   /* Fonts a card needs, as {family, weight, style, text}. */
-  function cardFonts(card) {
+  function cardFonts(card, state) {
     var out = {};
     function add(f, t) {
       var key = f.family + "|" + f.weight + "|" + f.style;
       if (!out[key]) out[key] = { family: f.family, weight: f.weight, style: f.style, text: "" };
       out[key].text += t;
     }
-    card.layers.forEach(function (l) {
+    var ls = (state && state.layers) || {};
+    card.layers.forEach(function (l, i) {
+      var st = ls[i];
+      if (st && st.font) { add(eff(l, st), (st.text || l.text || (l.runs ? l.runs.map(function (r) { return r.t; }).join("") : ""))); return; }
       if (l.runs) l.runs.forEach(function (r) { add(r, r.t); });
       else add(l, l.text);
     });
@@ -629,8 +666,15 @@ function linkFamily(fam){
   linked[fam]=new Promise(function(res){var l=document.createElement("link");l.rel="stylesheet";l.href=href;l.onload=function(){res(true)};l.onerror=function(){res(false)};document.head.appendChild(l)});
   return linked[fam];
 }
-function ensureFonts(card,extra){
-  var fs=TagRender.cardFonts(card);
+var FONT_CHOICES=[
+  ["Script",[["Great Vibes",400],["Dancing Script",600],["Pacifico",400],["Sacramento",400],["Allura",400],["Parisienne",400],["Satisfy",400],["Alex Brush",400],["Caveat",600],["Mynerve",400]]],
+  ["Serif",[["Playfair Display",600],["Cormorant Garamond",600],["DM Serif Display",400],["Lora",600],["Libre Baskerville",400],["Noto Serif",600]]],
+  ["Sans",[["Montserrat",600],["Poppins",600],["Quicksand",600],["Nunito",700],["Josefin Sans",600],["Raleway",600],["Inter",600]]],
+  ["Fun",[["Fredoka",600],["Lobster",400],["Chewy",400],["Bagel Fat One",400],["Amatic SC",700],["Bebas Neue",400],["Mountains of Christmas",700]]]];
+FONT_CHOICES.forEach(function(g){g[1].forEach(function(f){famSpec[f[0]]=famSpec[f[0]]||{};famSpec[f[0]]["0,"+f[1]]=1})});
+function fontWeight(fam){var w=400;FONT_CHOICES.forEach(function(g){g[1].forEach(function(f){if(f[0]===fam)w=f[1]})});return w}
+function ensureFonts(card,extra,state){
+  var fs=TagRender.cardFonts(card,state||(cur&&cur.card===card?cur.state:null));
   return Promise.all(fs.map(function(f){return linkFamily(f.family).then(function(){
     return document.fonts.load(TagRender.fontStr(f,40),(f.text||"")+(extra||"")+"AaZz").catch(function(){})})}));
 }
@@ -753,7 +797,7 @@ function openEditor(code,draft){
   $("edSaved").textContent=cur.draftId?(cur.order&&cur.order.no?"Order "+cur.order.no+" · saved":"Saved"):"";
   if(!(draft&&draft.order&&octx&&String(octx.order.id)===String(draft.order.id)))octx=null;
   $("btnBack").textContent=octx?"← Orders":"← Designs";$("custBox").hidden=!!octx;
-  buildFields();show("ed");renderOrderBox();
+  buildFields();show("ed");renderOrderBox();histReset();
   $("fontsLoading").hidden=false;
   loadBg(code).then(function(im){if(cur&&cur.code===code){cur.bg=im;schedule()}}).catch(function(){toast("The tag artwork didn't load. Check your connection and reopen it.")});
   ensureFonts(card).then(function(){if(cur&&cur.code===code){$("fontsLoading").hidden=true;schedule()}});
@@ -846,6 +890,19 @@ function extraRows(l,i,w){
     b.onclick=function(){lstate(i).fill=c;changed();buildFields();focusField(i)};cr.appendChild(b)});
   var pick=document.createElement("input");pick.type="color";pick.className="swp";pick.value=(curC||def||"#000000").slice(0,7);pick.title="Pick any color";
   pick.oninput=function(){lstate(i).fill=pick.value;changed()};pick.onchange=function(){buildFields();focusField(i)};cr.appendChild(pick);
+  // font picker + plain letters
+  var fr=document.createElement("div");fr.className="xrow";fr.innerHTML='<span class="xl">Font</span>';
+  var sel=document.createElement("select");sel.className="fsel";var stI=cur.state.layers[i]||{},baseFam=l.runs?(l.runs.filter(function(r){return r.role==="n"})[0]||l.runs[0]).family:l.family;
+  var o0=document.createElement("option");o0.value="";o0.textContent="Design font · "+baseFam;sel.appendChild(o0);
+  FONT_CHOICES.forEach(function(g){var og=document.createElement("optgroup");og.label=g[0];g[1].forEach(function(f){var o=document.createElement("option");o.value=f[0];o.textContent=f[0];o.style.fontFamily="'"+f[0]+"'";og.appendChild(o)});sel.appendChild(og)});
+  sel.value=stI.font||"";
+  sel.onchange=function(){var s2=lstate(i);if(sel.value){s2.font=sel.value;s2.fw=fontWeight(sel.value)}else{delete s2.font;delete s2.fw}
+    markDirty();linkFamily(sel.value||baseFam);ensureFonts(cur.card,(s2.text||l.text||""),cur.state).then(schedule);schedule()};
+  fr.appendChild(sel);
+  var pl=document.createElement("label");pl.className="plain";pl.innerHTML='<input type="checkbox"> Plain letters';pl.title="Turns off alternate letter shapes and ligatures, like the second n in “nn” looking different";
+  var cb=pl.querySelector("input");cb.checked=!!stI.plain;cb.onchange=function(){var s2=lstate(i);if(cb.checked)s2.plain=true;else delete s2.plain;changed()};
+  fr.appendChild(pl);
+  w.appendChild(fr);
   w.appendChild(pos);w.appendChild(cr);
   if(l.extra){var rm=document.createElement("button");rm.type="button";rm.className="link";rm.textContent="Remove this line";rm.onclick=function(){removeExtra(i)};var r3=document.createElement("div");r3.className="xrow";r3.appendChild(rm);w.appendChild(r3)}
 }
@@ -862,7 +919,20 @@ function focusField(i){
   if(inp){inp.focus({preventScroll:true});f.scrollIntoView({block:"center",behavior:"smooth"})}
 }
 function changed(newText){markDirty();schedule();if(newText)ensureFonts(cur.card,newText).then(schedule)}
-function markDirty(){if(!cur)return;cur.dirty=true;if(cur.draftId){$("edSaved").textContent="Saving…";clearTimeout(saveTimer);saveTimer=setTimeout(flushSave,1200)}else $("edSaved").textContent="Not saved"}
+/* undo / redo: snapshots of the tag's settings, grouped while you type or drag */
+var hist={st:[],i:-1,t:0,restoring:false};
+function snapNow(){return cur?JSON.stringify(cur.state):""}
+function histReset(){hist.st=[snapNow()];hist.i=0;clearTimeout(hist.t);updUndo()}
+function histNote(){if(hist.restoring)return;clearTimeout(hist.t);hist.t=setTimeout(histPush,450)}
+function histPush(){if(!cur)return;var s2=snapNow();if(s2===hist.st[hist.i])return;hist.st=hist.st.slice(0,hist.i+1);hist.st.push(s2);if(hist.st.length>100)hist.st.shift();hist.i=hist.st.length-1;updUndo()}
+function updUndo(){var u=$("btnUndo"),r=$("btnRedo");if(!u)return;u.disabled=!(hist.i>0||(cur&&snapNow()!==hist.st[hist.i]));r.disabled=hist.i>=hist.st.length-1}
+function histGo(d){if(!cur)return;clearTimeout(hist.t);histPush();var j=hist.i+d;if(j<0||j>=hist.st.length)return;hist.i=j;hist.restoring=true;
+  cur.state=JSON.parse(hist.st[j]);cur.card=cardFor(cur.code,cur.state);buildFields();markDirty();ensureFonts(cur.card,"",cur.state).then(schedule);schedule();hist.restoring=false;updUndo();
+  toast(d<0?"Undone":"Redone")}
+$("btnUndo").onclick=function(){histGo(-1)};$("btnRedo").onclick=function(){histGo(1)};
+document.addEventListener("keydown",function(e){if(view!=="ed"||!(e.metaKey||e.ctrlKey)||e.key.toLowerCase()!=="z")return;
+  var t=e.target,typing=t&&(t.tagName==="TEXTAREA"||t.tagName==="INPUT");if(typing)return;e.preventDefault();histGo(e.shiftKey?1:-1)});
+function markDirty(){if(!cur)return;histNote();setTimeout(updUndo,0);cur.dirty=true;if(cur.draftId){$("edSaved").textContent="Saving…";clearTimeout(saveTimer);saveTimer=setTimeout(flushSave,1200)}else $("edSaved").textContent="Not saved"}
 $("cust").addEventListener("input",function(e){cur.customer=e.target.value;markDirty()});
 $("note").addEventListener("input",function(e){cur.note=e.target.value;markDirty()});
 
@@ -912,7 +982,7 @@ function blobOf(c){return new Promise(function(res,rej){c.toBlob(function(b){b?r
 function slug(s){return (s||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)}
 function renderFile(code,state,kind){
   var card=cardFor(code,state);
-  return Promise.all([loadBg(code),ensureFonts(card,allText(card,state))]).then(function(r){
+  return Promise.all([loadBg(code),ensureFonts(card,allText(card,state),state)]).then(function(r){
     var c=document.createElement("canvas");
     if(kind==="print"){TagRender.render(c,card,state,r[0],{mode:"print"});return blobOf(c).then(function(b){return b.arrayBuffer()}).then(function(a){return new Blob([withDpi(a)],{type:"image/png"})})}
     TagRender.render(c,card,state,r[0],{mode:"card",scale:1});watermark(c);return blobOf(c)});
@@ -1138,7 +1208,7 @@ window.addEventListener("hashchange",importFromHash);
     var key=code+"|"+(A.nameOn?A.name:"");if(faceCache[key])return Promise.resolve(faceCache[key]);
     var card=CARDS[code],st={layers:{}};
     if(A.nameOn&&A.name){card.layers.forEach(function(l,i){if(l.role==="n"&&l.edit&&!l.runs)st.layers[i]={text:A.name}})}
-    return Promise.all([loadBg(code),ensureFonts(card,allText(card,st))]).then(function(r){var c=document.createElement("canvas");TagRender.render(c,card,st,r[0],{mode:"card",scale:.62});faceCache[key]=c;return c})}
+    return Promise.all([loadBg(code),ensureFonts(card,allText(card,st),st)]).then(function(r){var c=document.createElement("canvas");TagRender.render(c,card,st,r[0],{mode:"card",scale:.62});faceCache[key]=c;return c})}
   var BOX={},EL=["tags","logo","title","cta"],ELN={tags:"Tags",logo:"Logo",title:"Title",cta:"Button"},sel="title";
   function P(e){A.pos=A.pos||{};var p=A.pos[A.size]=A.pos[A.size]||{};return p[e]=p[e]||{dx:0,dy:0,s:1}}
   function sceneFX(x,S){ // depth helpers drawn in scene units (1500 px square)
@@ -1351,7 +1421,7 @@ function flushIfDirty(){if(cur&&cur.dirty&&cur.draftId)flushSave()}
 
 /* ---------- proof sheet: every tag of the order on one long image ---------- */
 function cardCanvas(d){var st=stateOf(d),card=cardFor(d.code,st);
-  return Promise.all([loadBg(d.code),ensureFonts(card,allText(card,st))]).then(function(r){var c=document.createElement("canvas");TagRender.render(c,card,st,r[0],{mode:"card",scale:1});watermark(c);return c})}
+  return Promise.all([loadBg(d.code),ensureFonts(card,allText(card,st),st)]).then(function(r){var c=document.createElement("canvas");TagRender.render(c,card,st,r[0],{mode:"card",scale:1});watermark(c);return c})}
 function rr(x,X,Y,W,H,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+W,Y,X+W,Y+H,r);x.arcTo(X+W,Y+H,X,Y+H,r);x.arcTo(X,Y+H,X,Y,r);x.arcTo(X,Y,X+W,Y,r);x.closePath()}
 function wrapLines(x,text,maxW){var out=[],line="";String(text).split(/\s+/).forEach(function(w){var t=line?line+" "+w:w;if(x.measureText(t).width>maxW&&line){out.push(line);line=w}else line=t});if(line)out.push(line);return out}
 function fit(x,text,maxW){if(x.measureText(text).width<=maxW)return text;while(text.length>1&&x.measureText(text+"…").width>maxW)text=text.slice(0,-1);return text+"…"}
