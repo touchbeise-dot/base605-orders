@@ -439,6 +439,9 @@ input,select,textarea{max-width:100%;min-width:0}
   .trow .tn{flex:1 1 100%;white-space:normal}
   .trow .tr{font-size:12px}
 }
+/* no double-tap zoom on phones; 16px inputs so iOS doesn't zoom while typing */
+html,body,button,a,label,input,select,textarea,summary{touch-action:manipulation}
+@media (max-width:739px){input,select,textarea{font-size:16px}}
 /* catalog */
 .cat .row3{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;align-items:end}
 .cat .codes{display:flex;flex-direction:column;gap:6px;margin-top:8px}
