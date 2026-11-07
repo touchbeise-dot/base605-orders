@@ -242,6 +242,15 @@ details.other[open] summary::before{content:"▾ ";}
   .sheeth b{font-size:14px;margin-top:6px}
   .ed.fig{padding-bottom:calc(64px + 56px + env(safe-area-inset-bottom,0px))}
 }
+.alignbox{gap:8px}
+.alignbox .ahead{display:flex;justify-content:space-between;align-items:center;gap:8px}.alignbox h3{margin:0}
+.pickmore{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 10px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink)}
+.pickmore[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff}
+.arow{display:flex;gap:4px;align-items:center}.arow .sp{width:10px}
+.arow button{width:40px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.arow button:hover{border-color:var(--red)}
+.arow svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linecap:round}
+.arow svg rect{fill:var(--red-soft);stroke:var(--red)}
 /* drafts */
 /* orders (connected to the order app) */
 .ogrid{display:grid;gap:18px;padding-block:8px 40px}
@@ -375,6 +384,19 @@ details.oact .obtns{margin-top:8px}
       <div class="panel" id="propsPanel">
         <button class="sheeth" id="sheetHandle" type="button" aria-label="Show or hide controls"><span></span><b id="sheetTitle">Tap a text on the tag</b></button>
         <div class="box obox" id="oBox" hidden></div>
+        <div class="box alignbox" id="alignBox" hidden>
+          <div class="ahead"><h3 id="alignTitle">Align</h3><button type="button" class="pickmore" id="pickMore" aria-pressed="false">＋ Pick another</button></div>
+          <div class="arow" id="alignRow">
+            <button type="button" data-al="left" title="Align left"><svg viewBox="0 0 24 24"><path d="M4 3v18"/><rect x="7" y="6" width="12" height="4" rx="1"/><rect x="7" y="14" width="8" height="4" rx="1"/></svg></button>
+            <button type="button" data-al="hcenter" title="Center left–right"><svg viewBox="0 0 24 24"><path d="M12 3v18"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/></svg></button>
+            <button type="button" data-al="right" title="Align right"><svg viewBox="0 0 24 24"><path d="M20 3v18"/><rect x="5" y="6" width="12" height="4" rx="1"/><rect x="9" y="14" width="8" height="4" rx="1"/></svg></button>
+            <span class="sp"></span>
+            <button type="button" data-al="top" title="Align top"><svg viewBox="0 0 24 24"><path d="M3 4h18"/><rect x="6" y="7" width="4" height="12" rx="1"/><rect x="14" y="7" width="4" height="8" rx="1"/></svg></button>
+            <button type="button" data-al="vcenter" title="Center top–bottom"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/></svg></button>
+            <button type="button" data-al="bottom" title="Align bottom"><svg viewBox="0 0 24 24"><path d="M3 20h18"/><rect x="6" y="5" width="4" height="12" rx="1"/><rect x="14" y="9" width="4" height="8" rx="1"/></svg></button>
+          </div>
+          <p class="note" id="alignNote">Lines it up on the tag. Shift-click (or ＋ Pick another) to line up two or more texts with each other.</p>
+        </div>
         <div class="box" id="custBox">
           <h3>Order</h3>
           <div class="row2">
@@ -935,7 +957,7 @@ function openEditor(code,draft){
   $("edSaved").textContent=cur.draftId?(cur.order&&cur.order.no?"Order "+cur.order.no+" · saved":"Saved"):"";
   if(!(draft&&draft.order&&octx&&String(octx.order.id)===String(draft.order.id)))octx=null;
   $("btnBack").textContent=octx?"← Orders":"← Designs";$("custBox").hidden=!!octx;
-  selKind=null;sel=-1;var di=-1;cur.card.layers.forEach(function(l,i){if(di<0&&l.role==="n"&&editable(i))di=i});if(di<0)cur.card.layers.forEach(function(l,i){if(di<0&&l.role!=="d"&&editable(i))di=i});
+  selKind=null;sel=-1;msel=[];pickMode=false;guides=[];var di=-1;cur.card.layers.forEach(function(l,i){if(di<0&&l.role==="n"&&editable(i))di=i});if(di<0)cur.card.layers.forEach(function(l,i){if(di<0&&l.role!=="d"&&editable(i))di=i});
   if(di>=0){sel=di;selKind="text"}
   if(window.innerWidth<900)$("propsPanel").classList.add("collapsed");
   buildFields();show("ed");renderOrderBox();histReset();
@@ -964,7 +986,29 @@ function buildFields(){
   buildLayers();applySel();
 }
 /* ---------- layers + selection ---------- */
-var selKind=null;
+var selKind=null,msel=[],pickMode=false,guides=[];
+function selList(){var a=msel.slice();if(sel>=0&&a.indexOf(sel)<0)a.unshift(sel);return a.filter(function(i){return cur&&cur.card.layers[i]&&editable(i)})}
+function toggleMulti(i){if(sel<0||selKind!=="text"){sel=i;selKind="text";msel=[];applySel();schedule();return}
+  if(msel.indexOf(sel)<0)msel.push(sel);var k=msel.indexOf(i);if(k>=0){msel.splice(k,1);if(sel===i)sel=msel[0]!=null?msel[0]:-1}else{msel.push(i);sel=i}
+  if(msel.length<2)msel=[];applySel();schedule()}
+function boxOf(i){var inf=lastInfo[i];return inf?inf.box:null}
+function alignSel(kind){
+  var list=selList();if(!list.length)return;var W=cur.card.w,H=cur.card.h,m=Math.round(Math.min(W,H)*.07),fr;
+  if(list.length>1){var bs=list.map(boxOf).filter(Boolean);fr=[Math.min.apply(null,bs.map(function(b){return b[0]})),Math.min.apply(null,bs.map(function(b){return b[1]})),Math.max.apply(null,bs.map(function(b){return b[2]})),Math.max.apply(null,bs.map(function(b){return b[3]}))]}
+  else fr=[m,m,W-m,H-m];
+  list.forEach(function(i){var b=boxOf(i);if(!b)return;var s2=lstate(i),ddx=0,ddy=0;
+    if(kind==="left")ddx=fr[0]-b[0];else if(kind==="right")ddx=fr[2]-b[2];else if(kind==="hcenter")ddx=(list.length>1?(fr[0]+fr[2])/2:W/2)-(b[0]+b[2])/2;
+    else if(kind==="top")ddy=fr[1]-b[1];else if(kind==="bottom")ddy=fr[3]-b[3];else if(kind==="vcenter")ddy=(list.length>1?(fr[1]+fr[3])/2:H/2)-(b[1]+b[3])/2;
+    s2.dx=Math.round((s2.dx||0)+ddx);s2.dy=Math.round((s2.dy||0)+ddy);if(!s2.dx)delete s2.dx;if(!s2.dy)delete s2.dy;refreshMoved(i)});
+  changed()}
+$("alignRow").addEventListener("click",function(e){var b=e.target.closest("button[data-al]");if(b)alignSel(b.dataset.al)});
+$("pickMore").onclick=function(){pickMode=!pickMode;this.setAttribute("aria-pressed",String(pickMode));this.textContent=pickMode?"Tap texts to add…":"＋ Pick another"};
+/* snapping while dragging: tag centre lines + other texts' centres */
+function snapMove(i,dx,dy){guides=[];var inf=lastInfo[i],s0=cur.state.layers[i]||{};if(!inf)return[dx,dy];
+  var b=inf.box,ox=dx-(s0.dx||0),oy=dy-(s0.dy||0),cx=(b[0]+b[2])/2+ox,cy=(b[1]+b[3])/2+oy,k=cur.card.w/(cv.clientWidth||cur.card.w),th=7*k,W=cur.card.w,H=cur.card.h;
+  var xs=[W/2],ys=[H/2];cur.card.layers.forEach(function(l,j){if(j===i||l.role==="d"||!lastInfo[j])return;var o=lastInfo[j].box;xs.push((o[0]+o[2])/2);ys.push((o[1]+o[3])/2)});
+  var bx=null,by=null;xs.forEach(function(x){if(Math.abs(x-cx)<th&&(bx===null||Math.abs(x-cx)<Math.abs(bx-cx)))bx=x});ys.forEach(function(y){if(Math.abs(y-cy)<th&&(by===null||Math.abs(y-cy)<Math.abs(by-cy)))by=y});
+  if(bx!==null){dx+=bx-cx;guides.push(["v",bx])}if(by!==null){dy+=by-cy;guides.push(["h",by])}return[dx,dy]}
 function layerIcon(l){return l.role==="x"?"T":l.role==="t"?"✉":l.role==="n"?"N":l.role==="m"?"M":"T"}
 function buildLayers(){
   var host=$("layerList");host.textContent="";var idx=[];cur.card.layers.forEach(function(l,i){if(l.role!=="d")idx.push(i)});idx.reverse();
@@ -987,10 +1031,17 @@ function applySel(){
   var ob=$("otherBox");if(locked){ob.open=true;[].forEach.call(ob.querySelectorAll(".lockrow"),function(r){r.classList.toggle("flash",+r.dataset.i===sel)})}
   var l=sel>=0?cur.card.layers[sel]:null;
   $("fieldsTitle").textContent=l?((l.extra==="free"?l.label:(l.label&&l.edit?l.label:ROLE[l.role]))||"Text"):"Text";
-  [].forEach.call(document.querySelectorAll("#layerList .lyr"),function(b){b.setAttribute("aria-current",String(b.dataset.k===selKind&&(selKind!=="text"||+b.dataset.i===sel)))});
-  $("sheetTitle").textContent=selKind==="design"?"Design":selKind==="paper"?"Paper":l?$("fieldsTitle").textContent+(locked?" · locked":""):"Tap a text on the tag";
+  [].forEach.call(document.querySelectorAll("#layerList .lyr"),function(b){b.setAttribute("aria-current",String(b.dataset.k===selKind&&(selKind!=="text"||+b.dataset.i===sel||msel.indexOf(+b.dataset.i)>=0)))});
+  var multi=selKind==="text"&&msel.length>1;$("alignBox").hidden=!(selKind==="text"&&(hasField||multi));
+  $("alignTitle").textContent=multi?msel.length+" selected · align":"Align";
+  $("alignNote").textContent=multi?"Lines up the selected texts with each other. Shift-click a text again to drop it.":"Lines it up on the tag. Shift-click (or ＋ Pick another) to line up two or more texts with each other.";
+  if(multi){[].forEach.call(document.querySelectorAll("#fields .field"),function(f){f.classList.remove("sel")});$("fields").parentNode.hidden=true}
+  if(!multi&&pickMode&&selKind!=="text"){pickMode=false;$("pickMore").setAttribute("aria-pressed","false");$("pickMore").textContent="＋ Pick another"}
+  $("sheetTitle").textContent=multi?msel.length+" texts selected":selKind==="design"?"Design":selKind==="paper"?"Paper":l?$("fieldsTitle").textContent+(locked?" · locked":""):"Tap a text on the tag";
 }
-$("layerList").addEventListener("click",function(e){var b=e.target.closest(".lyr");if(!b)return;selectLayer(b.dataset.k,b.dataset.i!=null?+b.dataset.i:-1)});
+$("layerList").addEventListener("click",function(e){var b=e.target.closest(".lyr");if(!b)return;
+  if(b.dataset.k==="text"&&(e.shiftKey||e.metaKey||e.ctrlKey||pickMode)&&editable(+b.dataset.i)){toggleMulti(+b.dataset.i);return}
+  msel=[];selectLayer(b.dataset.k,b.dataset.i!=null?+b.dataset.i:-1)});
 $("addLayer").onclick=function(e){e.stopPropagation();$("addMenu").hidden=!$("addMenu").hidden};
 $("addMenu").addEventListener("click",function(e){var b=e.target.closest("button[data-add]");if(!b||b.disabled)return;$("addMenu").hidden=true;addExtra(b.dataset.add)});
 document.addEventListener("click",function(e){if(!e.target.closest(".addwrap"))$("addMenu").hidden=true});
@@ -1189,6 +1240,10 @@ function draw(){
       x.fillStyle="#fff";x.beginPath();x.arc(cx,u[1]-p-28*k,6*k,0,Math.PI*2);x.fill();x.stroke();
       [[u[0]-p,u[1]-p],[u[2]+p,u[1]-p],[u[0]-p,u[3]+p],[u[2]+p,u[3]+p]].forEach(function(c){x.fillRect(c[0]-5*k,c[1]-5*k,10*k,10*k);x.strokeRect(c[0]-5*k,c[1]-5*k,10*k,10*k)})}
     x.restore()}
+  if(selKind==="text"&&msel.length>1){x.save();x.setTransform(scale,0,0,scale,0,0);x.lineWidth=1.6*k;x.strokeStyle="#C8102E";
+    msel.forEach(function(j){if(j===sel||!lastInfo[j])return;var o=lastInfo[j].box;x.strokeRect(o[0]-6*k,o[1]-6*k,o[2]-o[0]+12*k,o[3]-o[1]+12*k)});x.restore()}
+  if(guides.length){x.save();x.setTransform(scale,0,0,scale,0,0);x.lineWidth=1.2*k;x.strokeStyle="#FF3D7F";x.setLineDash([6*k,4*k]);
+    guides.forEach(function(g){x.beginPath();if(g[0]==="v"){x.moveTo(g[1],0);x.lineTo(g[1],cur.card.h)}else{x.moveTo(0,g[1]);x.lineTo(cur.card.w,g[1])}x.stroke()});x.restore()}
   else if(selKind==="design"||selKind==="paper"){x.save();x.setTransform(scale,0,0,scale,0,0);x.lineWidth=3*k;x.strokeStyle="#C8102E";x.setLineDash([10*k,7*k]);x.strokeRect(2*k,2*k,cur.card.w-4*k,cur.card.h-4*k);x.restore()}
   cur.card.layers.forEach(function(l,i){var f=document.querySelector('.field[data-i="'+i+'"] .fit');if(!f)return;
     var inf=lastInfo[i];if(inf&&inf.fitted){f.hidden=false;f.textContent="Shrunk to "+Math.round(inf.k*100)+"% to fit"}else f.hidden=true});
@@ -1206,7 +1261,9 @@ cv.addEventListener("pointerdown",function(e){if(!cur)return;var p=cardPt(e),hd=
   if(hd){var inf=lastInfo[sel],s0=cur.state.layers[sel]||{},pv=inf.pivot;drag={i:sel,mode:hd,pv:pv,d0:Math.hypot(p[0]-pv[0],p[1]-pv[1])||1,a0:Math.atan2(p[1]-pv[1],p[0]-pv[0]),s0:s0.scale||1,r0:s0.rot||0,moved:true,id:e.pointerId};
     try{cv.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();return}
   var h=hitAt(e);
-  if(h.i<0){selectLayer("design",-1);return}
+  if(h.i<0){if(!(e.shiftKey||pickMode)){msel=[];selectLayer("design",-1)}return}
+  if((e.shiftKey||pickMode)&&editable(h.i)){toggleMulti(h.i);e.preventDefault();return}
+  if(msel.indexOf(h.i)<0)msel=[];
   if(sel!==h.i||selKind!=="text"){sel=h.i;selKind="text";applySel()}
   var s=cur.state.layers[h.i]||{};drag={i:h.i,mode:"move",x:h.x,y:h.y,dx:s.dx||0,dy:s.dy||0,moved:false,id:e.pointerId};try{cv.setPointerCapture(e.pointerId)}catch(_){}schedule();e.preventDefault()});
 cv.addEventListener("pointermove",function(e){if(!drag||!cur)return;var p=cardPt(e);
@@ -1215,9 +1272,10 @@ cv.addEventListener("pointermove",function(e){if(!drag||!cur)return;var p=cardPt
     var s3=lstate(drag.i);if(r)s3.rot=Math.round(r);else delete s3.rot;markDirty();schedule();var f=document.querySelector('.field[data-i="'+drag.i+'"]');if(f&&f._updR)f._updR();return}
   if(!drag.moved&&Math.hypot(p[0]-drag.x,p[1]-drag.y)<6)return;drag.moved=true;
   if(!editable(drag.i)){return}
-  var m=clampMove(drag.i,drag.dx+(p[0]-drag.x),drag.dy+(p[1]-drag.y)),s=lstate(drag.i);s.dx=m[0];s.dy=m[1];markDirty();schedule();refreshMoved(drag.i)});
+  var sn=e.altKey?[drag.dx+(p[0]-drag.x),drag.dy+(p[1]-drag.y)]:snapMove(drag.i,drag.dx+(p[0]-drag.x),drag.dy+(p[1]-drag.y));
+  var m=clampMove(drag.i,sn[0],sn[1]),s=lstate(drag.i);s.dx=m[0];s.dy=m[1];markDirty();schedule();refreshMoved(drag.i)});
 function updPct(i){var f=document.querySelector('.field[data-i="'+i+'"] .fhead .pct');if(f)f.textContent=Math.round(((cur.state.layers[i]||{}).scale||1)*100)+"%"}
-function endDrag(){if(!drag)return;var d=drag;drag=null;if(d.mode==="move"&&!d.moved){if(window.innerWidth<900){$("propsPanel").classList.remove("collapsed")}if(!editable(d.i))focusField(d.i)}else{ensureFonts(cur.card,"",cur.state).then(schedule)}}
+function endDrag(){if(!drag)return;var d=drag;drag=null;if(guides.length){guides=[];schedule()}if(d.mode==="move"&&!d.moved){if(window.innerWidth<900){$("propsPanel").classList.remove("collapsed")}if(!editable(d.i))focusField(d.i)}else{ensureFonts(cur.card,"",cur.state).then(schedule)}}
 cv.addEventListener("pointerup",endDrag);cv.addEventListener("pointercancel",function(){drag=null});
 
 /* ---------- export ---------- */
