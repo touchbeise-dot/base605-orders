@@ -220,11 +220,11 @@ details.other[open] summary::before{content:"▾ ";}
 .swrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 @media (min-width:900px){
   .ed.fig{grid-template-columns:210px minmax(0,1fr) 340px;gap:22px}
-  .fig .edhead{grid-column:1/-1;grid-row:1}
-  .fig .layers{grid-column:1;grid-row:2/span 2;position:sticky;top:calc(var(--hh,64px) + 12px);align-self:start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px}
-  .fig .stage{grid-column:2;grid-row:2}
-  .fig .hint{grid-column:2;grid-row:3}
-  .fig>.panel{grid-column:3;grid-row:2/span 2;position:sticky;top:calc(var(--hh,64px) + 12px);max-height:calc(100vh - var(--hh,64px) - 110px);overflow:auto;align-self:start;padding-right:2px}
+  .ed.fig .edhead{grid-column:1/-1;grid-row:1}
+  .ed.fig .layers{grid-column:1;grid-row:2/span 2;position:sticky;top:calc(var(--hh,64px) + 12px);align-self:start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+  .ed.fig .stage{grid-column:2;grid-row:2}
+  .ed.fig .hint{grid-column:2;grid-row:3}
+  .ed.fig>.panel{grid-column:3;grid-row:2/span 2;position:sticky;top:calc(var(--hh,64px) + 12px);max-height:calc(100vh - var(--hh,64px) - 110px);overflow:auto;align-self:start;padding-right:2px}
 }
 @media (max-width:899px){
   .fig .layers{flex-direction:row;align-items:center;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
