@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Base 605 · Orders</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -245,6 +245,47 @@ body.itemopen{overflow:hidden}
 .pf-acts{display:flex;gap:10px;margin-top:16px}.pf-acts button{flex:1;padding:13px;font-size:15px}
 .cx-in-l .pr{opacity:.6}.cx-in-l em{font-style:normal;font-size:12px;font-weight:700;color:var(--mute);margin-left:4px}.cx-in-l em.ok{color:var(--brand)}
 .cx-in-x{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:13px}.cx-in-x .note{margin-left:auto;font-size:12px}
+
+/* text size */
+.tsz{display:flex;background:#f0ebe4;border-radius:12px;padding:3px;gap:3px}
+.tsz button{flex:1;border:0;background:none;font:inherit;font-weight:600;font-size:14px;padding:9px 0;border-radius:10px;color:var(--mute);cursor:pointer}
+.tsz button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0002}
+.tsz button[data-z="0.85"]{font-size:12px}.tsz button[data-z="0.92"]{font-size:13px}
+@supports (zoom:1){html[style*="zoom"] input,html[style*="zoom"] select,html[style*="zoom"] textarea{font-size:calc(16px / var(--uiz,1))!important}}
+/* today: new orders strip */
+.xban .xnew{margin-top:12px;width:100%;max-width:420px;display:flex;align-items:center;gap:12px;background:#fff;color:var(--ink);border:0;border-radius:14px;padding:10px 12px;font:inherit;text-align:left;cursor:pointer}
+.xnew .xn{display:flex;flex-direction:column;align-items:center;min-width:56px;padding-right:12px;border-right:1px solid var(--line)}
+.xnew .xn b{font-size:26px;line-height:1;color:#922b2c}.xnew .xn small{font-size:11px;font-weight:700;color:var(--mute);white-space:nowrap}
+.xnew .xg{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:1px 10px}.xnew .xg b{font-size:15px}.xnew .xg small{font-size:11.5px;color:var(--mute);font-weight:600}
+.xnew .xc{font-size:18px;color:#9a918a}
+.xban .xpills{display:flex;gap:6px;flex-wrap:wrap}.xban .xpills .xpill{margin-top:10px}
+/* stats day/week */
+.sstep{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.sstep[hidden]{display:none}
+.sstep button{width:44px;height:44px;font-size:22px;padding:0;border-radius:12px}
+.sstep button:disabled{opacity:.35}
+.sslbl{text-align:center}.sslbl b{display:block;font-size:17px}.sslbl small{font-size:12px;font-weight:700;color:var(--brand);letter-spacing:.04em}
+.skpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+@media (min-width:900px){.skpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.skpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 13px}
+.skpi span{display:block;font-size:12px;font-weight:600;color:var(--mute)}.skpi b{display:block;font-size:24px;font-weight:800;margin-top:2px}
+.skpi small{font-size:12px;font-weight:600;color:var(--mute)}.skpi .dup{color:var(--brand);font-weight:700}.skpi .ddn{color:#9a2e36;font-weight:700}
+.slist h3{display:flex;justify-content:space-between}
+.srow{display:flex;align-items:center;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:none;padding:10px 0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.srow .st{font-size:12px;color:var(--mute);font-weight:600;width:58px;flex:0 0 auto}
+.srow .sn{flex:1;min-width:0}.srow .sn b{display:block;font-size:14.5px}.srow .sn small{display:block;font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .sp{text-align:right}.srow .sp b{display:block;font-size:14.5px}.srow .sp i{font-style:normal;font-size:11px;font-weight:700;border-radius:999px;padding:2px 7px}
+.srow .pay-paid{background:#e4f0e7;color:#2a5440}.srow .pay-partial{background:#e4f0e7;color:#2a5440}.srow .pay-unpaid{background:#fbeed8;color:#8a5400}
+.smix{display:flex;height:12px;border-radius:999px;overflow:hidden;gap:2px}.smix i{display:block}
+.smixl{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12.5px;font-weight:600}.smixl i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.swh{display:flex;justify-content:space-between;align-items:center}.swh h3{margin:0}
+.sseg{display:flex;background:#f0ebe4;border-radius:8px;padding:2px;gap:2px}.sseg button{border:0;background:none;font:inherit;font-size:12px;font-weight:600;padding:5px 10px;border-radius:6px;color:var(--mute);cursor:pointer}.sseg button.on{background:#fff;color:var(--ink);font-weight:700}
+.sbars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end;height:160px;margin-top:12px}
+.sbar{display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:flex-end;height:100%}
+.sbar em{font-style:normal;font-size:12px;font-weight:700}.sbar i{display:block;width:100%;background:#c98a8b;border-radius:6px 6px 2px 2px}
+.sbar span{font-size:11.5px;font-weight:600;color:var(--mute)}
+.sbar.today i{background:#922b2c}.sbar.today em,.sbar.today span{color:#922b2c;font-weight:800}
+.sbar.fut em{color:#b9b2aa}.sbar.fut i{border-top:2px dashed #e5ded6;background:none;height:0!important}
 .upwrap{margin-top:10px}
 .upz{width:100%;border:1.5px dashed #c9b9b0;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;background:#fffaf7;text-align:left;cursor:pointer;font:inherit;color:inherit}
 .upz .ic{width:42px;height:42px;border-radius:10px;background:#f3e6e1;display:grid;place-items:center;font-size:20px;flex:0 0 auto}
@@ -440,6 +481,13 @@ body.itemopen{overflow:hidden}
 .qrs .q-gcash img{border-color:#007DFE}.qrs .q-gcash figcaption{color:#007DFE}
 .qrs .q-bpi img{border-color:#B11116}.qrs .q-bpi figcaption{color:#B11116}
 .inv-foot{margin-top:12px;font-size:13px;color:#6b6b74;text-align:center}
+.inv .fitn{display:block;line-height:1.3;overflow-wrap:anywhere}
+.inv .inv-meta{grid-template-columns:minmax(0,1fr) auto}
+.inv .fitt{display:block;line-height:1.35;white-space:normal}
+.inv .fitt .ic{font-size:1.14em}.inv .fitt .ip{font-size:.75em}
+.inv .fits{line-height:1.35}
+.inv table.it .ln td:first-child{white-space:nowrap}
+
 .dmap{width:100%;display:block;border-radius:10px;margin-top:12px;max-height:260px;object-fit:cover}
 .dloc{margin-top:12px;padding:12px 14px;background:#f7f3ee;border-left:4px solid #f9a75d;border-radius:10px}
 .dloc b{display:block;font-size:16px}
@@ -718,7 +766,7 @@ button.ok-flash{background:#2e9e5b !important;color:#fff !important;border-color
 .pkg{width:2in;background:#fff;color:#111;border:1px solid #999;padding:.09in .11in .09in;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.2;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid}
 .pkg .lh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2.5px solid #111;padding-bottom:4px;font-weight:600;font-size:9.5pt;letter-spacing:.05em}
 .pkg .lh span:last-child{letter-spacing:0;font-size:10.5pt}
-.pkg .ln{font-family:"Archivo Black",-apple-system,system-ui,sans-serif;font-size:22pt;font-weight:400;line-height:1.0;margin:9px 0 7px;overflow-wrap:anywhere;text-transform:uppercase;letter-spacing:0}
+.pkg .ln{font-family:"Oswald","Archivo Black",-apple-system,system-ui,sans-serif;font-size:26pt;font-weight:700;line-height:1.05;margin:9px 0 7px;overflow-wrap:normal;word-break:normal;hyphens:none;overflow:hidden;text-transform:uppercase;letter-spacing:0}
 .pkg .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;padding-top:7px;border-top:1px solid #999}
 .pkg .chips span{display:inline-flex;align-items:center;gap:4px;font-size:9pt;font-weight:700;padding:2px 3px 2px 7px;border:1.5px solid #111;border-radius:999px;white-space:nowrap}
 .pkg .chips b{background:#111;color:#fff;border-radius:999px;padding:1px 6px;font-size:8pt;font-weight:700}
@@ -824,12 +872,14 @@ section.enter-back{animation:inBack .2s ease-out}
   </section>
 
   <section id="tab-stats" hidden>
-    <div class="tabs" id="statsRange"><button data-r="month" class="on">This month</button><button data-r="all">All time</button></div>
+    <div class="tabs" id="statsRange"><button data-r="day">Day</button><button data-r="week">Week</button><button data-r="month" class="on">Month</button><button data-r="all">All time</button></div>
+    <div class="sstep" id="statsStep" hidden><button type="button" class="ghost" id="ssPrev" aria-label="Earlier">‹</button><div class="sslbl"><b id="ssTitle"></b><small id="ssSub"></small></div><button type="button" class="ghost" id="ssNext" aria-label="Later">›</button></div>
     <div id="stats"></div>
   </section>
 
   <section id="tab-cat" hidden>
-    <p class="note" style="margin:0 0 12px">Changes here apply to every device. Prices only affect new orders; existing orders keep what they were saved with.</p>
+    <div class="card"><h3>Text size <span class="note">· this device only</span></h3><div class="tsz" id="tszSeg"><button type="button" data-z="0.85">Smaller</button><button type="button" data-z="0.92">Small</button><button type="button" data-z="1">Normal</button></div><p class="note" style="margin:8px 0 0">Makes everything in the app smaller so more fits on the screen.</p></div>
+    <p class="note" style="margin:0 0 12px">Changes below apply to every device. Prices only affect new orders; existing orders keep what they were saved with.</p>
     <div id="catProducts"></div>
     <button class="ghost" id="catAdd" type="button" style="width:100%;margin-bottom:12px">+ Add a product</button>
     <div class="card">
@@ -1668,7 +1718,7 @@ function renderInvoice(o,mode="full"){
     const which=o.payment&&PAYMENTS[o.payment]?[o.payment]:["gcash","bpi"];
     const qrs=which.filter(k=>QR[k]).map(k=>`<figure class="q-${k}"><img src="${QR[k]}" alt="${PAYMENTS[k].label} QR"><figcaption>${PAYMENTS[k].label} · scan to pay</figcaption></figure>`).join("");
     $("invoice").innerHTML=`<div class="inv-band"><img src="${LOGO}" alt="Base 605"><div class="no">${o.no?ono(o.no):"Order"}<small>Balance due</small></div></div><div class="inv-rule"></div><div class="inv-body">
-      <div class="inv-meta"><div><b>Customer</b>${esc(o.customer)}</div><div><b>Release date</b>${o.releaseDate?fmtDate(o.releaseDate):"TBD"}</div></div>
+      <div class="inv-meta"><div><b>Customer</b><span class="fitn">${esc(o.customer)}</span></div><div><b>Release date</b>${o.releaseDate?fmtDate(o.releaseDate):"TBD"}</div></div>
       <table><tr class="sub"><td>Order total</td><td>${peso(o.total)}</td></tr><tr class="sub"><td>Paid so far</td><td>${peso(paid)}</td></tr><tr class="tot"><td>Balance due</td><td>${peso(bal)}</td></tr></table>
       <div class="pay"><h3>Pay the balance via</h3><div class="acct" style="border-top:0;margin-top:0;padding-top:0">${acct}</div>${qrs?`<div class="qrs">${qrs}</div>`:""}</div>
       <div class="inv-foot">Please settle before release · send proof of payment in our chat</div></div>`;
@@ -1691,7 +1741,7 @@ function renderInvoice(o,mode="full"){
     const [pb,pf]=pillFor(i.product);
     const notes=[i.sender?`Name: ${esc(i.sender)}`:"",i.greeting?`“${esc(i.greeting)}”`:""].filter(Boolean).join(" · ");
     const title=i.code?`<span class="ic">${esc(i.code)}</span><span class="ip" style="background:${pb};color:${pf}">${esc(i.product)}</span>`:`<span class="ic">${esc(i.product)}</span>`;
-    return `<tr class="gr"><td colspan="3">${title}${notes?`<small>${notes}</small>`:""}</td><td>${peso(i.line)}</td></tr>`+lines.map((l,k)=>ln(l[0],l[1],l[2],l[3],k===lines.length-1)).join("");
+    return `<tr class="gr"><td colspan="3"><span class="fitt">${title}</span>${notes?`<small class="fits">${notes}</small>`:""}</td><td>${peso(i.line)}</td></tr>`+lines.map((l,k)=>ln(l[0],l[1],l[2],l[3],k===lines.length-1)).join("");
   }).join("");
   const extras=(rushN(o)?`<tr class="xr"><td>${rushLabel(o).replace(/ ×\d+$/,"")}</td><td>${rushN(o)}</td><td>${peso(RUSH)}</td><td>${peso(rushFee(o))}</td></tr>`:"")+(o.shipping?`<tr class="xr"><td>J&amp;T delivery</td><td>1</td><td>${peso(o.shipping)}</td><td>${peso(o.shipping)}</td></tr>`:"");
   const acct=esc(payDetails(o)).replace(/\n/g,"<br>");
@@ -1700,11 +1750,20 @@ function renderInvoice(o,mode="full"){
   const qrBlock=qrs&&paid<o.total?`<div class="qrs">${qrs}</div>`:"";
   const pay=paid>=o.total?`<h3>Fully paid — thank you!</h3>`:paid>0?`<h3>Payment</h3><div class="opt"><span>Paid</span><span>${peso(paid)}</span></div><div class="opt"><span>Remaining balance</span><span>${peso(bal)}</span></div><div class="acct">${acct}</div>${qrBlock}`:`<h3>Payment options</h3><div class="opt"><span>50% downpayment</span><span>${peso(half)}</span></div><div class="opt"><span>Full payment</span><span>${peso(o.total)}</span></div><div class="acct">${acct}</div>${qrBlock}`;
   $("invoice").innerHTML=`<div class="inv-band"><img src="${LOGO}" alt="Base 605"><div class="no">${o.no?ono(o.no):"Order"}<small>${fmt(o.createdAt)}</small></div></div><div class="inv-rule"></div><div class="inv-body">
-    <div class="inv-meta"><div><b>Customer</b>${esc(o.customer)}${o.contact?`<br>${esc(o.contact)}`:""}</div><div><b>Release date</b>${o.releaseDate?fmtDate(o.releaseDate):"TBD"}</div></div>
+    <div class="inv-meta"><div><b>Customer</b><span class="fitn">${esc(o.customer)}</span>${o.contact?esc(o.contact):""}</div><div><b>Release date</b>${o.releaseDate?fmtDate(o.releaseDate):"TBD"}</div></div>
     <table class="it"><tr class="th"><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr>${rows}${extras}<tr class="tt"><td colspan="3">Total</td><td>${peso(o.total)}</td></tr></table>
     <div class="pay">${pay}</div><div class="inv-foot">Send proof of payment in our chat · balance due before release</div></div>`;
 }
-function showInvoice(o,mode="full"){lastOrder=o;invMode=mode;renderInvoice(o,mode);go("done");}
+function showInvoice(o,mode="full"){lastOrder=o;invMode=mode;renderInvoice(o,mode);go("done");requestAnimationFrame(()=>fitInv($("invoice")));}
+// shrink long names so they fit: customer on 1 line (2 if very long), design title on 1 line, sender/greeting on 2 lines
+function fitText(el,lines,min){if(!el||!el.offsetParent)return false;el.style.fontSize="";const cs=getComputedStyle(el);let fs=parseFloat(cs.fontSize);
+  const lh=()=>parseFloat(getComputedStyle(el).lineHeight)||fs*1.3;let guard=40;
+  while(el.getBoundingClientRect().height>lines*lh()+1&&fs>min&&guard--){fs-=0.5;el.style.fontSize=fs+"px";}
+  return el.getBoundingClientRect().height<=lines*lh()+1;}
+function fitInv(root){if(!root)return;
+  root.querySelectorAll(".fitn").forEach(el=>{if(!fitText(el,1,12)){el.style.fontSize="";fitText(el,2,11);}});
+  root.querySelectorAll(".fitt").forEach(el=>fitText(el,1,10.5));
+  root.querySelectorAll(".fits").forEach(el=>fitText(el,2,10));}
 $("copy").onclick=async()=>{try{await navigator.clipboard.writeText(invMode==="balance"?fillMessage(CAT.messages.balance,lastOrder):messageFor(lastOrder));toast("Copied");}catch{toast("Copy failed");}};
 $("another").onclick=()=>go("new");$("toToday").onclick=()=>go("today");
 async function downloadPng(el,name,btn){
@@ -1730,14 +1789,14 @@ function showDelivery(o){
   $("pickSel").value=known?cur.id:(cur&&cur.name?"__custom":"");
   $("pickCustom").hidden=$("pickSel").value!=="__custom";
   if(cur&&!known){$("pcName").value=cur.name||"";$("pcAddr").value=cur.address||"";$("pcPerson").value=cur.person||"";$("pcPhone").value=cur.phone||"";$("pcMaps").value=cur.maps||"";}
-  renderDelivery(); go("deliv");
+  renderDelivery(); go("deliv");requestAnimationFrame(()=>fitInv($("deliv")));
 }
 function renderDelivery(){
   const o=delivOrder; if(!o)return; const p=o.pickup;
   if(!p||!p.name){$("deliv").innerHTML=`<div class="inv-band"><img src="${LOGO}" alt="Base 605"><div class="no">${ono(o.no)}<small>Delivery details</small></div></div><div class="inv-rule"></div><div class="inv-body"><p class="note" style="padding:20px 0;text-align:center">Choose a pickup location above.</p></div>`;return;}
   const mapsLine=p.maps?`<div style="margin-top:8px;font-size:13px;word-break:break-all"><b style="display:inline;font-size:11px;color:#6b6b74;text-transform:uppercase;letter-spacing:.04em">Map </b>${esc(p.maps)}</div>`:"";
   $("deliv").innerHTML=`<div class="inv-band"><img src="${LOGO}" alt="Base 605"><div class="no">${ono(o.no)}<small>Pickup details</small></div></div><div class="inv-rule"></div><div class="inv-body">
-    <div class="inv-meta"><div><b>Customer</b>${esc(o.customer)}${o.contact?`<br>${esc(o.contact)}`:""}</div><div><b>Items</b>${o.items.map(i=>`${esc(i.product.replace(" Tag",""))}${i.code?" "+esc(i.code):""}${i.pieces?" ×"+i.pieces:""}`).join(", ")}</div></div>
+    <div class="inv-meta"><div><b>Customer</b><span class="fitn">${esc(o.customer)}</span>${o.contact?esc(o.contact):""}</div><div><b>Items</b>${o.items.map(i=>`${esc(i.product.replace(" Tag",""))}${i.code?" "+esc(i.code):""}${i.pieces?" ×"+i.pieces:""}`).join(", ")}</div></div>
     <div class="dloc"><b>${esc(p.name)}</b>${esc(p.address)}<div class="who2">Contact: ${esc(p.person)}${p.phone?` · ${esc(p.phone)}`:""}</div>${mapsLine}</div>
     ${p.map?`<img class="dmap" src="${p.map}" alt="Map">`:""}
     <div class="inv-foot">Book Grab or Lalamove to this address · send us the rider's details once booked</div></div>`;
@@ -1773,9 +1832,14 @@ function labelHtml(o){
   const grp={};o.items.forEach(i=>{const k=i.code||i.product.replace(" Tag","").replace(" (own design)","");const g=grp[k]=grp[k]||{n:0,pcs:0,sizes:new Set()};g.n++;g.pcs+=Number(i.pieces)||0;g.sizes.add(Number(i.pieces)||0);});
   const chips=Object.entries(grp).map(([k,g])=>`<span>${esc(k)}<b>${g.n} pack${g.n===1?"":"s"}</b><i>${g.sizes.size===1?"×"+[...g.sizes][0]:g.pcs+" pcs"}</i></span>`).join("");
   const npk=o.items.length,ntg=o.items.reduce((a,i)=>a+(Number(i.pieces)||0),0);
-  return `<div class="pkg"><div class="lh"><span>BASE 605</span><span>${ono(o.no)}${rushN(o)?" · RUSH":""}</span></div><div class="ln">${esc(o.customer)}</div>${o.contact?`<div class="ld">${esc(o.contact)}</div>`:""}${deliv}${chips?`<div class="chips">${chips}</div><div class="tot">${npk} pack${npk===1?"":"s"} · ${ntg} tags</div>`:""}</div>`;
+  return `<div class="pkg"><div class="lh"><span>BASE 605</span><span>${ono(o.no)}${rushN(o)?" · RUSH":""}</span></div><div class="ln">${esc(o.customer)}</div>${o.contact?`<div class="ld">${esc(o.contact)}</div>`:""}${deliv}</div>`;
 }
-function showLabels(list){labelOrders=list;labelPrev=tab;$("labels").innerHTML=list.map(labelHtml).join("");$("labelPng").style.display=list.length===1?"":"none";go("label");}
+function showLabels(list){labelOrders=list;labelPrev=tab;$("labels").innerHTML=list.map(labelHtml).join("");$("labelPng").style.display=list.length===1?"":"none";go("label");fitLabels();}
+// names wrap only between words; if one word is too wide for the label, the name shrinks until it fits (no "FLORCRU / Z")
+function fitLabels(){const run=()=>document.querySelectorAll("#labels .pkg .ln").forEach(el=>{
+  el.style.fontSize="";let pt=26;
+  while(el.scrollWidth>el.clientWidth+0.5&&pt>8){pt-=0.5;el.style.fontSize=pt+"pt";}});
+  requestAnimationFrame(run);if(document.fonts&&document.fonts.load)document.fonts.load('700 26pt "Oswald"').then(()=>requestAnimationFrame(run),()=>{});}
 $("labelBack").onclick=()=>go(labelPrev||"today");
 $("labelPng").onclick=()=>downloadPng($("labels").firstElementChild,`base605-${labelOrders[0]&&labelOrders[0].no?ono(labelOrders[0].no).slice(1):"order"}-label.png`,$("labelPng"));
 $("labelPrint").onclick=()=>{const st=document.createElement("style");st.textContent="@page{size:2in auto;margin:0}";document.head.appendChild(st);document.body.classList.add("print-labels");const done=()=>{document.body.classList.remove("print-labels");st.remove();window.removeEventListener("afterprint",done);};window.addEventListener("afterprint",done);setTimeout(()=>window.print(),60);};
@@ -1954,8 +2018,10 @@ function renderToday(){
   const now=new Date(),dateLine=now.toLocaleDateString("en-PH",{weekday:"long",month:"short",day:"numeric"}).toUpperCase().replace(",", " ·");
   const flakes=[[72,18,.45,16],[80,56,.3,24],[88,12,.4,12],[76,98,.25,14],[93,84,.5,18],[66,64,.22,11],[97,30,.3,10]].map(([x,y,o,z])=>`<span class="fl" style="left:${x}%;top:${y}px;opacity:${o};font-size:${z}px">❄</span>`).join("");
   $("xban").innerHTML=`${flakes}<svg class="xstar" viewBox="0 0 24 24"><path d="M12 0C12.8 7 17 11.2 24 12C17 12.8 12.8 17 12 24C11.2 17 7 12.8 0 12C7 11.2 11.2 7 12 0Z" fill="#f9a75d"/></svg>
-    <div class="xin"><div class="xtxt"><div class="xd">${dateLine}</div><div class="xt">Today</div><div class="xs">${xmasLine(active.length)}</div><div class="xpill">${peso(owedAmt)} still to collect</div></div>
+    <div class="xin"><div class="xtxt"><div class="xd">${dateLine}</div><div class="xt">Today</div><div class="xs">${xmasLine(active.length)}</div>${(()=>{const t0=dayStart(new Date()),T=periodStats(t0,addDays(t0,1)),Y=periodStats(addDays(t0,-1),t0),d=T.rows.length-Y.rows.length;
+      return `<button type="button" class="xnew" id="xNew"><span class="xn"><b>${T.rows.length}</b><small>new today</small></span><span class="xg"><b>${peso(T.sales)}</b><b>${T.tags} tags</b><small>sales today</small><small>to make</small></span><span class="xc">›</span></button><div class="xpills"><span class="xpill">${peso(owedAmt)} still to collect</span>${d?`<span class="xpill">${d>0?"+":"−"}${Math.abs(d)} vs yesterday</span>`:""}</div>`;})()}</div>
     <div class="xstats"><div><b>${peso(owedAmt)}</b><span>to collect</span></div><div><b>${relToday}</b><span>releasing today</span></div><div><b>${relSoon}</b><span>releasing soon</span></div></div></div>`;
+  if($("xNew"))$("xNew").onclick=()=>{go("stats");setStatsRange("day",0);};
   if(loading){$("todayLists").innerHTML='<div class="loading">Loading orders…</div>';return;}
   if(!orders.length){$("todayLists").innerHTML=`<div class="empty">No orders yet. Tap + to log the first one.</div>`;return;}
   const sortRel=(a,b)=>String(a.releaseDate||"9").localeCompare(String(b.releaseDate||"9"));
@@ -2039,11 +2105,32 @@ function renderPrint(){
 }
 
 // ===== STATS =====
-let statsRange="month";
-$("statsRange").addEventListener("click",e=>{const b=e.target.closest("button[data-r]");if(!b)return;statsRange=b.dataset.r;document.querySelectorAll("#statsRange button").forEach(x=>x.classList.toggle("on",x===b));renderStats();});
+let statsRange="month",statsOff=0,statsWkMode="orders";
+function setStatsRange(r,off){statsRange=r;statsOff=off||0;document.querySelectorAll("#statsRange button").forEach(x=>x.classList.toggle("on",x.dataset.r===r));renderStats();}
+$("statsRange").addEventListener("click",e=>{const b=e.target.closest("button[data-r]");if(!b)return;setStatsRange(b.dataset.r,0);});
+$("ssPrev").onclick=()=>{statsOff--;renderStats();};$("ssNext").onclick=()=>{if(statsOff<0){statsOff++;renderStats();}};
+// ---- day / week helpers (local time)
+function dayStart(d){const x=new Date(d);x.setHours(0,0,0,0);return x;}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function weekStart(d){const x=dayStart(d),wd=(x.getDay()+6)%7;return addDays(x,-wd);}
+function inRange(t,a,b){const v=new Date(t).getTime();return v>=a.getTime()&&v<b.getTime();}
+function periodStats(a,b){
+  const rows=orders.filter(o=>o.status!=="cancelled"&&o.createdAt&&inRange(o.createdAt,a,b));
+  const sales=rows.reduce((x,o)=>x+(Number(o.total)||0),0),tags=rows.reduce((x,o)=>x+o.items.reduce((y,i)=>y+(Number(i.pieces)||0),0),0);
+  let collected=0,payN=0;orders.forEach(o=>{if(o.status==="cancelled")return;const log=o.payLog||[];
+    if(log.length)log.forEach(l=>{if(l.at&&inRange(l.at,a,b)){collected+=Number(l.amt)||0;payN++;}});
+    else if(Number(o.paid)>0&&o.createdAt&&inRange(o.createdAt,a,b)){collected+=Number(o.paid);payN++;}});
+  return {rows,sales,tags,collected,payN};
+}
+function deltaTxt(cur,prev,money,label){const d=cur-prev;if(!d)return `<span class="dz">same as ${label}</span>`;return `<span class="${d>0?"dup":"ddn"}">${d>0?"+":"−"}${money?peso(Math.abs(d)):Math.abs(d)} vs ${label}</span>`;}
+function kpiCard(t,v,sub){return `<div class="skpi"><span>${t}</span><b>${v}</b><small>${sub}</small></div>`;}
+function productOf(i){return String(i.product||"").replace(/\s*\(.*?\)\s*/g," ").replace(/\s+tags?$/i,"").trim();}
 function rankList(map,f=v=>v){const arr=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,8);if(!arr.length)return'<div class="note">Nothing yet</div>';const max=arr[0][1];return `<ul class="rank">${arr.map(([k,v])=>`<li><span>${esc(k)}</span><span class="barw"><i style="width:${Math.round(v/max*100)}%"></i></span><b>${f(v)}</b></li>`).join("")}</ul>`;}
 function renderStats(){
   const el=$("stats");if(loading){el.innerHTML='<div class="loading">Loading…</div>';return;}
+  $("statsStep").hidden=!(statsRange==="day"||statsRange==="week");
+  if(statsRange==="day"){renderStatsDay(el);return;}
+  if(statsRange==="week"){renderStatsWeek(el);return;}
   const ym=new Date().toISOString().slice(0,7);
   const rows=orders.filter(o=>o.status!=="cancelled"&&(statsRange==="all"||String(o.createdAt).slice(0,7)===ym));
   const revenue=rows.reduce((a,o)=>a+(Number(o.total)||0),0),collected=rows.reduce((a,o)=>a+Math.min(Number(o.paid)||0,Number(o.total)||0),0);
@@ -2056,6 +2143,41 @@ function renderStats(){
     <div class="card"><h3>Top customers</h3>${rankList(spend,peso)}</div>
     <div class="card"><h3>Pieces printed</h3><b style="font-size:24px">${pieces.toLocaleString("en-PH")}</b> <span class="note">across all orders</span></div>`;
 }
+
+function renderStatsDay(el){
+  const a=addDays(dayStart(new Date()),statsOff),b=addDays(a,1),pa=addDays(a,-1);
+  const S=periodStats(a,b),P=periodStats(pa,a),pl=pa.toLocaleDateString("en-PH",{weekday:"long"});
+  $("ssTitle").textContent=a.toLocaleDateString("en-PH",{weekday:"long",month:"short",day:"numeric"});$("ssSub").textContent=statsOff===0?"TODAY":statsOff===-1?"YESTERDAY":"";$("ssNext").disabled=statsOff>=0;
+  const list=S.rows.slice().sort((x,y)=>String(x.createdAt).localeCompare(String(y.createdAt)));
+  const mix={};S.rows.forEach(o=>o.items.forEach(i=>{const k=productOf(i)||"Other";mix[k]=(mix[k]||0)+1;}));
+  const MIXC=["#922b2c","#2f5d44","#2b4a63","#9a5b00","#5b4b8f","#75706a"],mk=Object.entries(mix).sort((x,y)=>y[1]-x[1]);
+  el.innerHTML=`<div class="skpis">${kpiCard("New orders",S.rows.length,deltaTxt(S.rows.length,P.rows.length,false,pl))}${kpiCard("Sales",peso(S.sales),deltaTxt(S.sales,P.sales,true,pl))}${kpiCard("Collected",peso(S.collected),S.payN?`from ${S.payN} payment${S.payN===1?"":"s"}`:"no payments")}${kpiCard("Tags ordered",S.tags.toLocaleString("en-PH"),`${Math.ceil(S.tags/10)} sheets`)}</div>
+  <div class="card slist"><h3>Orders received <span class="note">${list.length}</span></h3>${list.length?list.map(o=>{const ps=payState(o);return `<button type="button" class="srow" data-id="${esc(o.id)}"><span class="st">${new Date(o.createdAt).toLocaleTimeString("en-PH",{hour:"numeric",minute:"2-digit"})}</span><span class="sn"><b>${esc(o.customer)}</b><small>${esc(o.items.map(i=>i.code||productOf(i)).join(", "))} · ${o.items.reduce((x,i)=>x+(Number(i.pieces)||0),0)} pcs</small></span><span class="sp"><b>${peso(o.total)}</b><i class="pay-${ps}">${ps==="paid"?"paid":ps==="partial"?"part paid":"unpaid"}</i></span></button>`;}).join(""):`<p class="note">No orders came in this day.</p>`}</div>
+  ${mk.length?`<div class="card"><h3>What they ordered</h3><div class="smix">${mk.map(([k,v],i)=>`<i style="flex:${v};background:${MIXC[i%MIXC.length]}"></i>`).join("")}</div><div class="smixl">${mk.map(([k,v],i)=>`<span><i style="background:${MIXC[i%MIXC.length]}"></i>${esc(k)} ${v}</span>`).join("")}</div></div>`:""}`;
+  el.querySelectorAll(".srow").forEach(b=>b.onclick=()=>{const o=orders.find(x=>x.id===b.dataset.id);if(o)openOrder(o);});
+}
+function renderStatsWeek(el){
+  const a=addDays(weekStart(new Date()),statsOff*7),b=addDays(a,7),pa=addDays(a,-7);
+  const S=periodStats(a,b),P=periodStats(pa,a),fm=d=>d.toLocaleDateString("en-PH",{month:"short",day:"numeric"});
+  $("ssTitle").textContent=`${fm(a)} – ${fm(addDays(b,-1))}`;$("ssSub").textContent=statsOff===0?"THIS WEEK":statsOff===-1?"LAST WEEK":"";$("ssNext").disabled=statsOff>=0;
+  const today=dayStart(new Date()),days=[...Array(7)].map((_,i)=>{const d=addDays(a,i),r=periodStats(d,addDays(d,1));return {d,n:r.rows.length,sales:r.sales,future:d>today,today:d.getTime()===today.getTime()};});
+  const val=x=>statsWkMode==="sales"?x.sales:x.n,max=Math.max(1,...days.map(val)),best=days.filter(x=>x.n).sort((x,y)=>y.n-x.n||y.sales-x.sales)[0];
+  const codes={};S.rows.forEach(o=>{const seen={};o.items.forEach(i=>{if(i.code&&!seen[i.code]){seen[i.code]=1;codes[i.code]=(codes[i.code]||0)+1;}});});
+  const top=Object.entries(codes).sort((x,y)=>y[1]-x[1]).slice(0,5);
+  el.innerHTML=`<div class="skpis">${kpiCard("New orders",S.rows.length,deltaTxt(S.rows.length,P.rows.length,false,"last week"))}${kpiCard("Sales",peso(S.sales),deltaTxt(S.sales,P.sales,true,"last week"))}${kpiCard("Collected",peso(S.collected),S.payN?`from ${S.payN} payment${S.payN===1?"":"s"}`:"no payments")}${kpiCard("Tags ordered",S.tags.toLocaleString("en-PH"),`${Math.ceil(S.tags/10)} sheets`)}</div>
+  <div class="card"><div class="swh"><h3>${statsWkMode==="sales"?"Sales":"Orders"} per day</h3><div class="sseg"><button type="button" data-m="orders" class="${statsWkMode==="orders"?"on":""}">Orders</button><button type="button" data-m="sales" class="${statsWkMode==="sales"?"on":""}">Sales</button></div></div>
+  <div class="sbars">${days.map(x=>{const v=val(x),h=x.future?0:Math.round(v/max*110);return `<div class="sbar${x.today?" today":""}${x.future?" fut":""}"><em>${x.future?"–":statsWkMode==="sales"?(v?"₱"+(v>=1000?(v/1000).toFixed(1).replace(/\.0$/,"")+"k":v):"0"):v}</em><i style="height:${Math.max(x.future?0:3,h)}px"></i><span>${x.d.toLocaleDateString("en-PH",{weekday:"short"})}</span></div>`;}).join("")}</div>
+  ${best?`<p class="note" style="margin:10px 0 0">Best day: <b>${best.d.toLocaleDateString("en-PH",{weekday:"long"})}</b> · ${best.n} order${best.n===1?"":"s"} · ${peso(best.sales)}</p>`:""}</div>
+  <div class="card"><h3>Top designs this week</h3>${top.length?`<ul class="rank">${top.map(([k,v])=>`<li><span>${esc(k)}</span><span class="barw"><i style="width:${Math.round(v/top[0][1]*100)}%"></i></span><b>${v} order${v===1?"":"s"}</b></li>`).join("")}</ul>`:'<div class="note">Nothing yet</div>'}</div>`;
+  el.querySelectorAll(".sseg button").forEach(b=>b.onclick=()=>{statsWkMode=b.dataset.m;renderStats();});
+}
+
+// ===== TEXT SIZE (per device) =====
+function uiScale(){let z=1;try{z=Number(localStorage.getItem("b605-ui-scale"))||1;}catch(e){}return z;}
+function applyUiScale(z){z=[0.85,0.92,1].includes(z)?z:1;document.documentElement.style.zoom=z===1?"":String(z);document.documentElement.style.setProperty("--uiz",z);
+  document.querySelectorAll("#tszSeg button").forEach(b=>b.classList.toggle("on",Number(b.dataset.z)===z));}
+$("tszSeg").addEventListener("click",e=>{const b=e.target.closest("button[data-z]");if(!b)return;const z=Number(b.dataset.z);try{localStorage.setItem("b605-ui-scale",String(z));}catch(e){}applyUiScale(z);toast(z===1?"Normal text size":"Text size changed on this device");});
+applyUiScale(uiScale());
 
 // ===== CATALOG UI =====
 let catDraft=null;
