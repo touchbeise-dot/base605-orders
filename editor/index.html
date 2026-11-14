@@ -401,6 +401,41 @@ details.oact .obtns{margin-top:8px}
   .morebtns button:disabled{opacity:.35;border-style:solid}
 }
 @media (min-width:900px){#moreBox{display:none!important}}
+
+.esheet-bg{position:fixed;inset:0;background:rgba(30,18,18,.45);z-index:90;display:none;align-items:flex-end;justify-content:center}
+.esheet-bg.show{display:flex}
+.esheet{background:var(--surface);color:var(--ink);width:100%;max-width:560px;max-height:92vh;overflow-y:auto;border-radius:22px 22px 0 0;padding:8px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.2)}
+@media (min-width:700px){.esheet-bg{align-items:center}.esheet{border-radius:20px}}
+.egrab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:2px auto 12px}
+.eh3{margin:0;font-size:20px}.esub{margin:3px 0 12px;color:var(--muted);font-size:13.5px}
+.eacts{display:flex;gap:10px;margin-top:16px}.eacts .btn{padding:13px}
+.eopt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px;margin-top:10px;cursor:pointer;font:inherit}
+.eopt .ic{width:44px;height:44px;border-radius:12px;background:var(--red-soft);color:var(--red);display:grid;place-items:center;font-size:20px;flex:0 0 auto}
+.eopt b{display:block;font-size:16px}.eopt small{color:var(--muted);font-size:13px}
+.fstage{background:var(--sunk);border-radius:12px;padding:12px;display:grid;place-items:center}
+.fstage canvas{display:block;box-shadow:0 2px 10px #0003;border-radius:2px;touch-action:none;max-width:100%}
+.fdim{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+.flab{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+.fseg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.fseg button{flex:1;border:0;background:var(--surface);color:var(--ink);padding:9px 4px;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.fseg button[aria-pressed="true"]{background:var(--pine);color:#fff}
+.fhint{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}.fhint:empty{display:none}
+.llist2{display:flex;flex-direction:column}
+.lrow{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;color:var(--ink);padding:11px 2px;font:inherit;cursor:pointer}
+.lrow:first-child{border-top:0}
+.lrow .radio{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;margin-top:1px}
+.lrow[aria-pressed="true"] .radio{border:7px solid var(--red)}
+.lrow .lt{flex:1;min-width:0}.lrow b{display:block;font-size:15px}.lrow b i{font-style:normal;color:var(--muted);font-weight:500}
+.lrow small{display:block;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow em{font-style:normal;font-size:12px;font-weight:700;color:var(--pine)}
+.newd{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:1.5px dashed var(--red);background:var(--surface);color:var(--ink);border-radius:14px;padding:12px 14px;margin:4px 0 10px;cursor:pointer;font:inherit}
+.newd .ic{width:38px;height:38px;border-radius:10px;background:var(--red);color:var(--red-ink);display:grid;place-items:center;font-size:20px;font-weight:700;flex:0 0 auto}
+.newd b{display:block;font-size:15px}.newd small{color:var(--muted);font-size:12.5px}
+.orow .chips span.upc{background:var(--surface);border:1.5px dashed var(--red);color:var(--red);cursor:pointer;padding:1px 8px}
+.ogrp h4{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sendall{border:0;background:var(--pine);color:#fff;border-radius:999px;padding:7px 12px;font:inherit;font-size:12.5px;font-weight:700;letter-spacing:0;text-transform:none;cursor:pointer;white-space:nowrap}
+.osend{color:var(--red);font-weight:700;cursor:pointer;white-space:nowrap}.osent{color:var(--pine);font-weight:700;white-space:nowrap}
+.ib.lnk{font-size:15px}.ib.lnk.on{background:var(--pine);border-color:var(--pine)}
 .stage .frame.focus{overflow:hidden;border-radius:10px;background:var(--sunk);box-shadow:inset 0 0 0 1px var(--line)}
 .stage .frame.focus canvas{transform-origin:0 0;box-shadow:none;border-radius:0;max-width:none;max-height:none}
 .stage .frame.focus::after{content:"Zoomed in · Done shows the whole tag";position:absolute;left:8px;bottom:8px;font:600 11px/1 -apple-system,system-ui,sans-serif;color:#fff;background:rgba(29,26,24,.62);padding:5px 8px;border-radius:999px;pointer-events:none}
@@ -429,8 +464,11 @@ details.oact .obtns{margin-top:8px}
 </header>
 
 <main>
+  <div class="esheet-bg" id="eSheetBg"><div class="esheet" id="eSheet" role="dialog"></div></div>
+  <input type="file" id="edUpFile" accept="image/*" hidden>
   <section id="vOr" class="wrap">
     <div class="dhead"><h2>Orders</h2><a class="back" href="../" style="text-decoration:none;color:inherit">← Order app</a></div>
+    <button type="button" class="newd" id="newDraft"><span class="ic">＋</span><span><b>New draft</b><small>Start a tag, then link it to an order</small></span></button>
     <p class="note" id="orNote">Loading orders…</p>
     <div class="ogrid" id="orList"></div>
   </section>
@@ -454,7 +492,7 @@ details.oact .obtns{margin-top:8px}
         <span class="code" id="edCode">SP14</span>
         <span class="pill" id="edTier">Standard ₱250</span>
         <span class="saved" id="edSaved"></span>
-        <span class="undo"><button class="ib" type="button" id="btnUndo" aria-label="Undo" title="Undo (Ctrl/⌘ Z)" disabled>↶</button><button class="ib" type="button" id="btnRedo" aria-label="Redo" title="Redo (Ctrl/⌘ Shift Z)" disabled>↷</button></span>
+        <button class="ib lnk" type="button" id="btnLink" hidden aria-label="Link to an order">🔗</button><span class="undo"><button class="ib" type="button" id="btnUndo" aria-label="Undo" title="Undo (Ctrl/⌘ Z)" disabled>↶</button><button class="ib" type="button" id="btnRedo" aria-label="Redo" title="Redo (Ctrl/⌘ Shift Z)" disabled>↷</button></span>
       </div>
       <aside class="layers" id="layersBox" aria-label="Layers">
         <div class="lhead"><b>Layers</b><div class="addwrap"><button class="addbtn" id="addLayer" type="button">＋ Add</button>
@@ -1059,7 +1097,7 @@ function openEditor(code,draft){
   cur={code:code,card:card,state:st0,
     draftId:draft?draft.id:null,customer:draft?draft.customer||"":"",note:draft?draft.note||"":"",status:draft?draft.status||"draft":"draft",
     unlocked:draft&&draft.unlocked?Object.assign({},draft.unlocked):{},dirty:false,bg:null,createdAt:draft?draft.createdAt:null,order:draft&&draft.order?draft.order:null};
-  $("edCode").textContent=isUp(code)?"Upload":code;
+  $("edCode").textContent=isUp(code)?"Upload":code;setTimeout(syncLink,0);
   var T=TIERS[card.tier];$("edTier").textContent=T.name+" "+T.price;$("edTier").className="pill"+(card.tier==="standard"?"":" g");
   $("tierNote").textContent=T.note;
   $("cust").value=cur.customer;$("note").value=cur.note;
@@ -1682,10 +1720,10 @@ function importFromHash(){
     octx={order:{id:o.id,no:o.no,customer:o.cu||"",status:"drafted",items:(o.items||[]).map(function(i){return{code:i.c,sender:i.n,greeting:i.g,pieces:i.q}})},ids:sheetOrder(ds.map(function(d){return d.id})),seen:{}};
     var f0=draftById(octx.ids[0])||ds[0];openEditor(f0.code,f0)});
 }
-function importOrder(o){
+function importOrder(o,quietEmpty){
   var items=(o.items||[]).map(function(it,ix){return{ix:ix,code:String(it.c||"").toUpperCase().replace(/\s+/g,""),name:it.n||"",greeting:it.g||"",pcs:it.q||null,po:!!it.po}});
   var known=items.filter(function(it){return CARDS[it.code]}),missing=items.filter(function(it){return it.code&&!CARDS[it.code]});
-  if(!known.length){toast(missing.length?"Design "+missing.map(function(x){return x.code}).join(", ")+" isn't in the tag editor.":"This order has no tag design code.");return Promise.resolve([])}
+  if(!known.length){if(quietEmpty)return Promise.resolve([]);toast(missing.length?"Design "+missing.map(function(x){return x.code}).join(", ")+" isn't in the tag editor.":"This order has no tag design code.");return Promise.resolve([])}
   var oid=safeId(o.id||o.no||Date.now());
   var made=0;
   var jobs=known.map(function(it){
@@ -1695,7 +1733,7 @@ function importOrder(o){
     return look.then(function(existing){
     if(existing)return existing;
     var card=CARDS[it.code],r=stateFromOrder(card,it.code,it.name,it.greeting);
-    if(card.up&&(it.po||!it.name.trim()))r.state.layers[0]=Object.assign({},r.state.layers[0]||{},{hidden:true});
+    if(!it.name.trim()||(card.up&&it.po))card.layers.forEach(function(l,li){if(l.role==="n")r.state.layers[li]=Object.assign({},r.state.layers[li]||{},{hidden:true})});
     var notes=[];if(it.pcs)notes.push(it.pcs+" pcs");if(it.greeting&&!r.used.greeting)notes.push("Greeting: "+it.greeting);
     var body={code:it.code,customer:o.cu||"",note:notes.join(" · "),status:"draft",layers:r.state.layers,extra:r.state.extra||[],bgScale:1,unlocked:{},
       createdAt:Date.now(),updatedAt:Date.now(),order:{id:String(o.id||""),no:String(o.no||""),item:it.ix}};
@@ -1872,6 +1910,7 @@ function ncode(c){return String(c||"").toUpperCase().replace(/\s+/g,"")}
 function codeItems(o){return (o.items||[]).filter(function(i){return i.code||i.art})}
 function icode(i){return i&&i.art?String(i.art):ncode(i&&i.code)}
 function pad4(n){return String(n||0).padStart(4,"0")}
+function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function peso(n){return "₱"+Number(n||0).toLocaleString("en-PH")}
 function fmtD(iso){if(!iso)return"";var p=iso.split("-").map(Number);return new Date(p[0],p[1]-1,p[2]).toLocaleDateString("en-PH",{weekday:"short",month:"short",day:"numeric"})}
 function pullOrders(){if(!SCRIPT_URL)return Promise.resolve();return apiGet("o=1").then(function(j){ORDERS=j.orders||[];ordersLoaded=true;
@@ -1884,7 +1923,7 @@ function renderOrders(){
   var host=$("orList");if(!host)return;
   if(!SCRIPT_URL){$("orNote").textContent="Not connected to the order app.";return}
   if(!ordersLoaded)return;
-  var act=ORDERS.filter(function(o){return o.status!=="done"&&o.status!=="cancelled"&&codeItems(o).some(function(i){return CARDS[icode(i)]})});
+  var act=ORDERS.filter(function(o){return o.status!=="done"&&o.status!=="cancelled"&&(codeItems(o).some(function(i){return CARDS[icode(i)]})||(o.items||[]).some(needsUpload)||extrasOf(o).length)});
   var by=function(a,b){return String(a.releaseDate||"9").localeCompare(String(b.releaseDate||"9"))};
   var G=[
     {k:"chg",t:"Changes requested",c:"var(--red)",f:function(o){return !!o.changeNote&&!stageAtLeast(o,"approved")}},
@@ -1896,19 +1935,25 @@ function renderOrders(){
   host.textContent="";
   G.forEach(function(g){var list=act.filter(g.f).sort(by);if(!list.length&&g.k==="chg")return;
     var sec=document.createElement("div");sec.className="ogrp";sec.style.setProperty("--gc",g.c);
-    sec.innerHTML="<h4>"+g.t+" · "+list.length+"</h4>";
+    sec.innerHTML="<h4>"+g.t+" · "+list.length+(g.k==="appr"&&canSend&&list.some(function(o){return unsent(o).length})?'<button type="button" class="sendall">✂ Send all to Cutter</button>':"")+"</h4>";
+    var sa=sec.querySelector(".sendall");if(sa)sa.onclick=function(){sendAll(list)};
     if(!list.length){var p=document.createElement("p");p.className="note";p.textContent="Nothing here.";sec.appendChild(p)}
     list.forEach(function(o){var b=document.createElement("button");b.type="button";b.className="orow";
       var ci=codeItems(o),done=ci.filter(function(it,ix){return drafts.some(function(d){return d.id==="o"+safeId(o.id)+"-"+ix})}).length;
       var paid=Number(o.paid)||0,pay=paid>=o.total?"paid":paid>0?"partly paid":"unpaid";
-      b.innerHTML='<div><b></b> <i>#'+pad4(o.no)+'</i></div><div class="rt">'+(o.releaseDate?"release "+fmtD(o.releaseDate):"no release date")+'</div><div class="chips">'+ci.map(function(i){var ok=!!CARDS[icode(i)];return "<span"+(ok?"":' class="nt" title="No template in the editor yet"')+">"+(i.art?"⬆ Own design":String(i.code).replace(/</g,""))+(ok?"":" ⚠")+"</span>"}).join("")+'</div><div class="sub">'+ci.length+" tag"+(ci.length===1?"":"s")+(done?" · "+done+" drafted":"")+" · "+pay+'</div>'+(o.changeNote?'<div class="cn"></div>':"");
+      b.innerHTML='<div><b></b> <i>#'+pad4(o.no)+'</i></div><div class="rt">'+(o.releaseDate?"release "+fmtD(o.releaseDate):"no release date")+'</div><div class="chips">'+(o.items||[]).map(function(i,ii){if(needsUpload(i))return '<span class="upc" role="button" tabindex="0" data-ii="'+ii+'">⬆ '+esc(i.code||shortP(i.product)||"Upload")+'</span>';if(!(i.code||i.art))return "";var ok=!!CARDS[icode(i)];return "<span"+(ok?"":' class="nt" title="No template in the editor yet"')+">"+(i.art?"⬆ Own design":esc(String(i.code)))+(ok?"":" ⚠")+"</span>"}).join("")+'</div><div class="sub">'+ci.length+" tag"+(ci.length===1?"":"s")+(done?" · "+done+" drafted":"")+(extrasOf(o).length?" · +"+extrasOf(o).length+" linked":"")+" · "+pay+(g.k==="appr"&&canSend&&orderDrafts(o).length?(unsent(o).length?' <span class="osend" role="button" tabindex="0">✂ Send</span>':' <span class="osent">✓ sent</span>'):"")+'</div>'+(o.changeNote?'<div class="cn"></div>':"");
       b.querySelector("b").textContent=o.customer||"No name";if(o.changeNote)b.querySelector(".cn").textContent="“"+o.changeNote+"”";
-      b.onclick=function(){openOrder(o)};sec.appendChild(b)});
+      b.onclick=function(e){var up=e.target.closest(".upc");if(up){e.stopPropagation();uploadForItem(o,+up.dataset.ii);return}
+        if(e.target.closest(".osend")){e.stopPropagation();sendDraftsToCutter(o,unsent(o)).then(renderOrders);return}
+        if(e.target.closest(".osent")){e.stopPropagation();return}
+        if(!codeItems(o).some(function(i){return CARDS[icode(i)]})&&!extrasOf(o).length){toast("Upload the design first: tap the ⬆ chip");return}
+        openOrder(o)};sec.appendChild(b)});
     host.appendChild(sec)});
 }
 function openOrder(o){
-  importOrder(linkOrder(o)).then(function(ds){if(!ds||!ds.length)return;
-    octx={order:o,ids:sheetOrder(ds.map(function(d){return d.id})),seen:{}};
+  importOrder(linkOrder(o),extrasOf(o).length>0).then(function(ds){ds=ds||[];if(!ds.length&&!extrasOf(o).length)return;if(!ds.length)ds=[extrasOf(o)[0]];
+    var ids=ds.map(function(d){return d.id});extrasOf(o).forEach(function(d){if(ids.indexOf(d.id)<0)ids.push(d.id)});
+    octx={order:o,ids:sheetOrder(ids),seen:{}};
     if(o.status==="new")patchOrder(o,{status:"drafted",stageAt:new Date().toISOString()});
     var f0=draftById(octx.ids[0])||ds[0];openEditor(f0.code,f0)});
 }
@@ -2035,17 +2080,21 @@ function makeProof(){
 var canSend=false;if(SCRIPT_URL)fetch(apiUrl("only=prints"),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){canSend=Array.isArray(j.prints);if(canSend&&typeof renderOrderBox==="function")renderOrderBox()}).catch(function(){});
 function blobToDataURL(b){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result)};r.onerror=rej;r.readAsDataURL(b)})}
 function sendToCutter(){
-  if(!octx)return;if(!SCRIPT_URL){toast("Sending needs the online sync. Use Download print files instead.");return}
-  flushIfDirty();var o=octx.order,ds=octx.ids.map(draftById).filter(Boolean);if(!ds.length)return;
-  var used={},i=0,sent=0;toast("Sending 1 of "+ds.length+"…");
-  (function next(){
-    if(i>=ds.length){if(!sent){toast("Couldn't send. Check the connection, or use Download print files.");return}
-      ds.forEach(function(d){patchDraft(d.id,{status:"printed"})});
-      toast("Sent "+sent+" file"+(sent===1?"":"s")+" to the Cutter · open ✂ in the order app");renderOrderBox();return}
-    var d=ds[i++];toast("Sending "+i+" of "+ds.length+"…");
-    renderFile(d.code,stateOf(d),"print").then(blobToDataURL).then(function(data){
+  if(!octx)return;flushIfDirty();sendDraftsToCutter(octx.order,octx.ids.map(draftById).filter(Boolean)).then(function(){renderOrderBox()});
+}
+function sendDraftsToCutter(o,ds,pre){
+  if(!SCRIPT_URL){toast("Sending needs the online sync. Use Download print files instead.");return Promise.resolve(0)}
+  ds=(ds||[]).filter(function(d){return d&&CARDS[d.code]});if(!ds.length){toast("Nothing to send for this order.");return Promise.resolve(0)}
+  var used={},sent=0,lab=pre||"";
+  return ds.reduce(function(p,d,i){return p.then(function(){toast(lab+"Sending "+(i+1)+" of "+ds.length+"…");
+    return renderFile(d.code,stateOf(d),"print").then(blobToDataURL).then(function(data){
       var base=pad4(o.no)+"_"+d.code,fn=base,k=2;while(used[fn])fn=base+" ("+(k++)+")";used[fn]=1;
-      return apiPost({action:"print_put",id:o.id+"_"+d.id,orderId:o.id,no:o.no,code:d.code,customer:o.customer||"",name:fn+".png",data:data})}).then(function(){sent++},function(e){console.error(e)}).then(next)})();
+      return apiPost({action:"print_put",id:o.id+"_"+d.id,orderId:o.id,no:o.no,code:d.code,customer:o.customer||"",name:fn+".png",data:data})}).then(function(){sent++;d.status="printed";return patchDraft(d.id,{status:"printed"})},function(e){console.error(e)})})},Promise.resolve()).then(function(){
+    toast(sent?"Sent "+sent+" file"+(sent===1?"":"s")+" to the Cutter · open ✂ in the order app on the laptop":"Couldn't send. Check the connection, or use Download print files.");return sent});
+}
+function sendAll(list){var todo=list.filter(function(o){return unsent(o).length}),total=0;if(!todo.length)return;
+  todo.reduce(function(p,o,i){return p.then(function(){return sendDraftsToCutter(o,unsent(o),"Order "+(i+1)+"/"+todo.length+" · ").then(function(n){total+=n})})},Promise.resolve()).then(function(){
+    toast("Sent "+total+" file"+(total===1?"":"s")+" from "+todo.length+" order"+(todo.length===1?"":"s")+" to the Cutter");renderOrders()});
 }
 function orderPrintFiles(){
   if(!octx)return;flushIfDirty();var o=octx.order,ds=octx.ids.map(draftById).filter(Boolean);if(!ds.length)return;
@@ -2056,7 +2105,102 @@ function orderPrintFiles(){
     var d=ds[i++];renderFile(d.code,stateOf(d),"print").then(function(b){var base=pad4(o.no)+"_"+d.code,fn=base,k=2;while(used[fn])fn=base+" ("+(k++)+")";used[fn]=1;zip.file(fn+".png",b)}).then(next,next)})();
 }
 
+/* ---------- order helpers (uploads, linked drafts) ---------- */
+function shortP(n){return String(n||"").replace(/\s*\(.*?\)\s*/g," ").replace(/\s+tags?\s*$/i,"").trim()}
+function upProd(i){return /custom|print/i.test(String(i&&i.product||""))&&!/sticker/i.test(String(i&&i.product||""))}
+function needsUpload(i){return !!i&&!i.art&&upProd(i)&&!CARDS[ncode(i.code)]}
+function extrasOf(o){var id=String(o.id);return drafts.filter(function(d){return d.order&&String(d.order.id)===id&&(d.order.item==null||d.order.item==="")})}
+function orderDrafts(o){var oid=safeId(o.id);return codeItems(o).map(function(it,ix){return draftById("o"+oid+"-"+ix)}).filter(function(d){return d&&CARDS[d.code]}).concat(extrasOf(o).filter(function(d){return CARDS[d.code]}))}
+function unsent(o){return orderDrafts(o).filter(function(d){return d.status!=="printed"})}
+/* bottom sheet */
+function eSheet(html){$("eSheet").innerHTML='<div class="egrab"></div>'+html;$("eSheetBg").classList.add("show");return $("eSheet")}
+function eSheetClose(){$("eSheetBg").classList.remove("show");$("eSheet").innerHTML=""}
+$("eSheetBg").addEventListener("click",function(e){if(e.target===$("eSheetBg"))eSheetClose()});
+/* pick an image, then fit it to a 2 x 3.5 in tag */
+var upCb=null;
+function pickImage(cb){upCb=cb;var f=$("edUpFile");f.value="";f.click()}
+$("edUpFile").addEventListener("change",function(){var f=$("edUpFile").files[0];if(!f||!upCb)return;
+  if(!/^image\//.test(f.type)&&!/\.(jpe?g|png|webp|heic|heif)$/i.test(f.name)){toast("Pick an image file (JPG or PNG)");return}
+  var url=URL.createObjectURL(f),im=new Image();im.onload=function(){upCb(im,f.name)};im.onerror=function(){URL.revokeObjectURL(url);toast("Couldn't open that image. Try a JPG or PNG.")};im.src=url});
+function fitSheet(img,name,head,done){
+  var F={rot:0,mode:"fill",ox:0,oy:0};
+  function rw(){return F.rot%180?img.naturalHeight:img.naturalWidth}function rh(){return F.rot%180?img.naturalWidth:img.naturalHeight}
+  F.orient=rw()>=rh()?"L":"P";
+  var sh=eSheet('<h3 class="eh3"></h3><p class="esub"></p><div class="fstage"><canvas id="fitC"></canvas></div><div class="fdim" id="fitDim"></div>'+
+    '<span class="flab">Tag</span><div class="fseg" id="fitO"><button type="button" data-v="L">▭ Landscape</button><button type="button" data-v="P">▯ Portrait</button></div>'+
+    '<span class="flab">Fit</span><div class="fseg" id="fitM"><button type="button" data-v="fill">Fill · crop edges</button><button type="button" data-v="fit">Fit · white border</button></div>'+
+    '<div class="fhint" id="fitHint"></div><div class="eacts"><button type="button" class="btn" id="fitRot">↻ Rotate</button><button type="button" class="btn primary" id="fitUse">Use this design</button></div>');
+  sh.querySelector(".eh3").textContent=head.title||"Fit to tag";sh.querySelector(".esub").textContent=head.sub||(name+" · "+img.naturalWidth+" × "+img.naturalHeight);
+  var cv=$("fitC"),PW,PH;
+  function geom(W,H){var iw=rw(),ih=rh(),s=(F.mode==="fill"?Math.max:Math.min)(W/iw,H/ih),w=iw*s,h=ih*s;return{w:w,h:h,mx:Math.max(0,(w-W)/2),my:Math.max(0,(h-H)/2)}}
+  function draw(c,W,H,k){var x=c.getContext("2d"),g=geom(W,H);x.setTransform(1,0,0,1,0,0);x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);
+    var ox=Math.max(-g.mx,Math.min(g.mx,F.ox*k)),oy=Math.max(-g.my,Math.min(g.my,F.oy*k));x.imageSmoothingQuality="high";x.translate(W/2+ox,H/2+oy);x.rotate(F.rot*Math.PI/180);
+    var dw=F.rot%180?g.h:g.w,dh=F.rot%180?g.w:g.h;x.drawImage(img,-dw/2,-dh/2,dw,dh);x.setTransform(1,0,0,1,0,0)}
+  function paint(){var L=F.orient==="L",avail=Math.min(sh.clientWidth-36-28,L?520:300);PW=L?avail:Math.round(avail*.8);PH=Math.round(L?PW*600/1050:PW*1050/600);
+    var maxH=Math.round(Math.min(300,window.innerHeight*.3));if(!L&&PH>maxH){PH=maxH;PW=Math.round(PH*600/1050)}
+    var dpr=window.devicePixelRatio||1;cv.width=Math.round(PW*dpr);cv.height=Math.round(PH*dpr);cv.style.width=PW+"px";cv.style.height=PH+"px";
+    draw(cv,cv.width,cv.height,cv.width/(L?1050:600));var g=geom(L?1050:600,L?600:1050);F.ox=Math.max(-g.mx,Math.min(g.mx,F.ox));F.oy=Math.max(-g.my,Math.min(g.my,F.oy));
+    $("fitDim").textContent="2 × 3.5 in · "+(L?"landscape":"portrait")+" · this is exactly what prints";
+    $("fitHint").textContent=F.mode==="fill"&&(g.mx>1||g.my>1)?"Drag the picture to choose what stays in":"";
+    [].forEach.call(sh.querySelectorAll("#fitO button"),function(b){b.setAttribute("aria-pressed",String(b.dataset.v===F.orient))});
+    [].forEach.call(sh.querySelectorAll("#fitM button"),function(b){b.setAttribute("aria-pressed",String(b.dataset.v===F.mode))})}
+  $("fitO").onclick=function(e){var b=e.target.closest("button");if(!b)return;F.orient=b.dataset.v;F.ox=F.oy=0;paint()};
+  $("fitM").onclick=function(e){var b=e.target.closest("button");if(!b)return;F.mode=b.dataset.v;F.ox=F.oy=0;paint()};
+  $("fitRot").onclick=function(){F.rot=(F.rot+90)%360;F.ox=F.oy=0;F.orient=rw()>=rh()?"L":"P";paint()};
+  var dp=null;cv.onpointerdown=function(e){if(F.mode!=="fill")return;dp={x:e.clientX,y:e.clientY,ox:F.ox,oy:F.oy};cv.setPointerCapture(e.pointerId);e.preventDefault()};
+  cv.onpointermove=function(e){if(!dp)return;var k=(F.orient==="L"?1050:600)/PW;F.ox=dp.ox+(e.clientX-dp.x)*k;F.oy=dp.oy+(e.clientY-dp.y)*k;paint()};
+  cv.onpointerup=cv.onpointercancel=function(){dp=null};
+  $("fitUse").onclick=function(){var L=F.orient==="L",W=L?1575:900,H=L?900:1575,out=document.createElement("canvas");out.width=W;out.height=H;draw(out,W,H,W/(L?1050:600));
+    var data=out.toDataURL("image/jpeg",.9),id="UP"+F.orient+"-"+(Date.now().toString(36)+Math.random().toString(36).slice(2,6)).toUpperCase().slice(-10),b=this;
+    if(!SCRIPT_URL){toast("Uploading needs the online sync.");return}
+    b.disabled=true;b.textContent="Uploading…";
+    apiPost({action:"art_put",id:id,data:data}).then(function(j){if(!j||!j.ok)throw new Error(j&&j.error||"upload");
+      var im2=new Image();im2.src=data;bgCache[id]=new Promise(function(r){im2.onload=function(){r(im2)}});eSheetClose();URL.revokeObjectURL(img.src);done(id,F.mode)},
+      function(e){console.error(e);b.disabled=false;b.textContent="Use this design";toast(/400|404/.test(String(e&&e.message))?"Update the Worker first (v4), then try again":"Couldn't upload. Check your connection and try again.")})};
+  requestAnimationFrame(paint);
+}
+function uploadForItem(o,ii){var it=(o.items||[])[ii];if(!it)return;
+  pickImage(function(img,name){fitSheet(img,name,{title:it.code||shortP(it.product)||"Own design",sub:(o.customer||"")+" #"+pad4(o.no)+" · "+(it.pieces||"")+" pcs"},function(id,fit){
+    var items=o.items.map(function(x,k){return k===ii?Object.assign({},x,{art:id,artName:name,artFit:fit}):x});
+    Promise.resolve(patchOrder(o,{items:items})).then(function(){toast("Design added · making the draft…");openOrder(o)})})})}
+/* new draft: template or upload, then link to an order */
+function newDraftSheet(){var sh=eSheet('<h3 class="eh3">New draft</h3><p class="esub">Start a tag now, then link it to an order.</p>'+
+  '<button type="button" class="eopt" id="ndTpl"><span class="ic">▦</span><span><b>Pick a template</b><small>BL / BP / SL / SP / GL / GP designs</small></span></button>'+
+  '<button type="button" class="eopt" id="ndUp"><span class="ic">⬆</span><span><b>Upload a design</b><small>Customer\'s own art · fitted to 2 × 3.5 in</small></span></button>'+
+  '<div class="eacts"><button type="button" class="btn" id="ndX">Cancel</button></div>');
+  $("ndX").onclick=eSheetClose;
+  $("ndTpl").onclick=function(){eSheetClose();octx=null;show("cat");toast("Pick a design · then tap 🔗 to link it to an order")};
+  $("ndUp").onclick=function(){eSheetClose();pickImage(function(img,name){fitSheet(img,name,{title:"Upload a design"},function(id){
+    octx=null;openEditor(id,null);show("ed");cur.draftId=newId();cur.createdAt=Date.now();cur.note=name;flushSave();setTimeout(linkSheet,350)})})}}
+function syncLink(){var b=$("btnLink");if(!b)return;var on=view==="ed"&&!!cur&&!octx;b.hidden=!on;if(!on)return;
+  b.textContent="🔗";b.classList.toggle("on",!!(cur.order&&cur.order.no));b.title=cur.order&&cur.order.no?"Linked to order "+cur.order.no:"Link to an order"}
+$("btnLink").onclick=function(){linkSheet()};
+function linkSheet(){if(!cur)return;
+  var list=ORDERS.filter(function(o){return o.status!=="done"&&o.status!=="cancelled"}).sort(function(a,b){return (Number(b.no)||0)-(Number(a.no)||0)}).slice(0,40);
+  var curId=cur.order&&cur.order.id?String(cur.order.id):"";
+  function slot(o){var oid=safeId(o.id),ci=codeItems(o);for(var k=0;k<ci.length;k++){if(icode(ci[k])===cur.code&&!draftById("o"+oid+"-"+k))return k}return -1}
+  var pick=curId||"";if(!pick){var m=list.filter(function(o){return slot(o)>=0})[0];if(m)pick=String(m.id)}
+  var rows=list.map(function(o){var ci=codeItems(o),s=slot(o);return '<button type="button" class="lrow" data-id="'+esc(String(o.id))+'"><span class="radio"></span><span class="lt"><b>'+esc(o.customer||"No name")+' <i>#'+pad4(o.no)+'</i></b><small>'+
+    esc(ci.map(function(i){return i.art?"Own design":String(i.code||"")}).join(" · ")||"no tags")+" · "+esc(o.status||"new")+'</small>'+(s>=0?'<em>matches '+esc(dispCode(cur.code))+'</em>':'')+'</span></button>'}).join("");
+  var sh=eSheet('<h3 class="eh3">Link to an order</h3><p class="esub">Open orders · newest first</p><div class="llist2">'+(rows||'<p class="note">No open orders.</p>')+
+    '<button type="button" class="lrow" data-id=""><span class="radio"></span><span class="lt"><b>No order yet</b><small>Keep it with just a customer name</small></span></button></div>'+
+    '<div class="eacts"><button type="button" class="btn" id="lkX">Cancel</button><button type="button" class="btn primary" id="lkGo">Link</button></div>');
+  function mark(){[].forEach.call(sh.querySelectorAll(".lrow"),function(r){r.setAttribute("aria-pressed",String(r.dataset.id===pick))})}mark();
+  sh.querySelector(".llist2").onclick=function(e){var r=e.target.closest(".lrow");if(!r)return;pick=r.dataset.id;mark()};
+  $("lkX").onclick=eSheetClose;
+  $("lkGo").onclick=function(){eSheetClose();
+    if(!pick){cur.order=null;if(!cur.draftId){cur.draftId=newId();cur.createdAt=Date.now()}flushSave();syncLink();toast("Not linked · saved in Drafts");return}
+    var o=ORDERS.filter(function(x){return String(x.id)===pick})[0];if(!o)return;
+    var k=slot(o),old=cur.draftId;cur.customer=o.customer||cur.customer;$("cust").value=cur.customer;
+    if(k>=0){cur.draftId="o"+safeId(o.id)+"-"+k;cur.order={id:String(o.id),no:String(o.no||""),item:k}}
+    else{if(!cur.draftId){cur.draftId=newId();cur.createdAt=Date.now()}cur.order={id:String(o.id),no:String(o.no||""),item:null}}
+    if(!cur.createdAt)cur.createdAt=Date.now();flushSave();if(old&&old!==cur.draftId)deleteDraft(old);
+    if(o.status==="new")patchOrder(o,{status:"drafted",stageAt:new Date().toISOString()});
+    syncLink();toast("Linked to #"+pad4(o.no)+" "+(o.customer||"")+(k>=0?" · fills its "+dispCode(cur.code)+" tag":" · added as an extra tag"))};
+}
+
 /* ---------- boot ---------- */
+$("newDraft").onclick=newDraftSheet;
 renderCat();setHH();show(SCRIPT_URL?"or":"cat");
 var ordersP=pullOrders();setInterval(function(){if(!document.hidden&&view==="or")pullOrders()},30000);
 dbP.then(function(d){
