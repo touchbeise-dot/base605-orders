@@ -286,6 +286,10 @@ body.itemopen{overflow:hidden}
 .sbar span{font-size:11.5px;font-weight:600;color:var(--mute)}
 .sbar.today i{background:#922b2c}.sbar.today em,.sbar.today span{color:#922b2c;font-weight:800}
 .sbar.fut em{color:#b9b2aa}.sbar.fut i{border-top:2px dashed #e5ded6;background:none;height:0!important}
+nav button{position:relative}
+#navCut:empty{display:none!important}
+@media (max-width:739px){nav button #navCut{display:block;position:absolute;top:3px;left:calc(50% + 6px);background:#c8102e;color:#fff;font-size:10px;font-weight:700;line-height:16px;min-width:16px;padding:0 4px;border-radius:999px;text-align:center;box-sizing:border-box}}
+@media (min-width:740px){nav button #navCut{color:#fff;background:#c8102e;border-radius:999px;padding:1px 7px;font-size:11.5px}}
 .upwrap{margin-top:10px}
 .upz{width:100%;border:1.5px dashed #c9b9b0;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;background:#fffaf7;text-align:left;cursor:pointer;font:inherit;color:inherit}
 .upz .ic{width:42px;height:42px;border-radius:10px;background:#f3e6e1;display:grid;place-items:center;font-size:20px;flex:0 0 auto}
@@ -642,6 +646,7 @@ body.itemopen{overflow:hidden}
 .trow .tn i{font-style:normal;color:var(--mute);font-weight:500}
 .trow .tr{font-size:12.5px;color:var(--mute);white-space:nowrap}
 .trow .tr.late{color:var(--cran);font-weight:600}
+.trow .baltag{flex:0 0 auto;font-size:11px;font-weight:700;color:#8a5400;background:#fbeed8;border:1px solid #f0d9ae;border-radius:999px;padding:2px 7px;white-space:nowrap}
 .trow.dragging{opacity:.4}
 .tnudge{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;border:1px solid #e9b9b5;background:#fff;color:var(--cran);cursor:pointer}
 .tnone{padding:8px 2px;opacity:.6;font-size:13px}
@@ -803,7 +808,7 @@ section.enter-back{animation:inBack .2s ease-out}
   <button data-tab="list"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Orders<b id="navCount"></b></button>
   <button data-tab="up"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>Upcoming</button>
   <button data-tab="print"><svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>Print<b id="navPrint"></b></button>
-  <button data-tab="cut"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/></svg>Cutter</button>
+  <button data-tab="cut"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/></svg>Cutter<b id="navCut" title="Files from the Tag Editor waiting to print"></b></button>
   <button data-tab="stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Stats</button>
   <button data-tab="new" id="navNew" style="display:none"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New order</button>
 </nav>
@@ -1066,9 +1071,9 @@ const STEP=10;
 const piecesAddon=n=>Math.max(0,Math.ceil((n-BASE_PIECES)/STEP))*STEP_PRICE;
 const PIECES_OPTS=()=>Array.from({length:18},(_,i)=>BASE_PIECES+i*10);
 const PRINT_OPTS=Array.from({length:20},(_,i)=>(i+1)*10);
-const STATUSES=["new","drafted","for approval","approved","ready to print","printed","messaged for pickup","for ship out","done","cancelled"];
+const STATUSES=["new","drafted","for approval","approved","ready to print","printed","messaged for pickup","done","cancelled"];
 const CLOSED=st=>st==="done"||st==="cancelled";
-const stage=st=>STATUSES.includes(st)?st:"new";
+const stage=st=>st==="for ship out"?"messaged for pickup":STATUSES.includes(st)?st:"new"; // "ship out" stage was removed
 const payState=o=>{const p=Number(o.paid)||0;return p>=o.total?"paid":p>0?"partial":"unpaid"};
 const peso=n=>"₱"+Number(n).toLocaleString("en-PH");
 const ono=n=>n?"#"+String(n).padStart(4,"0"):"";
@@ -1995,7 +2000,7 @@ const TGROUPS=[
   {key:"chase",label:"Chase approval",cls:"g-cran",target:"for approval",test:o=>o.status==="for approval"},
   {key:"prep",label:"Make print files",cls:"g-pine",target:"approved",test:o=>o.status==="approved"},
   {key:"print",label:"Print",cls:"g-green",target:"ready to print",test:o=>o.status==="ready to print"},
-  {key:"hand",label:"Hand over",cls:"g-blue",target:"printed",test:o=>["printed","messaged for pickup","for ship out"].includes(o.status)}];
+  {key:"hand",label:"Hand over",cls:"g-blue",target:"printed",test:o=>["printed","messaged for pickup"].includes(o.status)}];
 let tOpen=new Set();try{tOpen=new Set(JSON.parse(localStorage.getItem("base605-tgroups")||"[]"));}catch{}
 const daysIn=o=>Math.floor((Date.now()-new Date(o.stageAt||o.createdAt))/864e5);
 function xmasLine(n){const t=new Date();t.setHours(0,0,0,0);const x=new Date(t.getFullYear(),11,25);const d=Math.round((x-t)/864e5);
@@ -2007,9 +2012,9 @@ function trow(o,g){
   else if(g.key==="draft"&&o.changeNote){right="changes: "+o.changeNote;late=true;}
   else if(g.key==="draft"&&o.status==="drafted")right="draft ready · send";
   else if(g.key==="draft"&&(o.items||[]).some(i=>i.code)){right=o.releaseDate?fmtDate(o.releaseDate):"";extra=`<button type="button" class="tnudge ttag" data-act="drafttag">Draft tag</button>`;}
-  else if(g.key==="hand")right=o.status==="messaged for pickup"?"waiting pickup":o.status==="for ship out"?"ship out":(o.shipping?"ship J&T":"message pickup");
+  else if(g.key==="hand")right=o.status==="messaged for pickup"?"waiting pickup":(o.shipping?"ship J&T":"message pickup");
   else{late=lateRel;right=o.releaseDate?(lateRel?`${-rel}d overdue`:rel===0?"today":rel===1?"tomorrow":fmtDate(o.releaseDate)):"no date";}
-  return `<div class="trow" data-id="${o.id}" draggable="true"><span class="tn">${esc(o.customer)} <i>${ono(o.no)}</i>${rushN(o)?'<span class="rushtag">RUSH</span>':""}</span><span class="tr${late?" late":""}">${right}</span>${extra}</div>`;
+  return `<div class="trow" data-id="${o.id}" draggable="true"><span class="tn">${esc(o.customer)} <i>${ono(o.no)}</i>${rushN(o)?'<span class="rushtag">RUSH</span>':""}</span>${(()=>{const bal=Math.max(0,(Number(o.total)||0)-(Number(o.paid)||0));return g.key!=="pay"&&bal>0?`<span class="baltag" title="Not fully paid">${(Number(o.paid)||0)>0?peso(bal)+" bal":"unpaid"}</span>`:"";})()}<span class="tr${late?" late":""}">${right}</span>${extra}</div>`;
 }
 function renderToday(){
   const active=orders.filter(o=>!CLOSED(o.status));
@@ -2393,9 +2398,15 @@ try{(function(){
   // ---- inbox: print files sent from the Tag Editor ----
   var inboxList=[];
   function apiQ(q){return SCRIPT_URL+(SCRIPT_URL.indexOf("?")>=0?"&":"?")+q}
-  function refreshInbox(){if(!SCRIPT_URL)return;fetch(apiQ("only=prints"),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){inboxList=j.prints||[];paintInbox()}).catch(function(){})}
+  function refreshInbox(){if(!SCRIPT_URL)return;fetch(apiQ("only=prints"),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){inboxList=j.prints||[];paintInbox();moveSent()}).catch(function(){})}
+  // orders whose print files were sent from the Tag Editor are ready to print: move them out of "Make print files"
+  var moving={};
+  async function moveSent(){var target=STATUSES.indexOf("ready to print"),ids={};inboxList.forEach(function(p){if(p.orderId)ids[p.orderId]=Math.max(ids[p.orderId]||0,Number(p.at)||0)});
+    var moved=[];for(var id in ids){var o=orders.find(function(x){return x.id===id});if(!o||moving[id]||CLOSED(o.status))continue;if(o.stageAt&&ids[id]&&ids[id]<Date.parse(o.stageAt))continue;var i=STATUSES.indexOf(o.status);
+      if(i>=0&&i<target&&STATUSES.indexOf("approved")<=i){moving[id]=1;try{await store.patch(o,{status:"ready to print",stageAt:new Date().toISOString()});moved.push(o)}catch(e){console.error(e)}delete moving[id];}}
+    if(moved.length){renderAll();toast(moved.length+" order"+(moved.length>1?"s":"")+" sent to the Cutter → ready to print");}}
   var inLoaded={};
-  function paintInbox(){var box=$("cxInbox");if(!inboxList.length){box.hidden=true;box.innerHTML="";return}
+  function paintInbox(){var nc=$("navCut");if(nc){var w=inboxList.filter(function(p){return !p.printedAt}).length;nc.textContent=w||"";}var box=$("cxInbox");if(!inboxList.length){box.hidden=true;box.innerHTML="";return}
     var by={},order=[];inboxList.forEach(function(p){var k=p.no?("#"+String(p.no).padStart(4,"0")+(p.customer?" "+p.customer:"")):"Other";if(!by[k]){by[k]=[];order.push(k)}by[k].push(p)});
     var printed=inboxList.filter(function(p){return p.printedAt}).length,todo=inboxList.filter(function(p){return !p.printedAt&&!inLoaded[p.id]}).length;
     box.hidden=false;box.innerHTML='<div class="cx-in-h"><b>From the Tag Editor</b><span>'+inboxList.length+' file'+(inboxList.length===1?'':'s')+(printed?' · '+printed+' printed':'')+'</span></div><div class="cx-in-l">'+
@@ -2426,6 +2437,9 @@ try{(function(){
   window.cxMarkPrinted=function(list){var ids=list.map(function(d){return d.inbox}).filter(Boolean);if(!ids.length)return;
     postInbox({action:"print_mark",ids:ids}).then(function(){inboxList.forEach(function(p){if(ids.indexOf(p.id)>=0)p.printedAt=Date.now()});paintInbox()},function(){})};
   window.cxRefreshInbox=refreshInbox;
+  // keep the Cutter count fresh: on load, when the app comes back to the front, and every minute
+  setTimeout(refreshInbox,1500);setInterval(function(){if(!document.hidden)refreshInbox()},60000);
+  document.addEventListener("visibilitychange",function(){if(!document.hidden)refreshInbox()});
   $("cxDrop").addEventListener("click",function(){$("cxFile").click()});
   $("cxFile").addEventListener("change",function(e){addFiles(e.target.files);e.target.value=""});
   var sec=$("tab-cut"),depth=0;
