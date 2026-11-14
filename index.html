@@ -107,6 +107,34 @@ input,select,textarea{max-width:100%;min-width:0}
 
 /* ===== New order: calm layout ===== */
 #tab-new [hidden],.pcsc[hidden]{display:none!important}
+/* item editor as a bottom sheet */
+#fitBg,#pfBg{z-index:60}
+.itembg{position:fixed;inset:0;background:rgba(36,32,28,.45);z-index:29;display:none}
+body.itemopen .itembg{display:block}
+body.itemopen{overflow:hidden}
+.item.open .ibody{display:block;position:fixed;left:0;right:0;bottom:0;z-index:30;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  background:#fff;border-radius:22px 22px 0 0;border-top:0;padding:8px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18);animation:up .2s ease-out}
+@media (min-width:700px){.item.open .ibody{left:50%;right:auto;width:640px;transform:translateX(-50%);animation:none;bottom:24px!important;border-radius:20px}}
+.item.open .isum{background:none}
+.item.open .ichev{transform:none}
+.igrab{width:40px;height:5px;border-radius:9px;background:#ddd5cc;margin:2px auto 10px}
+.item.open .ihead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px}
+.ihead b{font-size:20px}.ihead span{font-weight:700;font-size:18px}
+.pgrid{grid-template-columns:repeat(4,1fr)!important;gap:6px}
+.pgrid button{height:58px;padding:4px 3px!important;font-size:12.5px;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.pgrid button>span.pn{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.pgrid button small{font-size:11px;margin-top:3px;white-space:nowrap}
+.pgrid button.on{padding:3px 2px!important}
+/* release strip: equal boxes */
+#tab-new .rstrip{gap:6px;align-items:flex-end}
+#tab-new .rday{flex:0 0 56px}
+#tab-new .rday .top{height:13px;white-space:nowrap;overflow:visible}
+#tab-new .rday .box{height:74px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0;box-sizing:border-box}
+#tab-new .rday.sug .box,#tab-new .rday.pick .box{height:74px}
+#tab-new .rday .ld{white-space:nowrap;font-size:10px;margin-top:2px;min-height:12px;line-height:12px}
+#tab-new .relcard .rlab{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+#tab-new .relcard .rlab #relCount{font-weight:700;color:var(--ink);letter-spacing:.02em}
+
 #tab-new #items{display:block!important;gap:0!important}
 #tab-new #items .item{width:auto!important;max-width:none!important;flex:none!important}
 @media (min-width:900px){#tab-new .ibody{padding:8px 18px 16px}#tab-new .ibody .pgrid{grid-template-columns:repeat(6,1fr)}#tab-new .ibody .ifoot{justify-content:flex-end}#tab-new .ibody .ifoot button{flex:0 0 160px}}
@@ -215,6 +243,8 @@ input,select,textarea{max-width:100%;min-width:0}
 .pf-ok{font-size:13.5px;color:var(--brand);font-weight:600;background:#eef5f0;border-radius:10px;padding:9px 12px;margin-top:10px}
 .pf-warn{font-size:13.5px;color:#7a5410;background:#fbf2e2;border-radius:10px;padding:9px 12px;margin-top:10px;line-height:1.45}
 .pf-acts{display:flex;gap:10px;margin-top:16px}.pf-acts button{flex:1;padding:13px;font-size:15px}
+.cx-in-l .pr{opacity:.6}.cx-in-l em{font-style:normal;font-size:12px;font-weight:700;color:var(--mute);margin-left:4px}.cx-in-l em.ok{color:var(--brand)}
+.cx-in-x{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:13px}.cx-in-x .note{margin-left:auto;font-size:12px}
 .upwrap{margin-top:10px}
 .upz{width:100%;border:1.5px dashed #c9b9b0;border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;background:#fffaf7;text-align:left;cursor:pointer;font:inherit;color:inherit}
 .upz .ic{width:42px;height:42px;border-radius:10px;background:#f3e6e1;display:grid;place-items:center;font-size:20px;flex:0 0 auto}
@@ -752,7 +782,7 @@ section.enter-back{animation:inBack .2s ease-out}
     </div><datalist id="custList"></datalist>
     <div class="hint" id="custHint"></div>
     <div class="fsec">Items <i id="itemsSum"></i></div>
-    <div class="grp" id="items"></div>
+    <div class="grp" id="items"></div><div class="itembg" id="itemBg"></div>
     <button class="addrow" id="addItem" type="button">+ Add item</button>
     <div class="fsec">Delivery &amp; payment</div>
     <div class="grp" id="moreOpts">
@@ -765,7 +795,7 @@ section.enter-back{animation:inBack .2s ease-out}
     </div>
     <div class="fsec">Release <button type="button" class="linkbtn" id="leadBtn">Lead times ›</button></div>
     <div class="grp relcard">
-      <div id="leadWrap" hidden><div class="rlab">Lead time · pieces → working days <span class="note" id="relCount"></span></div><div class="tierbar" id="tierbar"></div></div>
+      <div id="leadWrap" hidden><div class="rlab"><span>Lead time · pieces → days</span><span id="relCount"></span></div><div class="tierbar" id="tierbar"></div></div>
       <div class="rstrip" id="relStrip"></div>
       <div class="rfoot"><div class="rsug" id="relSug"></div><button type="button" class="linkbtn" id="relOther">Other date…</button></div>
       <div id="relOtherWrap" hidden style="margin-top:8px"><input id="release" type="date"></div>
@@ -1125,7 +1155,7 @@ function addItem(vals){
   const id=++seq, div=document.createElement("div"); div.className="item"; div.dataset.id=id;
   div.innerHTML=`<button type="button" class="isum"><span class="ichip">—</span><span class="it"><b>Pick a design</b><small></small></span><span class="ip"></span><span class="ichev">›</span></button>
   <div class="ibody">
-    <div class="ihead"><b class="ino">Item</b><span class="ilt"></span></div>
+    <div class="igrab"></div><div class="ihead"><b class="ino">Item</b><span class="ilt"></span></div>
     <span class="flab">Product</span>
     <div class="pgrid"></div>
     <select class="product" hidden>${Object.entries(PRODUCTS).map(([k,p])=>`<option value="${k}">${p.name}${p.per10?` — ${peso(p.price)} per 10 pcs`:` — ${peso(p.price)}`}</option>`).join("")}</select>
@@ -1159,15 +1189,15 @@ function addItem(vals){
     div.querySelector(".greetwrap").style.display=p.greeting?"":"none";
     div.querySelector(".greetnote").textContent=p.greetingAddon?`(+${peso(p.greetingAddon)})`:"";
     renderUp(div);
-    div.querySelector(".pgrid").innerHTML=Object.entries(PRODUCTS).map(([k,q])=>`<button type="button" data-k="${k}" class="${k===prod.value?"on":""}">${esc(shortProd(q.name))}<small>${q.per10?`${peso(q.price)} / 10`:peso(q.price)}</small></button>`).join("");
+    div.querySelector(".pgrid").innerHTML=Object.entries(PRODUCTS).map(([k,q])=>`<button type="button" data-k="${k}" class="${k===prod.value?"on":""}"><span class="pn">${esc(shortProd(q.name))}</span><small>${q.per10?`${peso(q.price)} / 10`:peso(q.price)}</small></button>`).join("");
     recalc();
   };
   prod.addEventListener("change",setCode);
   div._setCode=setCode;
   div.addEventListener("input",recalc); div.addEventListener("change",recalc);
-  div.querySelector(".rm")?.addEventListener("click",()=>{div.remove();recalc();});
+  div.querySelector(".rm")?.addEventListener("click",()=>{div.remove();openItem(null);recalc();});
   div.querySelector(".isum").onclick=()=>openItem(div.classList.contains("open")?null:div);
-  div.querySelector(".idone").onclick=()=>{openItem(null);div.scrollIntoView({block:"nearest",behavior:"smooth"});};
+  div.querySelector(".idone").onclick=()=>{if(document.activeElement)document.activeElement.blur();openItem(null);};
   div.querySelector(".pgrid").onclick=e=>{const b=e.target.closest("button[data-k]");if(!b)return;prod.value=b.dataset.k;setCode();};
   const stepP=d=>{const ps=div.querySelector(".pieces"),o=[...ps.options].map(x=>x.value).filter(x=>x!=="custom");let i=o.indexOf(ps.value);i=Math.max(0,Math.min(o.length-1,(i<0?0:i)+d));ps.value=o[i];recalc();};
   div.querySelector(".pm").onclick=()=>stepP(-1);div.querySelector(".pp").onclick=()=>stepP(1);
@@ -1209,8 +1239,13 @@ function readItems(){
   });
 }
 const shipAmt=()=>Math.max(0,Number($("shipAmt").value)||0);
-function shortProd(n){return String(n||"").replace(/\s*\(.*?\)\s*/g," ").replace(/\s+tags?\s*$/i,"").trim()||n;}
-function openItem(div){itemsEl.querySelectorAll(".item.open").forEach(d=>{if(d!==div)d.classList.remove("open");});if(div){div.classList.add("open");setTimeout(()=>div.scrollIntoView({block:"start",behavior:"smooth"}),30);}}
+function shortProd(n){return String(n||"").replace(/\s*\(.*?\)\s*/g," ").replace(/\s+[-–—]\s+/g," ").replace(/(sticker)s?\s+print(s)?\b/i,"$1").replace(/\s+tags?\s*$/i,"").replace(/\s+/g," ").trim()||n;}
+function openItem(div){itemsEl.querySelectorAll(".item.open").forEach(d=>{if(d!==div)d.classList.remove("open");});
+  if(div){div.classList.add("open");const b=div.querySelector(".ibody");b.scrollTop=0;}
+  document.body.classList.toggle("itemopen",!!div);fitItemSheet();}
+function fitItemSheet(){const b=itemsEl&&itemsEl.querySelector(".item.open .ibody");if(!b)return;const vv=window.visualViewport;
+  if(vv){const gap=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);b.style.bottom=gap+"px";b.style.maxHeight=Math.round(vv.height*0.92)+"px";}else{b.style.bottom="0px";}}
+if(window.visualViewport){visualViewport.addEventListener("resize",fitItemSheet);visualViewport.addEventListener("scroll",fitItemSheet);}
 function syncItemUI(div,it,i){
   if(!it)return;const p=PRODUCTS[div.querySelector(".product").value]||{};
   const chip=div.querySelector(".ichip");chip.textContent=it.code?it.code.slice(0,6):(it.art?"⬆":"—");chip.className="ichip"+(p.per10?" st":"")+(it.code||it.art?"":" none");
@@ -1278,6 +1313,7 @@ $("release").addEventListener("change",()=>recalc());
 $("addItem").onclick=()=>{addItem();openItem([...itemsEl.querySelectorAll(".item")].pop());};
 $("delSeg").onclick=e=>{const b=e.target.closest("button[data-v]");if(!b)return;setDelivery($("delSeg").dataset.v===b.dataset.v?"":b.dataset.v);};
 $("paySeg").onclick=e=>{const b=e.target.closest("button[data-v]");if(!b)return;$("payment").value=b.dataset.v;recalc();};
+$("itemBg").onclick=()=>{if(document.activeElement)document.activeElement.blur();openItem(null);};
 $("noteBtn").onclick=()=>{notesOpen=true;syncFormUI();$("notes").focus();};
 $("leadBtn").onclick=()=>{const w=$("leadWrap");w.hidden=!w.hidden;$("leadBtn").textContent=w.hidden?"Lead times ›":"Hide lead times";};
 const syncAddr=()=>{$("addrWrap").hidden=!($("ship").checked||$("bookRider").checked);};
@@ -1296,7 +1332,7 @@ function resetForm(){
   ["customer","contact","release","payment","notes","address"].forEach(i=>$(i).value="");$("bookRider").checked=false;$("addrWrap").hidden=true;
   if(CAT.leadDays>0)$("release").value=addWorkingDays(CAT.leadDays);$("custHint").textContent="";$("relOtherWrap").hidden=true;
   $("rush").checked=false;$("rushQty").value=1;$("ship").checked=false;$("shipAmt").value=CAT.ship||60;$("rushLbl").textContent=peso(RUSH);
-  notesOpen=false;setDelivery("",true);$("leadWrap").hidden=true;$("leadBtn").textContent="Lead times ›";
+  document.body.classList.remove("itemopen");notesOpen=false;setDelivery("",true);$("leadWrap").hidden=true;$("leadBtn").textContent="Lead times ›";
   itemsEl.innerHTML="";seq=0;addItem();recalc();
   $("pasteCard").hidden=false;$("pasteCard").classList.remove("editing");$("pasteBox").value="";$("pasteRes").hidden=true;$("pasteCard").classList.remove("filled");pfUndo=null;pfLen=0;
 }
@@ -1304,7 +1340,7 @@ function startEdit(o){
   $("pasteCard").hidden=true;
   editing=o;$("customer").value=o.customer;$("contact").value=o.contact||"";$("release").value=o.releaseDate||"";$("payment").value=o.payment||"";$("notes").value=o.notes||"";
   $("rush").checked=rushN(o)>0;$("rushQty").value=rushN(o)||1;$("ship").checked=!!o.shipping;$("bookRider").checked=!!o.bookRider;$("address").value=o.address||"";$("addrWrap").hidden=!(o.shipping||o.bookRider);$("shipAmt").value=o.shipping||CAT.ship||60;
-  notesOpen=false;setDelivery(o.delivery||(o.shipping?"jnt":o.bookRider?"grab":""),true);$("bookRider").checked=!!o.bookRider;syncAddr();
+  document.body.classList.remove("itemopen");notesOpen=false;setDelivery(o.delivery||(o.shipping?"jnt":o.bookRider?"grab":""),true);$("bookRider").checked=!!o.bookRider;syncAddr();
   itemsEl.innerHTML="";seq=0;o.items.forEach(i=>addItem(i));
   $("save").textContent="Update";$("saveLbl").textContent=`Editing ${ono(o.no)}`;$("cancelEdit").hidden=false;go("new");recalc();
 }
@@ -2227,7 +2263,7 @@ try{(function(){
     var pending=list.length,first=cs.designs.length;
     list.forEach(function(f){var url=URL.createObjectURL(f),img=new Image();
       img.onload=function(){var w=img.naturalWidth,h=img.naturalHeight,isSvg=/svg/i.test(f.type)||/\.svg$/i.test(f.name);if(isSvg&&(!w||!h)){w=SW;h=SH}
-        var bg=edgeColor(img,w,h);var nd={id:++uid,name:f.name.replace(/\.[^.]+$/,""),url:url,img:img,w:w,h:h,isSvg:isSvg,bg:bg,autoBg:bg,bgAuto:true,orderId:null,code:null};autoLink(nd);cs.designs.push(nd);done()};
+        var bg=edgeColor(img,w,h);var nd={id:++uid,name:f.name.replace(/\.[^.]+$/,""),url:url,img:img,w:w,h:h,isSvg:isSvg,bg:bg,autoBg:bg,bgAuto:true,orderId:null,code:null,inbox:f._inbox||null};autoLink(nd);cs.designs.push(nd);done()};
       img.onerror=function(){URL.revokeObjectURL(url);st(f.name+" couldn't be opened.",true);done()};img.src=url;});
     function done(){if(--pending)return;if(cs.designs.length>first)cs.current=first;renderList();draw();var al=cs.designs.slice(first).filter(function(d){return d.auto}).length;st(list.length+" design"+(list.length>1?"s":"")+" added"+(al?" · "+al+" linked from file name":"")+".");
       var nu=cs.designs.slice(first).filter(function(d){return !d.orderId}).map(function(d){return d.id});if(nu.length)openMatch(nu);}}
@@ -2236,18 +2272,37 @@ try{(function(){
   var inboxList=[];
   function apiQ(q){return SCRIPT_URL+(SCRIPT_URL.indexOf("?")>=0?"&":"?")+q}
   function refreshInbox(){if(!SCRIPT_URL)return;fetch(apiQ("only=prints"),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){inboxList=j.prints||[];paintInbox()}).catch(function(){})}
+  var inLoaded={};
   function paintInbox(){var box=$("cxInbox");if(!inboxList.length){box.hidden=true;box.innerHTML="";return}
-    var by={};inboxList.forEach(function(p){var k=p.no?("#"+String(p.no).padStart(4,"0")+(p.customer?" "+p.customer:"")):"Other";(by[k]=by[k]||[]).push(p.code)});
-    box.hidden=false;box.innerHTML='<div class="cx-in-h"><b>From the Tag Editor</b><span>'+inboxList.length+' file'+(inboxList.length===1?'':'s')+'</span></div><div class="cx-in-l">'+
-      Object.keys(by).map(function(k){return '<div><b>'+esc(k)+'</b> · '+by[k].map(esc).join(", ")+'</div>'}).join("")+'</div><div class="cx-in-b"><button type="button" class="btn primary" id="cxInLoad">Load into Cutter</button><button type="button" class="btn ghost" id="cxInClear">Clear</button></div>';
-    $("cxInLoad").onclick=loadInbox;$("cxInClear").onclick=function(){var b=this;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Tap again to clear";return}
-      postInbox({action:"print_del",ids:inboxList.map(function(p){return p.id})}).then(function(){inboxList=[];paintInbox();st("Inbox cleared.")})}}
+    var by={},order=[];inboxList.forEach(function(p){var k=p.no?("#"+String(p.no).padStart(4,"0")+(p.customer?" "+p.customer:"")):"Other";if(!by[k]){by[k]=[];order.push(k)}by[k].push(p)});
+    var printed=inboxList.filter(function(p){return p.printedAt}).length,todo=inboxList.filter(function(p){return !p.printedAt&&!inLoaded[p.id]}).length;
+    box.hidden=false;box.innerHTML='<div class="cx-in-h"><b>From the Tag Editor</b><span>'+inboxList.length+' file'+(inboxList.length===1?'':'s')+(printed?' · '+printed+' printed':'')+'</span></div><div class="cx-in-l">'+
+      order.map(function(k){var ps=by[k],allP=ps.every(function(p){return p.printedAt}),inC=ps.every(function(p){return inLoaded[p.id]});
+        return '<div'+(allP?' class="pr"':'')+'><b>'+esc(k)+'</b> · '+ps.map(function(p){return esc(p.code)}).join(", ")+(allP?' <em class="ok">✓ printed</em>':inC?' <em>in Cutter</em>':'')+'</div>'}).join("")+
+      '</div><div class="cx-in-b"><button type="button" class="btn ghost" id="cxInDl">⬇ Download files</button><button type="button" class="btn primary" id="cxInLoad">'+(todo?'Load '+todo+' into Cutter':'Load again')+'</button></div>'+
+      '<div class="cx-in-x">'+(printed?'<button type="button" class="linkbtn" id="cxInClearP">Clear printed</button>':'')+'<button type="button" class="linkbtn" id="cxInClear">Clear all</button><span class="note">Files stay here until you clear them.</span></div>';
+    $("cxInLoad").onclick=loadInbox;$("cxInDl").onclick=downloadInbox;
+    if($("cxInClearP"))$("cxInClearP").onclick=function(){var ids=inboxList.filter(function(p){return p.printedAt}).map(function(p){return p.id});
+      postInbox({action:"print_del",ids:ids}).then(function(){inboxList=inboxList.filter(function(p){return !p.printedAt});paintInbox();st("Cleared "+ids.length+" printed file"+(ids.length===1?"":"s")+".")})};
+    $("cxInClear").onclick=function(){var b=this;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Tap again to clear all";return}
+      postInbox({action:"print_del",ids:inboxList.map(function(p){return p.id})}).then(function(){inboxList=[];inLoaded={};paintInbox();st("Inbox cleared.")})}}
   function postInbox(body){return fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
-  function loadInbox(){var list=inboxList.slice(),files=[],b=$("cxInLoad");b.disabled=true;b.textContent="Loading 0 of "+list.length+"…";var n=0;
-    Promise.all(list.map(function(p){return fetch(apiQ("print="+encodeURIComponent(p.id)),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){
-      b.textContent="Loading "+(++n)+" of "+list.length+"…";if(!j.print)return;return fetch(j.print.data).then(function(r){return r.blob()}).then(function(bl){files.push(new File([bl],p.name,{type:"image/png"}))})}).catch(function(){})})).then(function(){
-      if(!files.length){st("Couldn't load those files. Try again.",true);b.disabled=false;b.textContent="Load into Cutter";return}
-      addFiles(files);postInbox({action:"print_del",ids:list.map(function(p){return p.id})}).then(function(){inboxList=[];paintInbox()},function(){})})}
+  function fetchInbox(list,b,label){var files=[],n=0;
+    return Promise.all(list.map(function(p){return fetch(apiQ("print="+encodeURIComponent(p.id)),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){
+      if(b)b.textContent=label+" "+(++n)+" of "+list.length+"…";if(!j.print)return;return fetch(j.print.data).then(function(r){return r.blob()}).then(function(bl){var f=new File([bl],p.name,{type:"image/png"});f._inbox=p.id;files.push(f)})}).catch(function(){})})).then(function(){return files})}
+  function loadInbox(){var list=inboxList.filter(function(p){return !p.printedAt&&!inLoaded[p.id]});if(!list.length)list=inboxList.slice();
+    var b=$("cxInLoad");b.disabled=true;
+    fetchInbox(list,b,"Loading").then(function(files){
+      if(!files.length){st("Couldn't load those files. Try again.",true);b.disabled=false;paintInbox();return}
+      files.forEach(function(f){inLoaded[f._inbox]=1});addFiles(files);paintInbox()})}
+  function downloadInbox(){var b=$("cxInDl");b.disabled=true;
+    fetchInbox(inboxList.slice(),b,"Getting").then(async function(files){
+      if(!files.length){st("Couldn't get those files. Try again.",true);paintInbox();return}
+      try{var blob,name;if(files.length===1){blob=files[0];name=files[0].name}
+        else{if(!window.JSZip)throw new Error("Zip tools didn't load. Reload the page and try again.");var zip=new window.JSZip();files.forEach(function(f){zip.file(f.name,f)});blob=await zip.generateAsync({type:"blob"});name="Base605_print_files_"+files.length+".zip"}
+        var r=await save(name,blob);st(r==="saved"?"Saved "+name:"Download cancelled.",r!=="saved")}catch(e){st((e&&e.message)||"Download failed.",true)}paintInbox()})}
+  window.cxMarkPrinted=function(list){var ids=list.map(function(d){return d.inbox}).filter(Boolean);if(!ids.length)return;
+    postInbox({action:"print_mark",ids:ids}).then(function(){inboxList.forEach(function(p){if(ids.indexOf(p.id)>=0)p.printedAt=Date.now()});paintInbox()},function(){})};
   window.cxRefreshInbox=refreshInbox;
   $("cxDrop").addEventListener("click",function(){$("cxFile").click()});
   $("cxFile").addEventListener("change",function(e){addFiles(e.target.files);e.target.value=""});
@@ -2279,7 +2334,7 @@ try{(function(){
         for(var j=0;j<list.length;j++){st("Building sheet "+(j+1)+" of "+list.length+"…");await new Promise(function(r){setTimeout(r,20)});var base=fileBase(list[j]),fn=base,k=2;while(used[fn])fn=base+"-"+(k++);used[fn]=1;zip.file(fn+"."+cs.fmt,await fileOf(list[j]));}
         blob=await zip.generateAsync({type:"blob"});name="Base605_Cutter_"+list.length+"-sheets.zip";}
       var r=await save(name,blob);st(r==="saved"?"Exported "+name:"Export cancelled.",r!=="saved");
-      if(r==="saved")await markReady(list);
+      if(r==="saved"){if(window.cxMarkPrinted)window.cxMarkPrinted(list);await markReady(list);}
     }catch(e){st((e&&e.message)||"Export failed. Try again.",true)}finally{cs.busy=false;draw()}}
   async function markReady(list){var target=STATUSES.indexOf("ready to print"),ids=[],seen={};
     list.forEach(function(d){if(d.orderId&&!seen[d.orderId]){seen[d.orderId]=1;ids.push(d.orderId)}});
