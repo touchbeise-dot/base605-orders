@@ -243,6 +243,17 @@ body.itemopen{overflow:hidden}
 .pf-ok{font-size:13.5px;color:var(--brand);font-weight:600;background:#eef5f0;border-radius:10px;padding:9px 12px;margin-top:10px}
 .pf-warn{font-size:13.5px;color:#7a5410;background:#fbf2e2;border-radius:10px;padding:9px 12px;margin-top:10px;line-height:1.45}
 .pf-acts{display:flex;gap:10px;margin-top:16px}.pf-acts button{flex:1;padding:13px;font-size:15px}
+.cx-in-seg{display:flex;background:rgba(47,93,68,.12);border-radius:11px;padding:3px;gap:3px;margin:8px 0 4px}
+.cx-in-seg button{flex:1;border:0;background:none;font:inherit;font-size:13.5px;font-weight:600;padding:8px 0;border-radius:9px;color:var(--mute);cursor:pointer}
+.cx-in-seg button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px #0002}
+.cx-in-l .cx-in-r{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid rgba(47,93,68,.18);margin:0;font-weight:400;cursor:pointer}
+.cx-in-l .cx-in-r input{width:19px;height:19px;margin:0;flex:0 0 auto;accent-color:var(--brand)}
+.cx-in-l .cx-in-r .t{flex:1;min-width:0;line-height:1.35}
+.cx-in-l .cx-in-r.off .t{opacity:.65}
+.cx-in-l .pt{flex:0 0 auto;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.cx-in-l .pt.ok{color:#24533c;background:#fff;border:1px solid #b9d6c4}.cx-in-l .pt.un{color:#7a4a00;background:#fbeed8;border:1px solid #f0d9ae}
+.cx-in-note{font-size:13px;color:#7a4a00;background:#fbf2e2;border-radius:10px;padding:8px 11px;margin-top:8px}
+.cx-in-b button:disabled{opacity:.45}
 .cx-in-l .pr{opacity:.6}.cx-in-l em{font-style:normal;font-size:12px;font-weight:700;color:var(--mute);margin-left:4px}.cx-in-l em.ok{color:var(--brand)}
 .cx-in-x{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:13px}.cx-in-x .note{margin-left:auto;font-size:12px}
 
@@ -2406,30 +2417,43 @@ try{(function(){
       if(i>=0&&i<target&&STATUSES.indexOf("approved")<=i){moving[id]=1;try{await store.patch(o,{status:"ready to print",stageAt:new Date().toISOString()});moved.push(o)}catch(e){console.error(e)}delete moving[id];}}
     if(moved.length){renderAll();toast(moved.length+" order"+(moved.length>1?"s":"")+" sent to the Cutter → ready to print");}}
   var inLoaded={};
+  var inSel={},inMode="paid";
+  function codeLabel(c){return /^UP[LP]-/.test(String(c||""))?"Own design":String(c||"")}
+  function groupCodes(ps){var m={},ord=[];ps.forEach(function(p){var k=codeLabel(p.code);if(!m[k]){m[k]=0;ord.push(k)}m[k]++});return ord.map(function(k){return k+(m[k]>1?" ×"+m[k]:"")}).join(", ")}
+  function inOrder(p){return p.orderId?orders.find(function(o){return o.id===p.orderId}):null}
+  function payOf(o){if(!o)return{paid:false,tag:"no order",cls:"un"};var t=Number(o.total)||0,pd=Number(o.paid)||0;
+    return pd>=t&&t>0?{paid:true,tag:"paid",cls:"ok"}:pd>0?{paid:false,tag:peso(t-pd)+" bal",cls:"un"}:{paid:false,tag:"unpaid",cls:"un"}}
+  function inGroups(){var by={},ord=[];inboxList.forEach(function(p){var k=p.orderId||("#"+p.no);if(!by[k]){by[k]={k:k,ps:[],o:inOrder(p),no:p.no,cu:p.customer};ord.push(k)}by[k].ps.push(p)});
+    return ord.map(function(k){var g=by[k];g.pay=payOf(g.o);if(inSel[k]===undefined)inSel[k]=inMode==="all"||g.pay.paid;return g})}
+  function selFiles(){var out=[];inGroups().forEach(function(g){if(inSel[g.k])g.ps.forEach(function(p){out.push(p)})});return out}
   function paintInbox(){var nc=$("navCut");if(nc){var w=inboxList.filter(function(p){return !p.printedAt}).length;nc.textContent=w||"";}var box=$("cxInbox");if(!inboxList.length){box.hidden=true;box.innerHTML="";return}
-    var by={},order=[];inboxList.forEach(function(p){var k=p.no?("#"+String(p.no).padStart(4,"0")+(p.customer?" "+p.customer:"")):"Other";if(!by[k]){by[k]=[];order.push(k)}by[k].push(p)});
-    var printed=inboxList.filter(function(p){return p.printedAt}).length,todo=inboxList.filter(function(p){return !p.printedAt&&!inLoaded[p.id]}).length;
-    box.hidden=false;box.innerHTML='<div class="cx-in-h"><b>From the Tag Editor</b><span>'+inboxList.length+' file'+(inboxList.length===1?'':'s')+(printed?' · '+printed+' printed':'')+'</span></div><div class="cx-in-l">'+
-      order.map(function(k){var ps=by[k],allP=ps.every(function(p){return p.printedAt}),inC=ps.every(function(p){return inLoaded[p.id]});
-        return '<div'+(allP?' class="pr"':'')+'><b>'+esc(k)+'</b> · '+ps.map(function(p){return esc(p.code)}).join(", ")+(allP?' <em class="ok">✓ printed</em>':inC?' <em>in Cutter</em>':'')+'</div>'}).join("")+
-      '</div><div class="cx-in-b"><button type="button" class="btn ghost" id="cxInDl">⬇ Download files</button><button type="button" class="btn primary" id="cxInLoad">'+(todo?'Load '+todo+' into Cutter':'Load again')+'</button></div>'+
+    var gs=inGroups(),paidN=gs.filter(function(g){return g.pay.paid}).length,printed=inboxList.filter(function(p){return p.printedAt}).length;
+    var sel=selFiles(),todo=sel.filter(function(p){return !p.printedAt&&!inLoaded[p.id]}).length,skipped=gs.filter(function(g){return !g.pay.paid&&!inSel[g.k]}).length;
+    box.hidden=false;box.innerHTML='<div class="cx-in-h"><b>From the Tag Editor</b><span>'+inboxList.length+' file'+(inboxList.length===1?'':'s')+' · '+gs.length+' order'+(gs.length===1?'':'s')+(printed?' · '+printed+' printed':'')+'</span></div>'+
+      '<div class="cx-in-seg"><button type="button" data-m="paid" class="'+(inMode==="paid"?"on":"")+'">Fully paid · '+paidN+'</button><button type="button" data-m="all" class="'+(inMode==="all"?"on":"")+'">All · '+gs.length+'</button></div>'+
+      '<div class="cx-in-l">'+gs.map(function(g){var allP=g.ps.every(function(p){return p.printedAt}),inC=g.ps.every(function(p){return inLoaded[p.id]});
+        return '<label class="cx-in-r'+(inSel[g.k]?'':' off')+(allP?' pr':'')+'"><input type="checkbox" data-k="'+esc(g.k)+'"'+(inSel[g.k]?' checked':'')+'><span class="t"><b>'+esc((g.no?"#"+String(g.no).padStart(4,"0")+" ":"")+((g.o&&g.o.customer)||g.cu||""))+'</b> · '+esc(groupCodes(g.ps))+(allP?' <em class="ok">✓ printed</em>':inC?' <em>in Cutter</em>':'')+'</span><span class="pt '+g.pay.cls+'">'+esc(g.pay.tag)+'</span></label>'}).join("")+'</div>'+
+      (skipped?'<div class="cx-in-note">'+skipped+' order'+(skipped===1?" isn't":"s aren't")+' fully paid, so '+(skipped===1?"it's":"they're")+' left out. Tick to include anyway.</div>':'')+
+      '<div class="cx-in-b"><button type="button" class="btn ghost" id="cxInDl"'+(sel.length?'':' disabled')+'>⬇ Download '+sel.length+'</button><button type="button" class="btn primary" id="cxInLoad"'+(sel.length?'':' disabled')+'>'+(todo?'Load '+todo+' into Cutter':'Load again')+'</button></div>'+
       '<div class="cx-in-x">'+(printed?'<button type="button" class="linkbtn" id="cxInClearP">Clear printed</button>':'')+'<button type="button" class="linkbtn" id="cxInClear">Clear all</button><span class="note">Files stay here until you clear them.</span></div>';
+    box.querySelectorAll(".cx-in-seg button").forEach(function(b){b.onclick=function(){inMode=b.dataset.m;inSel={};paintInbox()}});
+    box.querySelectorAll(".cx-in-r input").forEach(function(c){c.onchange=function(){inSel[c.dataset.k]=c.checked;paintInbox()}});
     $("cxInLoad").onclick=loadInbox;$("cxInDl").onclick=downloadInbox;
     if($("cxInClearP"))$("cxInClearP").onclick=function(){var ids=inboxList.filter(function(p){return p.printedAt}).map(function(p){return p.id});
       postInbox({action:"print_del",ids:ids}).then(function(){inboxList=inboxList.filter(function(p){return !p.printedAt});paintInbox();st("Cleared "+ids.length+" printed file"+(ids.length===1?"":"s")+".")})};
     $("cxInClear").onclick=function(){var b=this;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Tap again to clear all";return}
-      postInbox({action:"print_del",ids:inboxList.map(function(p){return p.id})}).then(function(){inboxList=[];inLoaded={};paintInbox();st("Inbox cleared.")})}}
+      postInbox({action:"print_del",ids:inboxList.map(function(p){return p.id})}).then(function(){inboxList=[];inLoaded={};inSel={};paintInbox();st("Inbox cleared.")})}}
   function postInbox(body){return fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
   function fetchInbox(list,b,label){var files=[],n=0;
     return Promise.all(list.map(function(p){return fetch(apiQ("print="+encodeURIComponent(p.id)),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){
       if(b)b.textContent=label+" "+(++n)+" of "+list.length+"…";if(!j.print)return;return fetch(j.print.data).then(function(r){return r.blob()}).then(function(bl){var f=new File([bl],p.name,{type:"image/png"});f._inbox=p.id;files.push(f)})}).catch(function(){})})).then(function(){return files})}
-  function loadInbox(){var list=inboxList.filter(function(p){return !p.printedAt&&!inLoaded[p.id]});if(!list.length)list=inboxList.slice();
+  function loadInbox(){var sel=selFiles(),list=sel.filter(function(p){return !p.printedAt&&!inLoaded[p.id]});if(!list.length)list=sel.slice();if(!list.length)return;
     var b=$("cxInLoad");b.disabled=true;
     fetchInbox(list,b,"Loading").then(function(files){
       if(!files.length){st("Couldn't load those files. Try again.",true);b.disabled=false;paintInbox();return}
       files.forEach(function(f){inLoaded[f._inbox]=1});addFiles(files);paintInbox()})}
   function downloadInbox(){var b=$("cxInDl");b.disabled=true;
-    fetchInbox(inboxList.slice(),b,"Getting").then(async function(files){
+    fetchInbox(selFiles(),b,"Getting").then(async function(files){
       if(!files.length){st("Couldn't get those files. Try again.",true);paintInbox();return}
       try{var blob,name;if(files.length===1){blob=files[0];name=files[0].name}
         else{if(!window.JSZip)throw new Error("Zip tools didn't load. Reload the page and try again.");var zip=new window.JSZip();files.forEach(function(f){zip.file(f.name,f)});blob=await zip.generateAsync({type:"blob"});name="Base605_print_files_"+files.length+".zip"}
