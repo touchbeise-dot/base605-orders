@@ -258,6 +258,27 @@ body.itemopen{overflow:hidden}
 .cx-in-x{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:13px}.cx-in-x .note{margin-left:auto;font-size:12px}
 
 /* text size */
+.lockscr{position:fixed;inset:0;z-index:1000;background:#faf8f5;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;font-family:inherit}
+.lockscr.show{display:flex}
+.lockscr .lk-brand{font-size:13px;font-weight:800;letter-spacing:.12em;color:#922b2c}
+.lockscr h2{margin:0;font-size:22px;font-weight:800}
+.lockscr .lk-dots{display:flex;gap:14px;height:18px}
+.lockscr .lk-dots i{width:14px;height:14px;border-radius:50%;border:2px solid #2f5d44}
+.lockscr .lk-dots i.on{background:#2f5d44}
+.lockscr .lk-msg{min-height:20px;font-size:14px;color:#922b2c;font-weight:600;text-align:center}
+.lockscr .lk-pad{display:grid;grid-template-columns:repeat(3,76px);gap:14px}
+.lockscr .lk-pad button{height:76px;border-radius:50%;border:1px solid #ece6dc;background:#fff;font:inherit;font-size:26px;font-weight:600;color:#24201c;cursor:pointer;box-shadow:0 1px 4px #0001}
+.lockscr .lk-pad button:active{background:#e4f0e7}
+.lockscr .lk-pad button.lk-k{border:0;background:none;box-shadow:none;font-size:15px;color:#6f6a64}
+.lockscr .lk-forgot{border:0;background:none;font:inherit;font-size:14px;color:#2f5d44;font-weight:600;text-decoration:underline;cursor:pointer}
+.lockscr .lk-help{max-width:300px;font-size:13.5px;line-height:1.5;color:#4e4842;text-align:center;display:none}
+.pcrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.pcrow button{flex:1}
+.pcform{display:none;margin-top:10px}.pcform.show{display:block}
+.pcform input{width:100%;box-sizing:border-box;font-size:20px;letter-spacing:.3em;text-align:center;margin-bottom:8px}
+.bkrem{display:flex;align-items:center;gap:12px;background:#fff3dc;border:1px solid #f0d9ae;border-radius:16px;padding:12px 14px;margin:0 0 12px}
+.bkrem b{display:block;font-size:15px;color:#6e4600}.bkrem small{font-size:13px;color:#7a5a1c}
+.bkrem button{margin-left:auto;font:inherit;font-size:14px;font-weight:700;border:0;background:#6e4600;color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;flex:0 0 auto}
+.bkline{display:flex;justify-content:space-between;font-size:14px;margin:6px 0}.bkline span{color:var(--mute)}
 .tsz{display:flex;background:#f0ebe4;border-radius:12px;padding:3px;gap:3px}
 .tsz button{flex:1;border:0;background:none;font:inherit;font-weight:600;font-size:14px;padding:9px 0;border-radius:10px;color:var(--mute);cursor:pointer}
 .tsz button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0002}
@@ -675,6 +696,7 @@ body.selmode #tab-list{padding-bottom:190px}
 .trow .tn i{font-style:normal;color:var(--mute);font-weight:500}
 .trow .tr{font-size:12.5px;color:var(--mute);white-space:nowrap}
 .trow .tr.late{color:var(--cran);font-weight:600}
+#printlist .baltag{display:inline-block;margin-left:8px;vertical-align:2px;font-size:11px;font-weight:700;color:#8a5400;background:#fbeed8;border:1px solid #f0d9ae;border-radius:999px;padding:2px 7px;white-space:nowrap}
 .trow .baltag{flex:0 0 auto;font-size:11px;font-weight:700;color:#8a5400;background:#fbeed8;border:1px solid #f0d9ae;border-radius:999px;padding:2px 7px;white-space:nowrap}
 .trow.dragging{opacity:.4}
 .tnudge{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;border:1px solid #e9b9b5;background:#fff;color:var(--cran);cursor:pointer}
@@ -848,6 +870,7 @@ section.enter-back{animation:inBack .2s ease-out}
 <main>
   <section id="tab-today">
     <div class="xban" id="xban"></div>
+    <div id="bkRemind"></div>
     <div class="tgroups" id="todayLists"></div>
   </section>
 
@@ -919,6 +942,12 @@ section.enter-back{animation:inBack .2s ease-out}
 
   <section id="tab-cat" hidden>
     <div class="card"><h3>Text size <span class="note">· this device only</span></h3><div class="tsz" id="tszSeg"><button type="button" data-z="0.85">Smaller</button><button type="button" data-z="0.92">Small</button><button type="button" data-z="1">Normal</button></div><p class="note" style="margin:8px 0 0">Makes everything in the app smaller so more fits on the screen.</p></div>
+    <div class="card" id="pcCard"><h3>Passcode</h3><div id="pcState"></div>
+      <div class="pcform" id="pcForm"><input id="pcNew" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="New passcode"><input id="pcNew2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="Type it again"><p class="note" style="margin:0 0 8px">4 to 8 numbers. Don't use a birthday.</p><div class="pcrow"><button class="ghost" id="pcCancel" type="button">Cancel</button><button class="primary" id="pcSaveBtn" type="button">Save passcode</button></div></div></div>
+    <div class="card" id="bkCard"><h3>Backup</h3><p class="note" style="margin:0 0 8px">One file with all orders, payments, catalog, Tag Editor drafts and uploaded designs. Keep it on the laptop or Google Drive.</p>
+      <div class="bkline"><span>Last backup</span><b id="bkLast">never</b></div>
+      <div class="pcrow"><button class="ghost" id="bkRestore" type="button">Restore…</button><button class="primary" id="bkDl" type="button" style="flex:1.6">Download backup</button></div>
+      <input type="file" id="bkFile" accept=".json,application/json" hidden></div>
     <p class="note" style="margin:0 0 12px">Changes below apply to every device. Prices only affect new orders; existing orders keep what they were saved with.</p>
     <div id="catProducts"></div>
     <button class="ghost" id="catAdd" type="button" style="width:100%;margin-bottom:12px">+ Add a product</button>
@@ -1017,8 +1046,9 @@ section.enter-back{animation:inBack .2s ease-out}
   <section id="tab-done" hidden>
     <div class="inv" id="invoice"></div>
     <div class="invacts">
-      <button class="primary" id="png" type="button">Download PNG</button>
-      <button class="ghost" id="copy" type="button">Copy as text</button>
+      <button class="primary wide" id="png" type="button">Save pic + copy message</button>
+      <button class="ghost" id="pngOnly" type="button">Save pic only</button>
+      <button class="ghost" id="copy" type="button">Copy message only</button>
       <button class="ghost wide" id="toToday" type="button">Back to Today</button>
       <button class="ghost wide" id="another" type="button">New order</button>
     </div>
@@ -1030,6 +1060,9 @@ section.enter-back{animation:inBack .2s ease-out}
 <div class="sheet-bg" id="pfBg"><div class="sheet pfsheet" id="pfSheet" role="dialog" aria-label="Check pasted order"></div></div>
 <div class="sheet-bg" id="fitBg"><div class="sheet fit" id="fitSheet" role="dialog" aria-label="Fit design to tag"></div></div>
 <input type="file" id="upFile" accept="image/*" hidden>
+<div class="lockscr" id="lockScr" role="dialog" aria-label="Enter passcode"><div class="lk-brand">BASE 605</div><h2>Enter passcode</h2><div class="lk-dots" id="lkDots"></div><div class="lk-msg" id="lkMsg"></div>
+  <div class="lk-pad" id="lkPad"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button><button type="button">6</button><button type="button">7</button><button type="button">8</button><button type="button">9</button><button type="button" class="lk-k" data-k="ok">Enter</button><button type="button">0</button><button type="button" class="lk-k" data-k="del">⌫</button></div>
+  <button type="button" class="lk-forgot" id="lkForgot">Forgot passcode?</button><div class="lk-help" id="lkHelp">Open the app on a phone or laptop that's still unlocked (yours or Bei's), go to Catalog → Passcode → Change passcode. If no device is unlocked, message Claude for a reset file.</div></div>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo" hidden>Undo</button></div>
 
 <script>
@@ -1088,6 +1121,7 @@ function migrateCatalog(){
   CAT.rev=2;return true;
 }
 function applyCatalog(c){
+  setTimeout(()=>{try{checkLock()}catch(e){}},0);
   CAT=Object.assign(JSON.parse(JSON.stringify(DEFAULT_CATALOG)),c||{});
   CAT.messages=Object.assign({},DEFAULT_CATALOG.messages,c&&c.messages||{});
   if(!Array.isArray(CAT.pickups))CAT.pickups=DEFAULT_CATALOG.pickups;
@@ -1805,20 +1839,25 @@ function fitInv(root){if(!root)return;
   root.querySelectorAll(".fitn").forEach(el=>{if(!fitText(el,1,12)){el.style.fontSize="";fitText(el,2,11);}});
   root.querySelectorAll(".fitt").forEach(el=>fitText(el,1,10.5));
   root.querySelectorAll(".fits").forEach(el=>fitText(el,2,10));}
-$("copy").onclick=async()=>{try{await navigator.clipboard.writeText(invMode==="balance"?fillMessage(CAT.messages.balance,lastOrder):messageFor(lastOrder));toast("Copied");}catch{toast("Copy failed");}};
+$("copy").onclick=async()=>{try{await navigator.clipboard.writeText(invMsg());toast("Copied");}catch{toast("Copy failed");}};
 $("another").onclick=()=>go("new");$("toToday").onclick=()=>go("today");
 async function downloadPng(el,name,btn){
-  if(!window.html2canvas){toast("PNG not available — screenshot instead");return;}
+  if(!window.html2canvas){toast("PNG not available — screenshot instead");return false;}
   btn.disabled=true;
   try{
     const canvas=await html2canvas(el,{scale:el.classList.contains("pkg")?4:3,backgroundColor:"#ffffff",useCORS:true});
     const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
-    if(store.downloads){try{await store.downloads.save({filename:name,data:blob});toast("Saved");}catch(e){if(e?.code!=="declined")toast("Download unavailable — screenshot instead");}}
-    else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
-  }catch(e){console.error(e);toast("Couldn't render — screenshot instead");}
+    if(store.downloads){try{await store.downloads.save({filename:name,data:blob});toast("Saved");return true;}catch(e){if(e?.code!=="declined")toast("Download unavailable — screenshot instead");return false;}}
+    else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);return true;}
+  }catch(e){console.error(e);toast("Couldn't render — screenshot instead");return false;}
   finally{btn.disabled=false;}
 }
-$("png").onclick=()=>downloadPng($("invoice"),`base605-${lastOrder&&lastOrder.no?ono(lastOrder.no).slice(1):"invoice"}${invMode==="balance"?"-balance":""}.png`,$("png"));
+const invName=()=>`base605-${lastOrder&&lastOrder.no?ono(lastOrder.no).slice(1):"invoice"}${invMode==="balance"?"-balance":""}.png`;
+const invMsg=()=>invMode==="balance"?fillMessage(CAT.messages.balance,lastOrder):messageFor(lastOrder);
+$("png").onclick=async()=>{let ok=false;try{await navigator.clipboard.writeText(invMsg());ok=true;}catch{}
+  const saved=await downloadPng($("invoice"),invName(),$("png"));
+  if(saved)toast(ok?"Pic saved · message copied — paste it in the chat":"Pic saved · tap “Copy message only” to copy");};
+$("pngOnly").onclick=()=>downloadPng($("invoice"),invName(),$("pngOnly"));
 
 // ===== DELIVERY DETAILS =====
 let delivOrder=null, prevTab="today";
@@ -2075,6 +2114,7 @@ function renderToday(){
       return `<button type="button" class="xnew" id="xNew"><span class="xn"><b>${T.rows.length}</b><small>new today</small></span><span class="xg"><b>${peso(T.sales)}</b><b>${T.tags} tags</b><small>sales today</small><small>to make</small></span><span class="xc">›</span></button><div class="xpills"><span class="xpill">${peso(owedAmt)} still to collect</span>${d?`<span class="xpill">${d>0?"+":"−"}${Math.abs(d)} vs yesterday</span>`:""}</div>`;})()}</div>
     <div class="xstats"><div><b>${peso(owedAmt)}</b><span>to collect</span></div><div><b>${relToday}</b><span>releasing today</span></div><div><b>${relSoon}</b><span>releasing soon</span></div></div></div>`;
   if($("xNew"))$("xNew").onclick=()=>{go("stats");setStatsRange("day",0);};
+  renderBackupRemind();
   if(loading){$("todayLists").innerHTML='<div class="loading">Loading orders…</div>';return;}
   if(!orders.length){$("todayLists").innerHTML=`<div class="empty">No orders yet. Tap + to log the first one.</div>`;return;}
   const sortRel=(a,b)=>String(a.releaseDate||"9").localeCompare(String(b.releaseDate||"9"));
@@ -2182,7 +2222,7 @@ function renderPrint(){
       const grp=rows.filter(x=>(x.releaseDate||"")===(o.releaseDate||""));
       html+=`<div class="day ${k!==null&&k<0?"late":""}"><span>${o.releaseDate?fmtDate(o.releaseDate):"No release date"} ${dayPill(k)}<span class="sheets">${sheetsText(grp)} · ${tagsOf(grp)} pcs${grp.some(x=>x.rush)?' · <span style="color:var(--danger)">'+grp.filter(x=>x.rush).length+' rush</span>':""}</span></span><button class="ghost" data-act="printday" data-date="${o.releaseDate||""}">Mark all printed</button></div><div class="pl">`;}
     const tg=o.items.reduce((a,i)=>a+(Number(i.pieces)||0),0),sh=o.items.reduce((a,i)=>a+Math.ceil((Number(i.pieces)||0)/10),0);
-    html+=`<details class="${o.rush?"rush":""}" data-id="${o.id}" ${printOpen.has(o.id)?"open":""}><summary><div><div class="name">${esc(o.customer)} <span class="note">${ono(o.no)}</span>${o.rush?'<span class="rushtag">RUSH</span>':""}</div><small>${o.items.length} design${o.items.length===1?"":"s"} · ${tg} tags · ${sh} sheet${sh===1?"":"s"} · ${o.items.map(i=>esc(i.code||i.product.replace(" Tag",""))).join(", ")}</small></div><button class="ghost" data-act="next">Printed</button></summary><div class="sub">${o.items.map(i=>`<div class="r"><span class="code">${esc(i.code||"—")}</span><div>${esc(i.product)} · ${i.pieces} pcs (${Math.ceil((Number(i.pieces)||0)/10)} sheet${Math.ceil((Number(i.pieces)||0)/10)===1?"":"s"})<small>${i.sender?`Name: <b>${esc(i.sender)}</b>`:""}${i.greeting?`${i.sender?" · ":""}“${esc(i.greeting)}”`:""}${i.extra?` · <b>${esc(i.extra)}</b>`:""}</small></div></div>`).join("")}</div></details>`;
+    html+=`<details class="${o.rush?"rush":""}" data-id="${o.id}" ${printOpen.has(o.id)?"open":""}><summary><div><div class="name">${esc(o.customer)} <span class="note">${ono(o.no)}</span>${o.rush?'<span class="rushtag">RUSH</span>':""}${(()=>{const t=Number(o.total)||0,pd=Number(o.paid)||0;return pd<t?`<span class="baltag" title="Not fully paid">${pd>0?peso(t-pd)+" bal":"unpaid"}</span>`:"";})()}</div><small>${o.items.length} design${o.items.length===1?"":"s"} · ${tg} tags · ${sh} sheet${sh===1?"":"s"} · ${(()=>{const m={},ord=[];o.items.forEach(i=>{const k=i.code||i.product.replace(" Tag","");if(!(k in m)){m[k]=0;ord.push(k);}m[k]++;});return ord.map(k=>esc(k)+(m[k]>1?" ×"+m[k]:"")).join(", ");})()}</small></div><button class="ghost" data-act="next">Printed</button></summary><div class="sub">${o.items.map(i=>`<div class="r"><span class="code">${esc(i.code||"—")}</span><div>${esc(i.product)} · ${i.pieces} pcs (${Math.ceil((Number(i.pieces)||0)/10)} sheet${Math.ceil((Number(i.pieces)||0)/10)===1?"":"s"})<small>${i.sender?`Name: <b>${esc(i.sender)}</b>`:""}${i.greeting?`${i.sender?" · ":""}“${esc(i.greeting)}”`:""}${i.extra?` · <b>${esc(i.extra)}</b>`:""}</small></div></div>`).join("")}</div></details>`;
   });
   el.innerHTML=html+"</div>";
 }
@@ -2265,6 +2305,7 @@ applyUiScale(uiScale());
 // ===== CATALOG UI =====
 let catDraft=null;
 function renderCatalog(){
+  try{renderPasscode();renderBackupCard();}catch(e){console.error(e)}
   catDraft=JSON.parse(JSON.stringify(CAT));
   $("catBase").value=catDraft.basePieces;$("catStep").value=catDraft.stepPrice;$("catRush").value=catDraft.rush;$("catShip").value=catDraft.ship;$("catLead").value=catDraft.leadDays||0;
   $("catTiers").innerHTML=(catDraft.leadTiers||[]).map((t,i)=>`<div class="row" style="grid-template-columns:1fr 1fr;margin-bottom:6px"><input data-ti="${i}" data-tk="max" type="number" min="0" inputmode="numeric" placeholder="and up" value="${t.max||""}"><input data-ti="${i}" data-tk="days" type="number" min="1" inputmode="numeric" value="${t.days}"></div>`).join("");
@@ -2311,6 +2352,7 @@ $("catSave").onclick=async()=>{
   catDraft.leadTiers=[...$("catTiers").querySelectorAll('input[data-tk="max"]')].map(inp=>{const i=inp.dataset.ti;const days=Number($("catTiers").querySelector(`input[data-ti="${i}"][data-tk="days"]`).value)||1;return {max:Number(inp.value)||0,days};}).filter((t,i,a)=>t.days>0);catDraft.customers=CAT.customers||{};
   catDraft.basePieces=Number($("catBase").value)||30;catDraft.stepPrice=Number($("catStep").value)||0;catDraft.rush=Number($("catRush").value)||0;catDraft.ship=Number($("catShip").value)||0;
   catDraft.payments={gcash:$("catGcash").value.trim(),bpi:$("catBpi").value.trim()};
+  ['lockHash','lockLen','lastBackup'].forEach(k=>{if(CAT[k]!==undefined)catDraft[k]=CAT[k];else delete catDraft[k];});
   catDraft.pickups=(catDraft.pickups||[]).filter(p=>p.name.trim()&&p.address.trim());
   catDraft.products=catDraft.products.filter(p=>p.name.trim()).map(p=>({...p,sets:(p.sets||[]).filter(st=>st.p&&st.n>0)}));
   try{await withBusy($("catSave"),()=>store.saveCatalog(catDraft),"Saved ✓");if(!editing)resetForm();renderAll();renderCatalog();toast("Catalog saved");}catch(e){console.error(e);toast("Couldn't save catalog");}
@@ -2576,6 +2618,116 @@ try{(function(){
 
 // ===== BOOT =====
 $("brandImg").src=LOGO;
+
+// ===== PASSCODE (app lock) =====
+const UNLOCK_KEY="b605-unlock",FAIL_KEY="b605-lockfails";
+async function pcHash(code){const t="base605|"+code;
+  if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+  let h=5381;for(const c of t)h=((h<<5)+h+c.charCodeAt(0))|0;return "x"+(h>>>0).toString(16);}
+let lkBuf="";
+function lkDraw(){const n=Math.max(4,Number(CAT.lockLen)||4);$("lkDots").innerHTML=Array.from({length:n},(_,i)=>`<i class="${i<lkBuf.length?"on":""}"></i>`).join("");}
+function checkLock(){const h=CAT.lockHash;let un="";try{un=localStorage.getItem(UNLOCK_KEY)||"";}catch{}
+  const lock=!!h&&un!==h,el=$("lockScr");if(!el)return;
+  if(lock&&!el.classList.contains("show")){lkBuf="";$("lkMsg").textContent="";lkDraw();}
+  el.classList.toggle("show",lock);if(tab==="cat")renderPasscode();}
+function lkFails(){try{return JSON.parse(localStorage.getItem(FAIL_KEY)||'{"n":0,"until":0}')}catch{return {n:0,until:0}}}
+async function lkTry(){const f=lkFails();const wait=Math.ceil((f.until-Date.now())/1000);
+  if(wait>0){$("lkMsg").textContent=`Too many tries. Wait ${wait}s.`;lkBuf="";lkDraw();return;}
+  if(!lkBuf)return;
+  const h=await pcHash(lkBuf);
+  if(h===CAT.lockHash){try{localStorage.setItem(UNLOCK_KEY,h);localStorage.removeItem(FAIL_KEY);}catch{}lkBuf="";checkLock();renderAll();return;}
+  f.n=(f.n||0)+1;if(f.n>=5){f.until=Date.now()+30000;f.n=0;}try{localStorage.setItem(FAIL_KEY,JSON.stringify(f));}catch{}
+  $("lkMsg").textContent=f.until>Date.now()?"Too many tries. Wait 30s.":"Wrong passcode";lkBuf="";lkDraw();
+  $("lkDots").animate&&$("lkDots").animate([{transform:"translateX(0)"},{transform:"translateX(-8px)"},{transform:"translateX(8px)"},{transform:"translateX(0)"}],{duration:250});}
+$("lkPad").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$("lkMsg").textContent="";
+  if(b.dataset.k==="del")lkBuf=lkBuf.slice(0,-1);else if(b.dataset.k==="ok"){lkTry();return;}else if(lkBuf.length<8)lkBuf+=b.textContent;
+  lkDraw();if(Number(CAT.lockLen)&&lkBuf.length===Number(CAT.lockLen))lkTry();});
+document.addEventListener("keydown",e=>{if(!$("lockScr").classList.contains("show"))return;
+  if(/^[0-9]$/.test(e.key)&&lkBuf.length<8){lkBuf+=e.key;lkDraw();if(Number(CAT.lockLen)&&lkBuf.length===Number(CAT.lockLen))lkTry();}
+  else if(e.key==="Backspace"){lkBuf=lkBuf.slice(0,-1);lkDraw();}else if(e.key==="Enter")lkTry();});
+$("lkForgot").onclick=()=>{const h=$("lkHelp");h.style.display=h.style.display==="block"?"none":"block";};
+async function saveLockFields(f){const c=JSON.parse(JSON.stringify(CAT));Object.keys(f).forEach(k=>{if(f[k]===undefined)delete c[k];else c[k]=f[k];});await store.saveCatalog(c);}
+function renderPasscode(){const on=!!CAT.lockHash;
+  $("pcState").innerHTML=on?`<p class="note" style="margin:0">On · ${Number(CAT.lockLen)||"?"} digits · asked once on each phone and laptop.</p><div class="pcrow"><button class="ghost" type="button" data-pc="lock">Lock this device</button><button class="ghost" type="button" data-pc="set">Change passcode</button></div><div class="pcrow"><button class="ghost" type="button" data-pc="off" style="color:#922b2c">Turn off passcode</button></div>`
+    :`<p class="note" style="margin:0">Off · anyone who opens the app link can see your orders.</p><div class="pcrow"><button class="primary" type="button" data-pc="set">Set a passcode</button></div>`;}
+$("pcState").addEventListener("click",async e=>{const b=e.target.closest("button[data-pc]");if(!b)return;const a=b.dataset.pc;
+  if(a==="set"){$("pcForm").classList.add("show");$("pcNew").value="";$("pcNew2").value="";$("pcNew").focus();return;}
+  if(a==="lock"){try{localStorage.removeItem(UNLOCK_KEY);}catch{}checkLock();return;}
+  if(a==="off"){if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Tap again to turn off";setTimeout(()=>{if(b.isConnected){b.dataset.sure="";b.textContent="Turn off passcode";}},4000);return;}
+    try{await saveLockFields({lockHash:undefined,lockLen:undefined});renderPasscode();toast("Passcode turned off");}catch(err){console.error(err);toast("Couldn't save — check internet");}}});
+$("pcCancel").onclick=()=>$("pcForm").classList.remove("show");
+$("pcSaveBtn").onclick=async()=>{const a=$("pcNew").value.trim(),b=$("pcNew2").value.trim();
+  if(!/^[0-9]{4,8}$/.test(a)){toast("Use 4 to 8 numbers");return;}if(a!==b){toast("The two passcodes don't match");return;}
+  const h=await pcHash(a);
+  let prevUn=null;try{prevUn=localStorage.getItem(UNLOCK_KEY);localStorage.setItem(UNLOCK_KEY,h);}catch{}
+  try{await withBusy($("pcSaveBtn"),()=>saveLockFields({lockHash:h,lockLen:a.length}));
+    $("pcForm").classList.remove("show");renderPasscode();toast("Passcode set · other devices will ask for it");}
+  catch(err){console.error(err);try{prevUn?localStorage.setItem(UNLOCK_KEY,prevUn):localStorage.removeItem(UNLOCK_KEY);}catch{}toast("Couldn't save — check internet");}};
+
+// ===== BACKUP =====
+const apiUrl=q=>SCRIPT_URL+(SCRIPT_URL.includes("?")?"&":"?")+q;
+const viaWorker=()=>store===sheetStore&&!IS_GOOGLE;
+function lastBackupAt(){let l=CAT.lastBackup||"";try{const x=localStorage.getItem("b605-lastbackup")||"";if(x>l)l=x;}catch{}return l;}
+const daysSince=iso=>iso?Math.floor((Date.now()-new Date(iso).getTime())/86400000):Infinity;
+function fmtBk(iso){if(!iso)return "never";const d=new Date(iso);return d.toLocaleDateString("en-PH",{month:"short",day:"numeric"})+" · "+d.toLocaleTimeString("en-PH",{hour:"numeric",minute:"2-digit"});}
+function renderBackupRemind(){const el=$("bkRemind");if(!el)return;const l=lastBackupAt(),d=daysSince(l);
+  if(loading||!orders.length||d<7){el.innerHTML="";return;}
+  el.innerHTML=`<div class="bkrem"><div><b>Back up this week</b><small>${l?`Last backup ${d} days ago`:"No backup yet"}</small></div><button type="button" id="bkRemBtn">Back up</button></div>`;
+  $("bkRemBtn").onclick=()=>doBackup($("bkRemBtn"));}
+function renderBackupCard(){if($("bkLast"))$("bkLast").textContent=fmtBk(lastBackupAt());}
+const blobToData=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});
+function artIds(){const ids=new Set();orders.forEach(o=>(o.items||[]).forEach(i=>{const t=[i.code,i.art,i.artId].filter(Boolean).join(" ");(t.match(/UP[LP]-[A-Z0-9]{4,16}/g)||[]).forEach(x=>ids.add(x));}));return [...ids];}
+async function doBackup(btn){const t=btn.textContent;btn.disabled=true;btn.textContent="Saving…";
+  try{
+    const data={app:"base605",v:1,at:new Date().toISOString(),orders:JSON.parse(JSON.stringify(orders)),catalog:JSON.parse(JSON.stringify(CAT)),drafts:{},art:{}};
+    delete data.catalog.lockHash;delete data.catalog.lockLen;
+    let missed=0;
+    if(viaWorker()){
+      try{const r=await fetch(apiUrl("only=drafts&t="+Date.now()));const d=await r.json();data.drafts=d.drafts||{};}catch(e){console.error(e);missed++;}
+      for(const id of artIds()){try{const r=await fetch(apiUrl("art="+encodeURIComponent(id)));if(r.ok)data.art[id]=await blobToData(await r.blob());}catch(e){console.error(e);missed++;}}
+    }
+    const name=`base605-backup-${new Date().toISOString().slice(0,10)}.json`,blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+    if(store.downloads){await store.downloads.save({filename:name,data:blob});}
+    else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+    const now=data.at;try{localStorage.setItem("b605-lastbackup",now);}catch{}
+    try{await saveLockFields({lastBackup:now});}catch(e){console.error(e);}
+    renderBackupRemind();renderBackupCard();
+    toast(missed?`Backup saved (${missed} part${missed>1?"s":""} couldn't download)`:`Backup saved · ${data.orders.length} orders`);
+  }catch(e){console.error(e);if(e?.code!=="declined")toast("Backup failed — try again");}
+  finally{btn.disabled=false;btn.textContent=t;}}
+$("bkDl").onclick=()=>doBackup($("bkDl"));
+$("bkRestore").onclick=()=>{$("bkFile").value="";$("bkFile").click();};
+let bkPending=null;
+$("bkFile").onchange=async()=>{const f=$("bkFile").files[0];if(!f)return;
+  try{const d=JSON.parse(await f.text());if(d.app!=="base605"||!Array.isArray(d.orders))throw new Error("not a backup");bkPending=d;}
+  catch(e){toast("That file isn't a Base 605 backup");return;}
+  const d=bkPending,have=new Set(orders.map(o=>o.id)),back=d.orders.filter(o=>!have.has(o.id)).length;
+  $("sheet").innerHTML=`<h3 style="margin:0 0 6px">Restore backup?</h3><p class="note" style="margin:0 0 10px">From ${fmtBk(d.at)}</p>
+    <div class="bkline"><span>Orders in the file</span><b>${d.orders.length}</b></div>
+    <div class="bkline"><span>Missing now (will come back)</span><b>${back}</b></div>
+    <div class="bkline"><span>Tag Editor drafts</span><b>${Object.keys(d.drafts||{}).length}</b></div>
+    <div class="bkline"><span>Uploaded designs</span><b>${Object.keys(d.art||{}).length}</b></div>
+    <p class="note" style="margin:10px 0">Orders in the file replace the same orders in the app. Orders made after the backup are kept. Orders that are missing come back with the next free order number. Your catalog and prices go back to how they were in the backup. Your passcode doesn't change.</p>
+    <div class="pcrow"><button class="ghost" type="button" id="bkNo">Cancel</button><button class="primary" type="button" id="bkYes">Restore</button></div>`;
+  $("sheetBg").classList.add("show");
+  $("bkNo").onclick=()=>{bkPending=null;closeSheet();};
+  $("bkYes").onclick=async()=>{const btn=$("bkYes");btn.disabled=true;let fail=0,done=0;const d=bkPending;
+    try{
+      const keep={lockHash:CAT.lockHash,lockLen:CAT.lockLen};const c={...d.catalog};delete c.lockHash;delete c.lockLen;if(keep.lockHash){c.lockHash=keep.lockHash;c.lockLen=keep.lockLen;}
+      try{await store.saveCatalog(c);}catch(e){console.error(e);fail++;}
+      const cur=new Set(orders.map(o=>o.id));
+      for(const o of d.orders.filter(o=>cur.has(o.id))){btn.textContent=`Restoring ${++done}/${d.orders.length}…`;try{await store.update(JSON.parse(JSON.stringify(o)));}catch(e){console.error(e);fail++;}}
+      for(const o of d.orders.filter(o=>!cur.has(o.id)).sort((a,b)=>(a.no||0)-(b.no||0))){btn.textContent=`Restoring ${++done}/${d.orders.length}…`;
+        try{if(viaWorker()){const r=await sheetStore.post({action:"add",order:JSON.parse(JSON.stringify(o))});}else{const x=JSON.parse(JSON.stringify(o));await store.add(x);}}catch(e){console.error(e);fail++;}}
+      if(viaWorker()){
+        for(const [id,body] of Object.entries(d.drafts||{})){try{await sheetStore.post({action:"draft_set",id,body});}catch(e){console.error(e);fail++;}}
+        for(const [id,data] of Object.entries(d.art||{})){try{await sheetStore.post({action:"art_put",id,data});}catch(e){console.error(e);fail++;}}
+        await sheetStore.pull();
+      }
+      closeSheet();renderAll();if(tab==="cat")renderCatalog();toast(fail?`Restored, but ${fail} item${fail>1?"s":""} failed — try again`:"Backup restored ✓");
+    }catch(e){console.error(e);toast("Restore failed — nothing lost, try again");btn.disabled=false;btn.textContent="Restore";}
+    bkPending=null;};
+};
 go("today");renderAll();initStore();
 </script>
 </body>
