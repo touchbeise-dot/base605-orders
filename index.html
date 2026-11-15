@@ -286,7 +286,8 @@ body.itemopen{overflow:hidden}
 .olcirc svg{width:19px;height:19px;fill:none;stroke:#24201c;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .olcirc.on{background:#2f5d44}.olcirc.on svg{stroke:#fff}
 .olcsv{display:none}
-.olsearch{display:none;margin:0 0 12px}.olsearch.open{display:block}
+.olhead{flex-wrap:wrap}
+.olsearch{display:none;order:3;flex:1 1 100%;margin:4px 0 0}.olsearch.open{display:block}
 .olsearch input{width:100%;box-sizing:border-box;border:0;background:#f3efe9;border-radius:12px;padding:11px 14px}
 .oltabs{display:flex;gap:20px;border-bottom:1px solid #f0ece6;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
 .oltabs::-webkit-scrollbar{display:none}
@@ -351,27 +352,30 @@ body.selmode .ochk{display:block}
   body[data-tab="list"] main{background:#fff}
 }
 @media (min-width:740px){
-  body[data-tab="list"] main{max-width:none;padding-left:28px;padding-right:28px}
+  body[data-tab="list"] main{max-width:none;width:100%;box-sizing:border-box;margin:0;padding-left:28px;padding-right:28px}
   .olcsv{display:inline-block}.olcsv2{display:none}
-  .olsearch{display:block;max-width:420px;margin:0;order:2}
-  .olhead{flex-wrap:wrap}
+  .olhead{flex-wrap:nowrap;gap:12px;margin:4px 0 16px}
+  .olsearch,.olsearch.open{display:block;order:0;flex:0 1 380px;margin:0}
+  #olSearchBtn{display:none}
+  .olsearch input{padding:10px 14px}
   .oltabs{margin:0;padding:0;gap:6px;border:0;flex-wrap:wrap;overflow:visible}
   .oltabs .dk{display:inline-block}.oltabs .ph{display:none}
   .oltabs button{font-size:13px;font-weight:600;border:1px solid #ece6dc;background:#fff;border-radius:999px;padding:7px 12px;color:#4e4842}
   .oltabs button.on{background:#24201c;color:#fff;border-color:#24201c}.oltabs button.on b{color:#cfc8c0}
   .oltabs select{display:none}
   #orders{background:#fff;border:1px solid #ece6dc;border-radius:14px;overflow:hidden;margin-top:12px}
-  .ohead{display:grid;grid-template-columns:0 62px minmax(150px,220px) minmax(0,1fr) 140px 90px 130px 130px;column-gap:14px;padding:12px 16px 8px;font-size:11.5px;font-weight:700;letter-spacing:.05em;color:#8f857d;text-transform:uppercase;margin-top:12px}
+  .ohead{display:grid;grid-template-columns:0 56px minmax(0,1fr) minmax(0,1.1fr) 118px 84px 108px 118px;column-gap:12px;padding:12px 16px 8px;font-size:11.5px;font-weight:700;letter-spacing:.05em;color:#8f857d;text-transform:uppercase;margin-top:12px}
   .ohead .h-tot{text-align:right}
-  body.selmode .ohead,body.selmode .omain{grid-template-columns:24px 62px minmax(150px,220px) minmax(0,1fr) 140px 90px 130px 130px}
+  body.selmode .ohead,body.selmode .omain{grid-template-columns:24px 56px minmax(0,1fr) minmax(0,1.1fr) 118px 84px 108px 118px}
   .ohead+#orders{margin-top:0}
   .orow{margin:0}
-  .omain{grid-template-columns:0 62px minmax(150px,220px) minmax(0,1fr) 140px 90px 130px 130px;grid-template-areas:"chk no name items rel total pay stage";align-items:center;column-gap:14px;padding:10px 16px;min-height:56px;box-sizing:border-box}
+  .omain{grid-template-columns:0 56px minmax(0,1fr) minmax(0,1.1fr) 118px 84px 108px 118px;grid-template-areas:"chk no name items rel total pay stage";align-items:center;column-gap:12px;padding:10px 16px;min-height:56px;box-sizing:border-box}
   .omain:hover{background:#fcfaf7}
   .ono{display:block;grid-area:no;color:#8f857d;font-weight:600;font-size:14px}
   .oname{font-size:14.5px;font-weight:700}.oname small{display:block;font-size:12px;font-weight:400;color:#8f857d;letter-spacing:0}
   .oitems,.orel{display:block;min-width:0}.oitems{grid-area:items}.orel{grid-area:rel}
-  .oitems b,.orel b{display:block;font-size:14px;font-weight:600}
+  .oitems b,.orel b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .oname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .oitems small,.orel small{display:block;font-size:12.5px;color:#8f877f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .orel small.soon{color:#c0392b;font-weight:700}
   .ometa{display:none}
@@ -400,7 +404,8 @@ body.selmode .ochk{display:block}
 .xtile.t2{background:#fff3dc;color:#7a4a00}.xtile.t3{background:#ffe4e6;color:#a3122a}
 .xweek{display:flex;align-items:center;gap:12px;width:calc(100% - 20px);margin:10px 10px 14px;border:0;font:inherit;text-align:left;background:#1f4d36;color:#fff;border-radius:16px;padding:12px 14px;cursor:pointer}
 .xweek .xw1{flex:1}.xweek b{display:block;font-size:14.5px}.xweek small{display:block;font-size:12.5px;color:#cfe5d6}.xweek .xc{opacity:.6;font-size:20px}
-@media (min-width:740px){.xtiles{margin:-58px 26px 0;max-width:960px}.xweek{width:calc(100% - 52px);max-width:960px;margin:10px 26px 16px}}
+.xtile.t4{display:none;background:#1f4d36;color:#fff}.xtile.t4 i{color:#cfe5d6;font-weight:600}
+@media (min-width:740px){.xtiles{margin:-58px 26px 16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.xtile{padding:16px 18px 14px}.xtile b,.xtile b.m,.xtile b.l{font-size:26px}.xtile.t4{display:block}.xweek{display:none}}
 .xtile b.m{font-size:20px}.xtile b.l{font-size:17px}.xtile i{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.xban .xpills .xpill{margin-top:10px}
 /* stats day/week */
 .sstep{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
@@ -743,6 +748,7 @@ body.selmode #tab-list{padding-bottom:190px}
 .cx-nav #cxPrev{width:40px;padding:8px 0}
 .cx-keys{display:none;margin:0}
 @media (min-width:1200px){body[data-tab="cut"] .cx-keys{display:block}}
+@media (min-width:1500px){.tgroups{grid-template-columns:repeat(6,minmax(0,1fr))!important}}
 .cx-cap{flex:1;min-width:0;text-align:center;font-size:14px;line-height:1.25}
 .cx-cap b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cx-cap small{display:block;color:var(--mute);font-size:12px}
@@ -823,7 +829,7 @@ body.selmode #tab-list{padding-bottom:190px}
 @media (min-width:1200px){
   body[data-tab="today"] main{max-width:none;padding-left:24px;padding-right:24px}
   .xban .xstats{display:flex}.xban .xpill{display:none}
-  .tgroups{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .tgroups{grid-template-columns:repeat(3,minmax(0,1fr))}
   .tg.over{outline:2px dashed var(--tg-fg);outline-offset:2px}
   .trow{cursor:grab;flex-wrap:wrap;row-gap:2px}
   .trow .tn{flex:1 1 100%;white-space:normal}
@@ -1025,8 +1031,8 @@ section.enter-back{animation:inBack .2s ease-out}
 
   <section id="tab-list" hidden>
     <div class="olhead"><div class="olsub" id="olSub"></div>
+      <div class="olsearch" id="olSearchWrap"><input id="search" placeholder="Search name, #, code…" autocomplete="off"></div>
       <div class="olbtns"><button type="button" class="olcirc" id="olSearchBtn" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button><button type="button" class="olcirc" id="selBtn" aria-label="Select orders"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg></button><button type="button" class="ghost olcsv" id="export">CSV</button></div></div>
-    <div class="olsearch" id="olSearchWrap"><input id="search" placeholder="Search name, #, code…" autocomplete="off"></div>
     <div class="oltabs" id="tabs"></div>
     <select id="payFilter" hidden><option value="all">Any payment</option><option value="unpaid">Unpaid</option><option value="partial">Partial</option><option value="paid">Paid</option></select>
     <div id="olSum"></div>
@@ -1410,7 +1416,7 @@ function addItem(vals){
     <div class="row extrawrap" style="grid-template-columns:2fr 1fr"><div><span class="flab">Extra</span><input class="extra" placeholder="e.g. gold foil, ribbon"></div><div><span class="flab">Extra price</span><input class="extraPrice" type="number" min="0" inputmode="numeric" placeholder="₱"></div></div>
     <div class="morelinks"><button type="button" class="linkbtn mg">+ Greeting <span class="greetnote2"></span></button><button type="button" class="linkbtn mx">+ Extra</button></div>
     <div class="linetotal"></div>
-    <div class="ifoot">${id>1?'<button class="rm ghost" type="button">Remove</button>':''}<button class="primary idone" type="button">Done</button></div>
+    <div class="ifoot"><button class="rm ghost" type="button">Remove</button><button class="primary idone" type="button">Done</button></div>
   </div>`;
   itemsEl.appendChild(div);
   const prod=div.querySelector(".product");
@@ -1433,7 +1439,7 @@ function addItem(vals){
   prod.addEventListener("change",setCode);
   div._setCode=setCode;
   div.addEventListener("input",recalc); div.addEventListener("change",recalc);
-  div.querySelector(".rm")?.addEventListener("click",()=>{div.remove();openItem(null);recalc();});
+  div.querySelector(".rm")?.addEventListener("click",()=>{const box=div.parentElement;div.remove();openItem(null);if(box&&!box.querySelector(".item"))addItem();recalc();});
   div.querySelector(".isum").onclick=()=>openItem(div.classList.contains("open")?null:div);
   div.querySelector(".idone").onclick=()=>{if(document.activeElement)document.activeElement.blur();openItem(null);};
   div.querySelector(".pgrid").onclick=e=>{const b=e.target.closest("button[data-k]");if(!b)return;prod.value=b.dataset.k;setCode();};
@@ -2227,7 +2233,7 @@ function renderToday(){
   {const t0=dayStart(new Date()),T=periodStats(t0,addDays(t0,1)),Y=periodStats(addDays(t0,-1),t0),d=T.rows.length-Y.rows.length;
    const ws=weekStart(new Date()),W=periodStats(ws,addDays(ws,7));
    const relT=relToday?relToday:active.filter(o=>o.releaseDate&&dayKey(o.releaseDate)===1).length,relL=relToday?"releasing today":"release tmrw";
-   $("xtiles").innerHTML=`<button type="button" class="xtile t1" data-x="day"><b>${T.rows.length}</b><span>new today</span><i class="${d>0?"up":d<0?"dn":"eq"}">${d>0?"▲ "+d:d<0?"▼ "+(-d):"same as"} ${d?"vs ":""}yday</i></button><button type="button" class="xtile t2" data-x="owe"><b class="${peso(owedAmt).length>=8?"l":peso(owedAmt).length>=6?"m":""}">${peso(owedAmt)}</b><span>to collect</span></button><button type="button" class="xtile t3" data-x="rel"><b>${relT}</b><span>${relL}</span></button>`;
+   $("xtiles").innerHTML=`<button type="button" class="xtile t1" data-x="day"><b>${T.rows.length}</b><span>new today</span><i class="${d>0?"up":d<0?"dn":"eq"}">${d>0?"▲ "+d:d<0?"▼ "+(-d):"same as"} ${d?"vs ":""}yday</i></button><button type="button" class="xtile t2" data-x="owe"><b class="${peso(owedAmt).length>=8?"l":peso(owedAmt).length>=6?"m":""}">${peso(owedAmt)}</b><span>to collect</span></button><button type="button" class="xtile t3" data-x="rel"><b>${relT}</b><span>${relL}</span></button><button type="button" class="xtile t4" data-x="week"><b class="${peso(W.sales).length>=8?"l":peso(W.sales).length>=6?"m":""}">${peso(W.sales)}</b><span>sales this week</span><i>${W.tags.toLocaleString("en-PH")} tags · ${W.rows.length} orders</i></button>`;
    $("xweek").innerHTML=`<span style="font-size:20px">⭐</span><span class="xw1"><b>${peso(W.sales)} sales this week</b><small>${W.tags.toLocaleString("en-PH")} tags · ${W.rows.length} order${W.rows.length===1?"":"s"} · tap for Stats</small></span><span class="xc">›</span>`;}
   renderBackupRemind();
   if(loading){$("todayLists").innerHTML='<div class="loading">Loading orders…</div>';return;}
@@ -2946,7 +2952,7 @@ $("bkFile").onchange=async()=>{const f=$("bkFile").files[0];if(!f)return;
     bkPending=null;};
 };
 $("xtiles").addEventListener("click",e=>{const b=e.target.closest(".xtile");if(!b)return;const x=b.dataset.x;
-  if(x==="day"){go("stats");setStatsRange("day",0);}else if(x==="owe"){filter="unpaid";payFilter="all";$("search").value="";go("list");renderList();}else go("up");});
+  if(x==="day"){go("stats");setStatsRange("day",0);}else if(x==="week"){go("stats");setStatsRange("week",0);}else if(x==="owe"){filter="unpaid";payFilter="all";$("search").value="";go("list");renderList();}else go("up");});
 $("xweek").onclick=()=>{go("stats");setStatsRange("week",0);};
 go("today");renderAll();initStore();
 </script>
