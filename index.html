@@ -201,6 +201,7 @@ body.itemopen{overflow:hidden}
 .linetotal:empty{display:none}
 .linetotal{font-size:13px}
 .ifoot{display:flex;gap:10px;margin-top:14px}
+.ifoot{flex-wrap:wrap}.ifoot .idup{order:-1;flex:1 1 100%;font-weight:700;color:var(--brand);border:1.5px dashed #b9cfc0;background:#f4f9f5;border-radius:12px;padding:12px}
 .ifoot button{flex:1;padding:12px;font-size:15px}
 .ifoot .rm{position:static;color:var(--danger);border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:600}
 /* release */
@@ -1416,7 +1417,7 @@ function addItem(vals){
     <div class="row extrawrap" style="grid-template-columns:2fr 1fr"><div><span class="flab">Extra</span><input class="extra" placeholder="e.g. gold foil, ribbon"></div><div><span class="flab">Extra price</span><input class="extraPrice" type="number" min="0" inputmode="numeric" placeholder="₱"></div></div>
     <div class="morelinks"><button type="button" class="linkbtn mg">+ Greeting <span class="greetnote2"></span></button><button type="button" class="linkbtn mx">+ Extra</button></div>
     <div class="linetotal"></div>
-    <div class="ifoot"><button class="rm ghost" type="button">Remove</button><button class="primary idone" type="button">Done</button></div>
+    <div class="ifoot"><button class="rm ghost" type="button">Remove</button><button class="idup ghost" type="button">+ Same name, new code</button><button class="primary idone" type="button">Done</button></div>
   </div>`;
   itemsEl.appendChild(div);
   const prod=div.querySelector(".product");
@@ -1439,6 +1440,11 @@ function addItem(vals){
   prod.addEventListener("change",setCode);
   div._setCode=setCode;
   div.addEventListener("input",recalc); div.addEventListener("change",recalc);
+  div.querySelector(".idup").addEventListener("click",()=>{const all=[...itemsEl.querySelectorAll(".item")],v=readItems()[all.indexOf(div)];if(!v)return;
+    ["art","artName","artFit"].forEach(k=>delete v[k]);v.code="";addItem(v);const nd=itemsEl.lastElementChild;
+    let after=div;while(after.nextElementSibling&&after.nextElementSibling!==nd&&after.nextElementSibling.dataset.dupOf===div.dataset.id)after=after.nextElementSibling;
+    nd.dataset.dupOf=div.dataset.id;itemsEl.insertBefore(nd,after.nextElementSibling);recalc();openItem(nd);
+    toast("Copied name & greeting — pick the next code");});
   div.querySelector(".rm")?.addEventListener("click",()=>{const box=div.parentElement;div.remove();openItem(null);if(box&&!box.querySelector(".item"))addItem();recalc();});
   div.querySelector(".isum").onclick=()=>openItem(div.classList.contains("open")?null:div);
   div.querySelector(".idone").onclick=()=>{if(document.activeElement)document.activeElement.blur();openItem(null);};
@@ -1590,8 +1596,12 @@ function startEdit(o){
 }
 function startReorder(o){
   resetForm();$("customer").value=o.customer;$("contact").value=o.contact||"";$("payment").value=o.payment||"";
-  itemsEl.innerHTML="";seq=0;o.items.forEach(i=>addItem(i));
-  $("customer").dispatchEvent(new Event("input"));go("new");recalc();toast(`Reordering ${ono(o.no)} — set a release date`);
+  const futureRel=o.releaseDate&&dayKey(o.releaseDate)>=0;$("release").value=futureRel?o.releaseDate:"";$("notes").value=o.notes||"";
+  $("rush").checked=rushN(o)>0;$("rushQty").value=rushN(o)||1;$("ship").checked=!!o.shipping;$("address").value=o.address||"";$("shipAmt").value=o.shipping||CAT.ship||60;
+  setDelivery(o.delivery||(o.shipping?"jnt":o.bookRider?"grab":""),true);$("bookRider").checked=!!o.bookRider;syncAddr();
+  itemsEl.innerHTML="";seq=0;o.items.forEach(i=>addItem(JSON.parse(JSON.stringify(i))));
+  $("customer").dispatchEvent(new Event("input"));go("new");recalc();
+  toast(`Copy of ${ono(o.no)} — check it, then Save${futureRel?"":" (set a release date)"}`);
 }
 $("cancelEdit").onclick=()=>{resetForm();go("list");};
 addItem();
@@ -2082,7 +2092,7 @@ function renderSheet(){
     const paid=Number(o.paid)||0;
     el.innerHTML=`<div class="grab"></div>
       <div class="top"><div><h2><small>${ono(o.no)}</small><button data-act="cust" class="x" style="font-size:20px;font-weight:700;color:var(--ink);padding:0;text-decoration:underline dotted var(--mute)">${esc(o.customer)}</button>${o.rush?'<span class="rushtag">RUSH</span>':""}</h2><div class="when">${fmt(o.createdAt)}</div></div><div style="display:flex;align-items:flex-start;gap:4px"><div class="pills" style="flex-direction:column;align-items:flex-end;margin:2px 0 0">${'<span class="status pay-'+payState(o)+'">'+payState(o)+'</span><span class="status '+pill(o.status)+'">'+esc(o.status)+'</span>'}</div><button class="x" data-act="close" aria-label="Close">×</button></div></div>
-      <div class="quick">${(o.items||[]).some(i=>i.code)?`<button data-act="drafttag" class="q-tag">✎ Draft tag</button>`:""}<button data-act="edit" class="q-edit">Edit</button><button data-act="reorder" class="q-re">Reorder</button><button data-act="cancel" class="q-cancel">${o.status==="cancelled"?"Un-cancel":"Cancel"}</button><button data-act="del" class="q-del">Delete</button></div>
+      <div class="quick">${(o.items||[]).some(i=>i.code)?`<button data-act="drafttag" class="q-tag">✎ Draft tag</button>`:""}<button data-act="edit" class="q-edit">Edit</button><button data-act="reorder" class="q-re">Duplicate</button><button data-act="cancel" class="q-cancel">${o.status==="cancelled"?"Un-cancel":"Cancel"}</button><button data-act="del" class="q-del">Delete</button></div>
       ${(()=>{const tg=o.items.reduce((a,i)=>a+(Number(i.pieces)||0),0),bal=Math.max(0,o.total-paid),k=o.releaseDate?dayKey(o.releaseDate):null;
         const t=(cls,n,l)=>`<div class="stile ${cls}"><b>${n}</b><span>${l}</span></div>`;
         return `<div class="stiles">${paid>=o.total?t("s-green","Paid","in full"):t("s-red",peso(bal),paid>0?"balance due":"unpaid")}${k===null?t("s-grey","—","no release date"):k<0?t("s-red",`${-k}d`,"overdue"):k===0?t("s-amber","Today","release"):k===1?t("s-amber","Tmrw","release"):t("s-amber",`${k} days`,"to release")}${t("s-green",`${o.items.length} · ${tg}`,"designs · tags")}${t("s-blue",o.shipping?"J&amp;T":o.bookRider?"Grab":o.pickup&&o.pickup.name?"Grab":"Pickup",o.shipping?"delivery":o.bookRider?"we book":o.pickup&&o.pickup.name?"from "+esc(o.pickup.name):"delivery")}</div>`;})()}
@@ -2106,7 +2116,7 @@ function renderSheet(){
       <div class="kpis" style="margin-top:12px"><div class="kpi"><b>${list.length}</b><span>orders</span></div><div class="kpi"><b>${peso(spend)}</b><span>total spent</span></div>${owed?`<div class="kpi warn"><b>${peso(owed)}</b><span>outstanding</span></div>`:""}</div>
       <h4>Customer notes</h4><div class="grp"><textarea class="custnote" style="flex:1;min-height:56px" placeholder="e.g. always wants extra ribbon · prefers Cubao 2 pickup">${esc((CAT.customers[sheetView.key]||{}).note||"")}</textarea></div><div class="grp"><button class="ghost" data-act="custnotesave" data-key="${esc(sheetView.key)}">Save note</button></div>
       <h4>Orders</h4>${list.map(o=>`<div class="mini ${CLOSED(o.status)?"closed":""}" data-id="${o.id}"><div><b>${ono(o.no)}</b> ${o.items.map(i=>i.code||i.product.replace(" Tag","")).join(", ")}<small>${fmt(o.createdAt)}${o.releaseDate?" · release "+fmtDate(o.releaseDate):""}</small></div><div style="text-align:right"><div>${peso(o.total)}</div>${pillsOf(o)}</div></div>`).join("")}
-      <div class="danger-row"><button class="ghost" data-act="reorder" data-id="${list[0].id}">Reorder last</button></div>`;
+      <div class="danger-row"><button class="ghost" data-act="reorder" data-id="${list[0].id}">Duplicate last order</button></div>`;
     el.dataset.id=list[0].id;
   }
   $("sheetBg").classList.add("show");
