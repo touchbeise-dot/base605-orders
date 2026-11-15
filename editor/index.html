@@ -1600,7 +1600,8 @@ $("btnSave").onclick=function(){if(!cur)return;
 function flushSave(announce){
   clearTimeout(saveTimer);if(!cur||!cur.draftId)return;var c=cur,body=docOf(c);
   $("edSaved").textContent="Saving…";
-  writeDraft(c.draftId,body).then(function(){c.dirty=false;if(cur===c)$("edSaved").textContent="Saved";if(announce)toast("Draft saved")},
+  if(announce)toast("Draft saved");
+  writeDraft(c.draftId,body).then(function(){c.dirty=false;if(cur===c)$("edSaved").textContent="Saved"},
     function(e){if(cur===c)$("edSaved").textContent="Not saved";toast(e&&e.code==="quota_exceeded"?"The drafts list is full. Delete old drafts, then save again.":"Couldn't save the draft. Try again.")});
 }
 
@@ -1905,7 +1906,7 @@ window.addEventListener("hashchange",importFromHash);
 
 /* ---------- orders from the order app ---------- */
 var ORDERS=[],ordersLoaded=false,octx=null; // octx: {order, ids:[draft ids in item order], seen:{}}
-var OSTAGES=["new","drafted","for approval","approved","ready to print","printed","messaged for pickup","for ship out","done","cancelled"];
+var OSTAGES=["new","drafted","for approval","approved","ready to print","printed","messaged for pickup","done","cancelled"];
 function ncode(c){return String(c||"").toUpperCase().replace(/\s+/g,"")}
 function codeItems(o){return (o.items||[]).filter(function(i){return i.code||i.art})}
 function icode(i){return i&&i.art?String(i.art):ncode(i&&i.code)}
@@ -1913,7 +1914,7 @@ function pad4(n){return String(n||0).padStart(4,"0")}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function peso(n){return "₱"+Number(n||0).toLocaleString("en-PH")}
 function fmtD(iso){if(!iso)return"";var p=iso.split("-").map(Number);return new Date(p[0],p[1]-1,p[2]).toLocaleDateString("en-PH",{weekday:"short",month:"short",day:"numeric"})}
-function pullOrders(){if(!SCRIPT_URL)return Promise.resolve();return apiGet("o=1").then(function(j){ORDERS=j.orders||[];ordersLoaded=true;
+function pullOrders(){if(!SCRIPT_URL)return Promise.resolve();return apiGet("o=1").then(function(j){ORDERS=(j.orders||[]).map(function(o){if(o.status==="for ship out")o.status="messaged for pickup";return o});ordersLoaded=true;
   if(octx){var f=ORDERS.filter(function(o){return String(o.id)===String(octx.order.id)})[0];if(f)octx.order=f}
   renderOrders();renderOrderBox();if(view==="ad"&&window.adRepaint)window.adRepaint()},function(){$("orNote").textContent="Couldn't reach the order app. Check your connection.";})}
 function linkOrder(o){return{id:o.id,no:o.no,cu:o.customer||"",items:codeItems(o).map(function(i){return{c:i.art||i.code,n:i.sender||"",g:i.greeting||"",q:i.pieces||null,po:/print/i.test(i.product||"")}})}}
@@ -1953,10 +1954,12 @@ function renderOrders(){
 function openOrder(o){
   importOrder(linkOrder(o),extrasOf(o).length>0).then(function(ds){ds=ds||[];if(!ds.length&&!extrasOf(o).length)return;if(!ds.length)ds=[extrasOf(o)[0]];
     var ids=ds.map(function(d){return d.id});extrasOf(o).forEach(function(d){if(ids.indexOf(d.id)<0)ids.push(d.id)});
-    octx={order:o,ids:sheetOrder(ids),seen:{}};
+    octx={order:o,ids:sheetOrder(ids),seen:{}};setTimeout(prefetchOctx,0);
     if(o.status==="new")patchOrder(o,{status:"drafted",stageAt:new Date().toISOString()});
     var f0=draftById(octx.ids[0])||ds[0];openEditor(f0.code,f0)});
 }
+/* warm up every tag in the open order (artwork + fonts) so Next tag shows instantly */
+function prefetchOctx(){if(!octx)return;octx.ids.forEach(function(id){var d=draftById(id);if(!d||!CARDS[d.code])return;loadBg(d.code).catch(function(){});try{ensureFonts(CARDS[d.code],null,stateOf(d)).catch(function(){})}catch(e){}})}
 function draftById(id){return drafts.filter(function(d){return d.id===id})[0]||null}
 function itemOf(d,o){var ci=codeItems(o||octx.order);return d&&d.order&&d.order.item!=null?(ci[+d.order.item]||{}):{}}
 function goItem(k){if(!octx)return;var id=octx.ids[k];if(cur&&cur.dirty&&cur.draftId)flushSave();var d=draftById(id);if(!d)return;octx.seen[cur&&cur.draftId]=1;openEditor(d.code,d)}
@@ -1969,7 +1972,7 @@ $("bONext").onclick=function(){if(!octx)return;octx.seen[cur.draftId]=1;goItem(o
 $("bOProof").onclick=function(){octx&&(octx.seen[cur.draftId]=1);makeProof()};
 function renderOrderBox(){
   var box=$("oBox");if(!box)return;syncBar();if(!octx||view!=="ed"){box.hidden=true;return}
-  var o=octx.order,ci=codeItems(o),k=octx.ids.indexOf(cur&&cur.draftId);box.hidden=false;
+  var o=octx.order,ci=codeItems(o),k=octx.ids.indexOf(cur&&cur.draftId);box.hidden=false;var pd=box.querySelector("details.oact"),wasOpen=pd?pd.open:window.innerWidth>=900;
   var rows=octx.ids.map(function(id,i){var d=draftById(id),it=itemOf(d);var nm=d?(nameGuess(d)||it.sender||""):(it.sender||"");
     var upd=d&&d.proofAt&&(d.updatedAt||0)>d.proofAt+1500;
     return '<button type="button" data-k="'+i+'" aria-current="'+(i===k)+'"><span class="n'+(octx.seen[id]&&i!==k?" ok":"")+'">'+(octx.seen[id]&&i!==k?"✓":(i+1))+'</span><span class="tx"><b>'+dispCode(d?d.code:icode(it))+'</b> <em></em></span>'+(upd?'<span class="up">updated</span>':"")+'</button>'}).join("");
@@ -1978,7 +1981,7 @@ function renderOrderBox(){
   var st=o.status||"new";
   box.innerHTML='<div class="oh"><b></b><span>#'+pad4(o.no)+' · '+st+'</span></div>'+(o.changeNote?'<div class="cnb"></div>':"")+
     '<div class="olist">'+rows+'</div>'+
-    '<details class="oact"'+(window.innerWidth>=900?" open":"")+'><summary>Order actions</summary><div class="obtns">'+
+    '<details class="oact"'+(wasOpen?" open":"")+'><summary>Order actions</summary><div class="obtns">'+
     '<button class="btn primary wide" type="button" data-o="proof">Make proof sheet ('+octx.ids.length+')</button>'+
     '<button class="btn" type="button" data-o="chg">Changes requested…</button><button class="btn pine" type="button" data-o="appr"'+(stageAtLeast(o,"approved")?" disabled":"")+'>✓ Mark approved</button>'+
     (canSend?'<button class="btn primary wide" type="button" data-o="send">✂ Send to Cutter ('+octx.ids.length+')</button><button class="btn wide" type="button" data-o="print">Download print files</button>':'<button class="btn wide" type="button" data-o="print">Download print files ('+octx.ids.length+')</button>')+'</div></details>'+
