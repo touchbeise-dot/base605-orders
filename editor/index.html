@@ -332,8 +332,8 @@ details.oact .obtns{margin-top:8px}
 .dhead h2{margin:0 auto 0 0;font-size:26px;letter-spacing:-.02em}
 .dlist{display:flex;flex-direction:column;gap:10px;padding-block:8px 40px}
 .drow{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
-.drow .th{width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:var(--sunk);border-radius:8px;cursor:pointer;border:0;padding:4px}
-.drow .th img{max-width:100%;max-height:100%;border-radius:2px;box-shadow:var(--shadow)}
+.drow .th{width:64px;height:64px;flex:0 0 64px;display:flex;align-items:center;justify-content:center;background:var(--sunk);border-radius:8px;cursor:pointer;border:0;padding:4px;overflow:hidden;box-sizing:border-box}
+.drow .th img{display:block;width:auto;height:auto;max-width:56px;max-height:56px;object-fit:contain;border-radius:2px;box-shadow:var(--shadow)}
 .drow .who{min-width:0;cursor:pointer}
 .drow .who b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .drow .who span{font-size:13px;color:var(--muted)}
@@ -601,7 +601,7 @@ details.oact .obtns{margin-top:8px}
     <div class="dhead">
       <h2>Drafts</h2>
       <div class="seg" id="fStatus" role="group" aria-label="Status">
-        <button data-v="all" aria-pressed="true">All</button><button data-v="draft" aria-pressed="false">Draft</button><button data-v="sent" aria-pressed="false">Sent</button><button data-v="approved" aria-pressed="false">Approved</button><button data-v="printed" aria-pressed="false">Printed</button>
+        <button data-v="todo" aria-pressed="true">Active</button><button data-v="draft" aria-pressed="false">Draft</button><button data-v="sent" aria-pressed="false">Sent</button><button data-v="approved" aria-pressed="false">Approved</button><button data-v="printed" aria-pressed="false">Done</button><button data-v="all" aria-pressed="false">All</button>
       </div>
       <button class="btn primary" id="btnBatch" type="button" style="flex:0 0 auto">Print files for approved</button>
       <button class="btn" id="btnClearPrinted" type="button" style="flex:0 0 auto" hidden>Delete all printed</button>
@@ -1611,17 +1611,26 @@ $("fStatus").addEventListener("click",function(e){var b=e.target.closest("button
   [].forEach.call($("fStatus").querySelectorAll("button"),function(x){x.setAttribute("aria-pressed",String(x===b))});fStatus=b.dataset.v;renderDrafts()});
 function ago(t){var s=(Date.now()-t)/1000;if(s<60)return"just now";if(s<3600)return Math.floor(s/60)+" min ago";if(s<86400)return Math.floor(s/3600)+" h ago";
   return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"})}
+var FIN_ORDER=["printed","messaged for pickup","done","cancelled"];
+function draftOrder(d){if(!d.order||!d.order.id)return null;var id=String(d.order.id);for(var i=0;i<ORDERS.length;i++)if(String(ORDERS[i].id)===id)return ORDERS[i];return null}
+function finished(d){var o=draftOrder(d);return d.status==="printed"||!!(o&&FIN_ORDER.indexOf(o.status)>=0)}
+/* drafts of orders that are done (picked up) or cancelled aren't needed anymore: remove them quietly */
+var cleaned={};
+function autoClean(){if(!ordersLoaded||!drafts.length)return;var gone=drafts.filter(function(d){var o=draftOrder(d);return o&&(o.status==="done"||o.status==="cancelled")&&!cleaned[d.id]});
+  if(!gone.length)return;gone.forEach(function(d){cleaned[d.id]=1;try{if(useLocal||!db){lsSet(lsGet().filter(function(x){return x.id!==d.id}))}else db.collection("drafts").doc(d.id).delete()}catch(e){console.error(e)}});
+  if(useLocal||!db){drafts=lsGet();renderDrafts()}
+  toast("Cleared "+gone.length+" draft"+(gone.length===1?"":"s")+" of picked-up orders")}
 function renderDrafts(){
   if(typeof renderOrderBox==="function"&&view==="ed")renderOrderBox();if(typeof renderOrders==="function"&&view==="or")renderOrders();
-  var n=drafts.length,todoN=drafts.filter(function(d){return d.status!=="printed"}).length,prN=n-todoN;$("drCount").hidden=!todoN;$("drCount").textContent=todoN;
-  $("btnClearPrinted").hidden=!(fStatus==="printed"&&prN);$("btnClearPrinted").textContent="Delete all printed ("+prN+")";$("btnBatch").hidden=fStatus==="printed";
+  var n=drafts.length,todoN=drafts.filter(function(d){return !finished(d)}).length,prN=n-todoN;$("drCount").hidden=!todoN;$("drCount").textContent=todoN;
+  $("btnClearPrinted").hidden=!(fStatus==="printed"&&prN);$("btnClearPrinted").textContent="Delete all done ("+prN+")";$("btnBatch").hidden=fStatus==="printed";
   var appr=drafts.filter(function(d){return d.status==="approved"}).length;
   $("btnBatch").disabled=!appr;$("btnBatch").textContent=appr?"Print files for approved ("+appr+")":"Print files for approved";
   if(view!=="dr")return;
   var host=$("dList");host.textContent="";
-  var list=drafts.filter(function(d){return fStatus==="all"||(fStatus==="todo"?d.status!=="printed":d.status===fStatus)});
+  var list=drafts.filter(function(d){return fStatus==="all"||(fStatus==="todo"?!finished(d):fStatus==="printed"?finished(d):(d.status||"draft")===fStatus&&!finished(d))});
   if(!list.length){var p=document.createElement("p");p.className="empty";
-    p.textContent=!n?"No drafts yet. Open a design, type the customer's name, and tap Save draft.":fStatus==="todo"?"All caught up. Printed drafts are under Printed.":"No drafts with this status.";host.appendChild(p);return}
+    p.textContent=!n?"No drafts yet. Open a design, type the customer's name, and tap Save draft.":fStatus==="todo"?"All caught up. Printed ones are under Done.":"No drafts with this status.";host.appendChild(p);return}
   list.forEach(function(d){
     if(!CARDS[d.code])return;
     var r=document.createElement("div");r.className="drow";
@@ -1651,9 +1660,9 @@ function deleteDraft(id){
   if(useLocal||!db){var a=lsGet().filter(function(d){return d.id!==id});lsSet(a);drafts=a;renderDrafts();return}
   db.collection("drafts").doc(id).delete().then(function(){toast("Draft deleted")},function(){toast("Couldn't delete it. Try again.")});
 }
-$("btnClearPrinted").onclick=function(){var b=this,pr=drafts.filter(function(d){return d.status==="printed"});if(!pr.length)return;
+$("btnClearPrinted").onclick=function(){var b=this,pr=drafts.filter(function(d){return finished(d)});if(!pr.length)return;
   if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Tap again to delete "+pr.length;setTimeout(function(){delete b.dataset.sure;renderDrafts()},3500);return}
-  delete b.dataset.sure;pr.forEach(function(d){if(useLocal){drafts=drafts.filter(function(x){return x.id!==d.id});lsSet(drafts)}else db.collection("drafts").doc(d.id).delete()});toast(pr.length+" printed draft"+(pr.length===1?"":"s")+" deleted");renderDrafts()};
+  delete b.dataset.sure;pr.forEach(function(d){if(useLocal){drafts=drafts.filter(function(x){return x.id!==d.id});lsSet(drafts)}else db.collection("drafts").doc(d.id).delete()});toast(pr.length+" done draft"+(pr.length===1?"":"s")+" deleted");renderDrafts()};
 $("btnBatch").onclick=function(){
   var list=drafts.filter(function(d){return d.status==="approved"&&CARDS[d.code]});if(!list.length)return;
   if(!window.JSZip){toast("Zip tools didn't load. Open each draft and use Print file.");return}
@@ -1915,7 +1924,7 @@ function pad4(n){return String(n||0).padStart(4,"0")}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function peso(n){return "₱"+Number(n||0).toLocaleString("en-PH")}
 function fmtD(iso){if(!iso)return"";var p=iso.split("-").map(Number);return new Date(p[0],p[1]-1,p[2]).toLocaleDateString("en-PH",{weekday:"short",month:"short",day:"numeric"})}
-function pullOrders(){if(!SCRIPT_URL)return Promise.resolve();return apiGet("o=1").then(function(j){ORDERS=(j.orders||[]).map(function(o){if(o.status==="for ship out")o.status="messaged for pickup";return o});ordersLoaded=true;
+function pullOrders(){if(!SCRIPT_URL)return Promise.resolve();return apiGet("o=1").then(function(j){ORDERS=(j.orders||[]).map(function(o){if(o.status==="for ship out")o.status="messaged for pickup";return o});ordersLoaded=true;setTimeout(function(){autoClean();renderDrafts()},0);
   if(octx){var f=ORDERS.filter(function(o){return String(o.id)===String(octx.order.id)})[0];if(f)octx.order=f}
   renderOrders();renderOrderBox();if(view==="ad"&&window.adRepaint)window.adRepaint()},function(){$("orNote").textContent="Couldn't reach the order app. Check your connection.";})}
 function linkOrder(o){return{id:o.id,no:o.no,cu:o.customer||"",items:codeItems(o).map(function(i){return{c:i.art||i.code,n:i.sender||"",g:i.greeting||"",q:i.pieces||null,po:/print/i.test(i.product||"")}})}}
@@ -1963,7 +1972,14 @@ function openOrder(o){
 function prefetchOctx(){if(!octx)return;octx.ids.forEach(function(id){var d=draftById(id);if(!d||!CARDS[d.code])return;loadBg(d.code).catch(function(){});try{ensureFonts(CARDS[d.code],null,stateOf(d)).catch(function(){})}catch(e){}})}
 function draftById(id){return drafts.filter(function(d){return d.id===id})[0]||null}
 function itemOf(d,o){var ci=codeItems(o||octx.order);return d&&d.order&&d.order.item!=null?(ci[+d.order.item]||{}):{}}
-function goItem(k){if(!octx)return;var id=octx.ids[k];if(cur&&cur.dirty&&cur.draftId)flushSave();var d=draftById(id);if(!d)return;octx.seen[cur&&cur.draftId]=1;openEditor(d.code,d)}
+function goItem(k){if(!octx)return;var id=octx.ids[k];if(!id)return;if(cur&&cur.dirty&&cur.draftId)flushSave();octx.seen[cur&&cur.draftId]=1;
+  var d=draftById(id);if(d){openEditor(d.code,d);return}
+  /* the next tag's draft isn't on this phone yet (just made, or still syncing): fetch it instead of doing nothing */
+  var look=(db&&!useLocal)?db.collection("drafts").doc(id).get().then(function(sn){if(!sn.exists)return null;var x=Object.assign({},sn.data());x.id=id;return x},function(){return null}):Promise.resolve(null);
+  toast("Opening next tag…");
+  look.then(function(x){if(x&&CARDS[x.code]){openEditor(x.code,x);return}
+    var o=octx.order,full=ORDERS.filter(function(z){return String(z.id)===String(o.id)})[0];
+    if(full){openOrder(full);toast("Refreshed this order's tags")}else{octx.ids=octx.ids.filter(function(z){return draftById(z)});syncBar();toast("That tag's draft is missing. Go back to Orders and open the order again.")}})}
 function syncBar(){var om=!!(octx&&view==="ed"),k=om?octx.ids.indexOf(cur&&cur.draftId):-1,last=om&&k>=octx.ids.length-1;
   $("btnSave").hidden=om;$("btnPreview").hidden=om;$("btnPrint").hidden=om;
   $("bOPrev").hidden=!om;$("bOPrev").disabled=k<=0;$("bONext").hidden=!om||last;$("bOProof").hidden=!om||!last;
@@ -2033,6 +2049,8 @@ function makeProof(){
     var P=items.filter(function(t){return t.P}),L=items.filter(function(t){return !t.P}),n=items.length;
     var pw,lw;if(n===1){pw=170;lw=330}else if(n===2){if(!P.length||!L.length){pw=150;lw=300}else{pw=112;lw=270}}else{pw=P.length>=3?100:130;lw=172}
     var per=pw<=100?3:2,perL=lw>200?1:2;if(perL===2)lw=(INNER-14)/2;
+    /* portrait + landscape on one sheet: draw every tag at the same real size (a portrait tag is just a landscape tag turned on its side) */
+    if(P.length&&L.length){lw=(INNER-14)/2;perL=2;pw=lw*600/1050;per=3}
     // measure pass (mock units) so the image is exactly as tall as it needs to be
     var mc=document.createElement("canvas").getContext("2d");
     function nameOf(t){return (nameGuess(t.d)||t.it.sender||"").replace(/\s*\n\s*/g," · ")}
@@ -2212,7 +2230,7 @@ dbP.then(function(d){
   if(!db){useLocal=true;drafts=lsGet();$("storeNote").textContent="Couldn't reach the order app, so drafts are saved in this browser only for now.";renderDrafts();return}
   $("storeNote").textContent="Drafts sync with the order app on every device.";
   db.collection("drafts").orderBy("updatedAt","desc").limit(500).onSnapshot(function(s){
-    drafts=s.docs.map(function(x){var o=Object.assign({},x.data());o.id=x.id;return o});renderDrafts()},
+    drafts=s.docs.map(function(x){var o=Object.assign({},x.data());o.id=x.id;return o});renderDrafts();autoClean()},
     function(){useLocal=true;drafts=lsGet();$("storeNote").textContent="Sync isn't available right now, so drafts are saved in this browser only.";renderDrafts()});
 }).then(function(){return ordersP}).then(importFromHash);
 })();
