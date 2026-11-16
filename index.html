@@ -1166,9 +1166,8 @@ section.enter-back{animation:inBack .2s ease-out}
   <section id="tab-done" hidden>
     <div class="inv" id="invoice"></div>
     <div class="invacts">
-      <button class="primary wide" id="png" type="button">Save pic + copy message</button>
-      <button class="ghost" id="pngOnly" type="button">Save pic only</button>
-      <button class="ghost" id="copy" type="button">Copy message only</button>
+      <button class="primary wide" id="png" type="button">Save to Photos</button>
+      <button class="ghost" id="copy" type="button">Copy message</button>
       <button class="ghost wide" id="toToday" type="button">Back to Today</button>
       <button class="ghost wide" id="another" type="button">New order</button>
     </div>
@@ -1958,7 +1957,7 @@ function renderInvoice(o,mode="full"){
     <table class="it"><tr class="th"><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr>${rows}${extras}<tr class="tt"><td colspan="3">Total</td><td>${peso(o.total)}</td></tr></table>
     <div class="pay">${pay}</div><div class="inv-foot">Send proof of payment in our chat · balance due before release</div></div>`;
 }
-function showInvoice(o,mode="full"){lastOrder=o;invMode=mode;renderInvoice(o,mode);go("done");requestAnimationFrame(()=>fitInv($("invoice")));}
+function showInvoice(o,mode="full"){lastOrder=o;invMode=mode;renderInvoice(o,mode);go("done");requestAnimationFrame(()=>{fitInv($("invoice"));prepInvoicePic();});}
 // shrink long names so they fit: customer on 1 line (2 if very long), design title on 1 line, sender/greeting on 2 lines
 function fitText(el,lines,min){if(!el||!el.offsetParent)return false;el.style.fontSize="";const cs=getComputedStyle(el);let fs=parseFloat(cs.fontSize);
   const lh=()=>parseFloat(getComputedStyle(el).lineHeight)||fs*1.3;let guard=40;
@@ -1970,11 +1969,16 @@ function fitInv(root){if(!root)return;
   root.querySelectorAll(".fits").forEach(el=>fitText(el,2,10));}
 $("copy").onclick=async()=>{try{await navigator.clipboard.writeText(invMsg());toast("Copied");}catch{toast("Copy failed");}};
 $("another").onclick=()=>go("new");$("toToday").onclick=()=>go("today");
+/* html2canvas measures text wrong when the page is zoomed (Catalog → Text size) and drops the spaces,
+   so render pictures at normal size and put the zoom back right after */
+async function snap(el,opts){const h=document.documentElement,z=h.style.zoom,boxes=STD_SIZE.map(id=>$(id)).filter(Boolean),bz=boxes.map(e=>e.style.zoom);
+  if(z){h.style.zoom="";boxes.forEach(e=>e.style.zoom="");await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));try{if(el.id==="invoice")fitInv(el);else if(el.classList.contains("pkg"))fitLabels();}catch(e){}}
+  try{return await html2canvas(el,opts);}finally{if(z){h.style.zoom=z;boxes.forEach((e,i)=>e.style.zoom=bz[i]);}}}
 async function downloadPng(el,name,btn){
   if(!window.html2canvas){toast("PNG not available — screenshot instead");return false;}
   btn.disabled=true;
   try{
-    const canvas=await html2canvas(el,{scale:el.classList.contains("pkg")?4:3,backgroundColor:"#ffffff",useCORS:true});
+    const canvas=await snap(el,{scale:el.classList.contains("pkg")?4:3,backgroundColor:"#ffffff",useCORS:true});
     const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
     if(store.downloads){try{await store.downloads.save({filename:name,data:blob});toast("Saved");return true;}catch(e){if(e?.code!=="declined")toast("Download unavailable — screenshot instead");return false;}}
     else{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);return true;}
@@ -1983,10 +1987,26 @@ async function downloadPng(el,name,btn){
 }
 const invName=()=>`base605-${lastOrder&&lastOrder.no?ono(lastOrder.no).slice(1):"invoice"}${invMode==="balance"?"-balance":""}.png`;
 const invMsg=()=>invMode==="balance"?fillMessage(CAT.messages.balance,lastOrder):messageFor(lastOrder);
-$("png").onclick=async()=>{let ok=false;try{await navigator.clipboard.writeText(invMsg());ok=true;}catch{}
-  const saved=await downloadPng($("invoice"),invName(),$("png"));
-  if(saved)toast(ok?"Pic saved · message copied — paste it in the chat":"Pic saved · tap “Copy message only” to copy");};
-$("pngOnly").onclick=()=>downloadPng($("invoice"),invName(),$("pngOnly"));
+/* Save to Photos: on phones this opens the share sheet → "Save Image" puts it in Photos.
+   The picture is made in the background as soon as the invoice opens, so the tap opens the sheet right away
+   (iPhone only allows the share sheet straight after a tap). On a laptop it just downloads. */
+let invPic=null,invPicKey="";
+const PNG_LABEL=matchMedia("(pointer:coarse)").matches?"Save to Photos":"Download picture";$("png").textContent=PNG_LABEL;
+function prepInvoicePic(){if(!window.html2canvas||!lastOrder)return;const key=invMode+"|"+$("invoice").innerHTML;
+  if(invPic&&invPicKey===key)return;invPicKey=key;const name=invName();
+  invPic=new Promise(r=>setTimeout(r,350)).then(()=>snap($("invoice"),{scale:3,backgroundColor:"#ffffff",useCORS:true}))
+    .then(c=>new Promise(r=>c.toBlob(r,"image/png"))).then(b=>b?new File([b],name,{type:"image/png"}):null).catch(e=>{console.error(e);return null;});}
+$("png").onclick=async()=>{const btn=$("png");
+  if(!window.html2canvas){toast("Picture tool didn't load — screenshot instead");return;}
+  prepInvoicePic();const ready=invPic;let file=null,waited=false;
+  const t=setTimeout(()=>{waited=true;btn.textContent="Preparing…";},120);
+  try{file=await ready;}finally{clearTimeout(t);btn.textContent=PNG_LABEL;}
+  if(!file){toast("Couldn't make the picture — screenshot instead");invPic=null;return;}
+  const canShare=navigator.canShare&&navigator.canShare({files:[file]})&&matchMedia("(pointer:coarse)").matches;
+  if(canShare){try{await navigator.share({files:[file]});return;}
+    catch(e){if(e&&e.name==="AbortError")return;if(e&&e.name==="NotAllowedError"){toast("Ready — tap Save to Photos again");return;}console.error(e);}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast(canShare?"Saved to Downloads":"Saved");};
 
 // ===== DELIVERY DETAILS =====
 let delivOrder=null, prevTab="today";
@@ -2048,7 +2068,7 @@ function showLabels(list){labelOrders=list;labelPrev=tab;$("labels").innerHTML=l
 $("labelZip").onclick=async()=>{const btn=$("labelZip");if(!window.html2canvas){toast("PNG not available — use Print instead");return;}
   const els=[...$("labels").querySelectorAll(".pkg")];if(!els.length)return;btn.disabled=true;const lab=btn.textContent;
   try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const files=[];
-    for(let i=0;i<els.length;i++){btn.textContent=`Saving ${i+1} of ${els.length}…`;const c=await html2canvas(els[i],{scale:4,backgroundColor:"#ffffff",useCORS:true});
+    for(let i=0;i<els.length;i++){btn.textContent=`Saving ${i+1} of ${els.length}…`;const c=await snap(els[i],{scale:4,backgroundColor:"#ffffff",useCORS:true});
       const blob=await new Promise(r=>c.toBlob(r,"image/png"));const o=labelOrders[i];files.push({name:`base605-${o&&o.no?ono(o.no).slice(1):"order"+(i+1)}-label.png`,blob});}
     let out,name;if(files.length===1){out=files[0].blob;name=files[0].name;}
     else{if(!window.JSZip)throw new Error("zip");const z=new window.JSZip();files.forEach(f=>z.file(f.name,f.blob));out=await z.generateAsync({type:"blob"});name=`base605-labels-${files.length}.zip`;}
@@ -2530,7 +2550,9 @@ function renderStatsWeek(el){
 
 // ===== TEXT SIZE (per device) =====
 function uiScale(){let z=1;try{z=Number(localStorage.getItem("b605-ui-scale"))||1;}catch(e){}return z;}
+const STD_SIZE=["invoice","deliv","labels"];/* invoice, delivery slip and labels always stay at standard size */
 function applyUiScale(z){z=[0.85,0.92,1].includes(z)?z:1;document.documentElement.style.zoom=z===1?"":String(z);document.documentElement.style.setProperty("--uiz",z);
+  STD_SIZE.forEach(id=>{const e=$(id);if(e)e.style.zoom=z===1?"":String(1/z);});
   document.querySelectorAll("#tszSeg button").forEach(b=>b.classList.toggle("on",Number(b.dataset.z)===z));}
 $("tszSeg").addEventListener("click",e=>{const b=e.target.closest("button[data-z]");if(!b)return;const z=Number(b.dataset.z);try{localStorage.setItem("b605-ui-scale",String(z));}catch(e){}applyUiScale(z);toast(z===1?"Normal text size":"Text size changed on this device");});
 applyUiScale(uiScale());
