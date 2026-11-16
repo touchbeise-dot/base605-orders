@@ -2676,14 +2676,23 @@ try{(function(){
   function codesOf(o){var m=[];o.items.forEach(function(i){var k=i.art||i.code||i.product;if(m.indexOf(k)<0)m.push(k)});return m}
   function sheetsFor(o,code){return o.items.filter(function(i){return (i.art||i.code||i.product)===code}).reduce(function(a,i){return a+Math.ceil((Number(i.pieces)||0)/10)},0)}
   function norm(x){return String(x||"").toUpperCase().replace(/[^A-Z0-9]/g,"")}
+  /* one file = one tag design (one item). If the order has the same code twice (e.g. BP11 for two names),
+     "0035_BP11" is the 1st item and "0035_BP11 (2)" the 2nd — count only that item's sheets. */
+  function itemForDesign(o,d,code){var same=o.items.filter(function(i){return norm(i.art||i.code||i.product)===norm(code)});
+    if(same.length<=1)return {it:same[0]||null,k:1,many:false};
+    var m=String(d.inbox||"").match(/_o[A-Za-z0-9_-]*-(\d+)$/);
+    if(m){var ci=o.items.filter(function(i){return i.code||i.art}),it=ci[Number(m[1])];if(it&&same.indexOf(it)>=0)return {it:it,k:same.indexOf(it)+1,many:true}}
+    var s2=String(d.name||"").match(/\((\d+)\)\s*$/),k=s2?Number(s2[1]):1;k=Math.min(Math.max(k,1),same.length);return {it:same[k-1],k:k,many:true}}
+  function sheetsForDesign(o,d,code){var r=itemForDesign(o,d,code);if(!r.many)return sheetsFor(o,code);return Math.ceil((Number(r.it&&r.it.pieces)||0)/10)}
   function firstName(c){return String(c||"").replace(/^@/,"").trim().split(/\s+/)[0].replace(/[^\w\u00C0-\u024F-]+/g,"")||"Customer"}
   function safe(n){return String(n).replace(/[\\/:*?"<>|]+/g,"-").trim()||"design"}
   function baseCode(name){return String(name).replace(/^#?\d{1,5}[_\-\s]+/,"").replace(/\s*\(\d+\)$/,"").replace(/[\s_-]*copy(\s*\d+)?$/i,"").trim()}
   function matchCode(o,name){var cds=codesOf(o),n=norm(baseCode(name));return cds.find(function(c){return norm(c)===n})||cds.find(function(c){return n.indexOf(norm(c))>=0&&norm(c).length>1})||cds[0]}
   function autoLink(d){var m=String(d.name).match(/^#?(\d{1,5})[_\-\s]+(.+)$/);if(!m)return;var no=Number(m[1]),o=orders.find(function(x){return Number(x.no)===no});if(!o)return;d.orderId=o.id;d.code=matchCode(o,m[2]);d.auto=true}
   function fileBase(d){var o=d.orderId&&orders.find(function(x){return x.id===d.orderId});
-    if(!o)return "Cutter_"+safe(d.name);var code=d.code||codesOf(o)[0]||d.name,n=sheetsFor(o,code)||1;
-    return String(o.no||0).padStart(4,"0")+"_"+firstName(o.customer)+"_"+safe(code).replace(/\s+/g,"-")+"_"+n+"sheet"+(n===1?"":"s");}
+    if(!o)return "Cutter_"+safe(d.name);var code=d.code||codesOf(o)[0]||d.name,n=sheetsForDesign(o,d,code)||1;
+    var r=itemForDesign(o,d,code),tag=r.many&&r.k>1?"-"+r.k:"";
+    return String(o.no||0).padStart(4,"0")+"_"+firstName(o.customer)+"_"+safe(code).replace(/\s+/g,"-")+tag+"_"+n+"sheet"+(n===1?"":"s");}
   function orderOpts(sel){var pr={"ready to print":0,"approved":1,"printed":2},list=orders.filter(function(o){return !CLOSED(o.status)||o.id===sel});
     list.sort(function(a,b){return((pr[a.status]!=null?pr[a.status]:3)-(pr[b.status]!=null?pr[b.status]:3))||String(a.releaseDate||"9").localeCompare(String(b.releaseDate||"9"))});
     return '<option value="">Link to order…</option>'+list.map(function(o){return '<option value="'+o.id+'"'+(o.id===sel?" selected":"")+">"+ono(o.no)+" "+esc(o.customer)+" · "+esc(o.status)+"</option>"}).join("")}
@@ -2710,7 +2719,7 @@ try{(function(){
   function renderMatch(){var ds=matchIds.map(function(id){return cs.designs.find(function(d){return d.id===id})}).filter(Boolean);
     $("cxMTitle").textContent="Match "+ds.length+" design"+(ds.length===1?"":"s");
     $("cxMList").innerHTML=ds.map(function(d){var cands=candidates(d),code=baseCode(d.name);
-      var btns=cands.map(function(o){var taken=cs.designs.some(function(x){return x!==d&&x.orderId===o.id&&norm(x.code)===norm(matchCode(o,d.name))});var c=matchCode(o,d.name),n=sheetsFor(o,c);
+      var btns=cands.map(function(o){var taken=cs.designs.some(function(x){return x!==d&&x.orderId===o.id&&norm(x.code)===norm(matchCode(o,d.name))});var c=matchCode(o,d.name),n=sheetsForDesign(o,d,c);
         return '<button type="button" data-o="'+o.id+'" class="'+(d.orderId===o.id?"on":"")+(taken&&d.orderId!==o.id?" taken":"")+'">'+ono(o.no)+" "+esc(o.customer)+'<small>'+esc(c)+" · "+n+" sheet"+(n===1?"":"s")+" · "+esc(o.status)+(o.releaseDate?" · "+fmtDate(o.releaseDate):"")+(taken&&d.orderId!==o.id?" · already matched":"")+'</small></button>'}).join("");
       return '<div class="cx-mrow'+(d.orderId?" done":"")+'" data-id="'+d.id+'"><img class="pv" src="'+d.url+'" alt=""><div class="nm">'+esc(d.name)+'<span>'+(cands.length?cands.length+" open order"+(cands.length===1?"":"s")+" with "+esc(code):"no open order has "+esc(code))+'</span></div><div class="cx-cands">'+btns+'</div><div class="oth"><select data-other>'+orderOpts(cands.some(function(o){return o.id===d.orderId})?null:d.orderId).replace("Link to order…","Other order…")+'</select><button type="button" class="ghost" data-skip style="padding:7px 12px;font-size:13px">'+(d.orderId?"Clear":"Skip")+'</button></div></div>'}).join("");}
   $("cxMList").addEventListener("click",function(e){var row=e.target.closest(".cx-mrow");if(!row)return;var d=cs.designs.find(function(x){return x.id===+row.dataset.id});if(!d)return;
@@ -2798,7 +2807,7 @@ try{(function(){
     fetchInbox(selFiles(),b,"Getting").then(async function(files){
       if(!files.length){st("Couldn't get those files. Try again.",true);paintInbox();return}
       try{var blob,name;if(files.length===1){blob=files[0];name=files[0].name}
-        else{if(!window.JSZip)throw new Error("Zip tools didn't load. Reload the page and try again.");var zip=new window.JSZip();files.forEach(function(f){zip.file(f.name,f)});blob=await zip.generateAsync({type:"blob"});name="Base605_print_files_"+files.length+".zip"}
+        else{if(!window.JSZip)throw new Error("Zip tools didn't load. Reload the page and try again.");var zip=new window.JSZip(),used={};files.forEach(function(f){var n=f.name,k=2;while(used[n.toLowerCase()])n=f.name.replace(/(\.[^.]+)?$/," ("+(k++)+")$1");used[n.toLowerCase()]=1;zip.file(n,f)});blob=await zip.generateAsync({type:"blob"});name="Base605_print_files_"+files.length+".zip"}
         var r=await save(name,blob);st(r==="saved"?"Saved "+name:"Download cancelled.",r!=="saved")}catch(e){st((e&&e.message)||"Download failed.",true)}paintInbox()})}
   window.cxMarkPrinted=function(list){var ids=list.map(function(d){return d.inbox}).filter(Boolean);if(!ids.length)return;
     postInbox({action:"print_mark",ids:ids}).then(function(){inboxList.forEach(function(p){if(ids.indexOf(p.id)>=0)p.printedAt=Date.now()});paintInbox()},function(){})};
