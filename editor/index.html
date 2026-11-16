@@ -1453,9 +1453,10 @@ function sizeStage(){
     var pn=$("propsPanel"),open=!!document.body.dataset.mtool&&getComputedStyle(pn).display!=="none",shH=open?pn.getBoundingClientRect().height:0,top=st.getBoundingClientRect().top,
     abH=kbd?0:abHm,lb=$("layersBox"),chH=lb.getBoundingClientRect().height||0,trH=kbd?0:66;
     availH=Math.max(90,vh-top-shH-abH-trH-chH-18);
-    // focus view: with a tool open on a text, zoom the tag so that text fills the free space
+    // focus view (turned off — Chloe prefers always seeing the whole tag): with a tool open on a text, zoom the tag so that text fills the free space
+    var AUTO_ZOOM=false;
     var fr=cv.parentNode,inf=lastInfo&&sel>=0?lastInfo[sel]:null;
-    if(open&&selKind==="text"&&inf&&msel.length<2){
+    if(AUTO_ZOOM&&open&&selKind==="text"&&inf&&msel.length<2){
       var bb=inf.box,cw=card.w,ch=card.h,fw=availW,fh=availH,pad=cw*.05,fit=Math.min(fw/cw,fh/ch);
       var Z=Math.min(fw*.92/((bb[2]-bb[0])+2*pad),fh*.8/((bb[3]-bb[1])+2*pad),fit*3);Z=Math.max(Z,fit);
       var tw=cw*Z,th=ch*Z,cx=(bb[0]+bb[2])/2*Z,cy=(bb[1]+bb[3])/2*Z;
