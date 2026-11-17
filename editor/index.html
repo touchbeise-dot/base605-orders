@@ -452,7 +452,7 @@ details.oact .obtns{margin-top:8px}
   <div class="wrap topin">
     <div class="brand">
       <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--pine)" d="M12 11c-2-4-6-6-9-5 2 1 2 3 1 4 2 0 3 1 3 3 1-1 3-2 5-2Zm0 0c2-4 6-6 9-5-2 1-2 3-1 4-2 0-3 1-3 3-1-1-3-2-5-2Z"/><circle cx="9.5" cy="15" r="2.6" fill="var(--red)"/><circle cx="14.5" cy="15" r="2.6" fill="var(--red)"/><circle cx="12" cy="19" r="2.6" fill="var(--red)"/></svg>
-      base605 <small>Tag editor <span style="font-size:11px;opacity:.55">v17d</span></small>
+      base605 <small>Tag editor <span style="font-size:11px;opacity:.55">v17e</span></small>
     </div>
     <nav class="tabs" role="tablist">
       <button id="tabOr" role="tab" aria-selected="true">Orders<span class="count" id="orCount" hidden>0</span></button>
@@ -1438,7 +1438,9 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("pv").hi
   if(view==="ed"&&(e.key==="Delete"||e.key==="Backspace")&&selKind==="text"&&sel>=0){var t=e.target;if(t&&(t.tagName==="TEXTAREA"||t.tagName==="INPUT"||t.tagName==="SELECT"||t.isContentEditable))return;e.preventDefault();deleteLayer(sel)}});
 document.addEventListener("keydown",function(e){if(view!=="ed"||!(e.metaKey||e.ctrlKey)||e.key.toLowerCase()!=="z")return;
   var t=e.target,typing=t&&(t.tagName==="TEXTAREA"||t.tagName==="INPUT");if(typing)return;e.preventDefault();histGo(e.shiftKey?1:-1)});
-function markDirty(){if(!cur)return;histNote();setTimeout(updUndo,0);cur.dirty=true;if(cur.draftId){$("edSaved").textContent="Saving…";clearTimeout(saveTimer);saveTimer=setTimeout(flushSave,1200)}else $("edSaved").textContent="Not saved"}
+function markDirty(){if(!cur)return;histNote();setTimeout(updUndo,0);cur.dirty=true;if(cur.draftId){$("edSaved").textContent="Saving…";clearTimeout(saveTimer);saveTimer=setTimeout(flushSave,8000)}else $("edSaved").textContent="Not saved"}
+/* fewer saves = fewer Cloudflare writes (free plan allows ~1,000 a day). Still saves on Next tag, Back, proof, and when you leave the app. */
+document.addEventListener("visibilitychange",function(){if(document.hidden&&cur&&cur.dirty&&cur.draftId){clearTimeout(saveTimer);flushSave()}});
 $("cust").addEventListener("input",function(e){cur.customer=e.target.value;markDirty()});
 $("note").addEventListener("input",function(e){cur.note=e.target.value;markDirty()});
 
