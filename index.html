@@ -383,6 +383,8 @@ body.selmode .ochk{display:block}
   .ototal{font-size:14.5px;font-weight:700}
   .opay{text-align:left;margin:0}.ostage{margin:0}
 }
+.toeditor{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:700;font-size:14px;color:#fff;background:#922b2c;border-radius:999px;padding:8px 14px 8px 11px;box-shadow:0 2px 8px rgba(146,43,44,.25);white-space:nowrap}
+.toeditor:active{transform:scale(.97)}
 .tsz{display:flex;background:#f0ebe4;border-radius:12px;padding:3px;gap:3px}
 .tsz button{flex:1;border:0;background:none;font:inherit;font-weight:600;font-size:14px;padding:9px 0;border-radius:10px;color:var(--mute);cursor:pointer}
 .tsz button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0002}
@@ -984,7 +986,7 @@ section.enter-back{animation:inBack .2s ease-out}
 </nav>
 <header>
   <div><h1 id="title">Today</h1></div>
-  <div style="display:flex;gap:10px;align-items:center"><span class="sub" id="storeState"></span><a class="ghost" href="editor/" target="_blank" rel="noopener" style="padding:6px 10px;font-size:13px;text-decoration:none;border-color:#c9c1e3;color:#5b4b8f;font-weight:600">✎ Tags</a><button class="ghost" id="gear" type="button" style="padding:6px 10px;font-size:13px" aria-label="Catalog & settings">⚙ Catalog</button></div>
+  <div style="display:flex;gap:10px;align-items:center"><span class="sub" id="storeState"></span><a class="toeditor" href="editor/" aria-label="Open the Tag Editor"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 7z"/><circle cx="7.5" cy="8" r="1.6"/></svg>Tag Editor</a><button class="ghost" id="gear" type="button" style="padding:6px 10px;font-size:13px" aria-label="Catalog & settings">⚙ Catalog</button></div>
 </header>
 <main>
   <section id="tab-today">
@@ -1888,7 +1890,7 @@ $("save").onclick=async()=>{
   try{
     if(editing)await store.update(order);else await store.add(order);
     showInvoice(order);resetForm();
-  }catch(e){console.error(e);const m=String(e&&e.message||e);toast(e?.code==="quota_exceeded"?"Storage full — delete old orders":/limit|1101|exceeded|429/i.test(m)?"Save failed: Cloudflare daily write limit reached. Your order is still on screen — try again later.":"Save failed ("+m.slice(0,90)+"). Your order is still on screen.");}
+  }catch(e){console.error(e);const m=String(e&&e.message||e);toast(e?.code==="quota_exceeded"?"Storage full — delete old orders":/limit|1101|exceeded|429/i.test(m)?"Save failed: Cloudflare daily write limit reached. Your order is still on screen — try again later.":/load failed|failed to fetch|networkerror/i.test(m)?"Save failed: Cloudflare didn't answer (likely the daily save limit, or no internet). Your order is still on screen.":"Save failed ("+m.slice(0,90)+"). Your order is still on screen.");}
   finally{btn.disabled=false;btn.classList.remove("busy");}
 };
 
@@ -2063,19 +2065,33 @@ function labelHtml(o){
   const npk=o.items.length,ntg=o.items.reduce((a,i)=>a+(Number(i.pieces)||0),0);
   return `<div class="pkg"><div class="lh"><span>BASE 605</span><span>${ono(o.no)}${rushN(o)?" · RUSH":""}</span></div><div class="ln">${esc(o.customer)}</div>${o.contact?`<div class="ld">${esc(o.contact)}</div>`:""}${deliv}</div>`;
 }
-function showLabels(list){labelOrders=list;labelPrev=tab;$("labels").innerHTML=list.map(labelHtml).join("");$("labelPng").style.display=list.length===1?"":"none";$("labelZip").style.display=list.length>1?"":"none";$("labelZip").textContent=`Save all ${list.length} as images`;go("label");fitLabels();}
+function showLabels(list){labelOrders=list;labelPrev=tab;$("labels").innerHTML=list.map(labelHtml).join("");$("labelPng").style.display=list.length===1?"":"none";$("labelZip").style.display=list.length>1?"":"none";$("labelZip").textContent=`Save all ${list.length} as pictures`;labelFiles=null;go("label");fitLabels();}
 // save every label on screen as its own PNG, together in one zip
-$("labelZip").onclick=async()=>{const btn=$("labelZip");if(!window.html2canvas){toast("PNG not available — use Print instead");return;}
-  const els=[...$("labels").querySelectorAll(".pkg")];if(!els.length)return;btn.disabled=true;const lab=btn.textContent;
+/* Save all labels as separate pictures (no zip).
+   Phone: share sheet → "Save N Images" puts them in Photos. Laptop: each label downloads as its own PNG.
+   iPhone only opens the share sheet right after a tap, so if making the pictures took too long,
+   the button turns into "Save N labels to Photos" — one more tap opens it instantly. */
+let labelFiles=null;
+const isPhone=()=>matchMedia("(pointer:coarse)").matches;
+async function shareOrDownload(files,btn,lab){
+  const canShare=isPhone()&&navigator.canShare&&navigator.canShare({files});
+  if(canShare){try{await navigator.share({files});labelFiles=null;btn.textContent=lab;toast(`Done · ${files.length} label${files.length>1?"s":""}`);return;}
+    catch(e){if(e&&e.name==="AbortError"){btn.textContent=lab;labelFiles=null;return;}
+      if(e&&e.name==="NotAllowedError"){labelFiles=files;btn.textContent=`Save ${files.length} label${files.length>1?"s":""} to Photos`;toast("Ready — tap the button again");return;}console.error(e);}}
+  for(let i=0;i<files.length;i++){const a=document.createElement("a");a.href=URL.createObjectURL(files[i]);a.download=files[i].name;document.body.appendChild(a);a.click();a.remove();
+    const u=a.href;setTimeout(()=>URL.revokeObjectURL(u),8000);if(i<files.length-1)await new Promise(r=>setTimeout(r,350));}
+  labelFiles=null;btn.textContent=lab;toast(`Saved ${files.length} label${files.length>1?"s":""}${files.length>1&&!isPhone()?" (allow multiple downloads if your browser asks)":""}`);}
+$("labelZip").onclick=async()=>{const btn=$("labelZip"),lab=`Save all ${labelOrders.length} as pictures`;
+  if(labelFiles){const f=labelFiles;labelFiles=null;await shareOrDownload(f,btn,lab);return;}
+  if(!window.html2canvas){toast("Picture tool didn't load — use Print instead");return;}
+  const els=[...$("labels").querySelectorAll(".pkg")];if(!els.length)return;btn.disabled=true;
   try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const files=[];
-    for(let i=0;i<els.length;i++){btn.textContent=`Saving ${i+1} of ${els.length}…`;const c=await snap(els[i],{scale:4,backgroundColor:"#ffffff",useCORS:true});
-      const blob=await new Promise(r=>c.toBlob(r,"image/png"));const o=labelOrders[i];files.push({name:`base605-${o&&o.no?ono(o.no).slice(1):"order"+(i+1)}-label.png`,blob});}
-    let out,name;if(files.length===1){out=files[0].blob;name=files[0].name;}
-    else{if(!window.JSZip)throw new Error("zip");const z=new window.JSZip();files.forEach(f=>z.file(f.name,f.blob));out=await z.generateAsync({type:"blob"});name=`base605-labels-${files.length}.zip`;}
-    if(store.downloads){try{await store.downloads.save({filename:name,data:out});toast(`Saved ${files.length} labels`);}catch(e){if(e?.code!=="declined")toast("Download unavailable — use Print instead");}}
-    else{const a=document.createElement("a");a.href=URL.createObjectURL(out);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast(`Saved ${files.length} labels`);}
-  }catch(e){console.error(e);toast(e&&e.message==="zip"?"Zip tools didn't load. Reload and try again.":"Couldn't save the labels. Try Print instead.");}
-  finally{btn.disabled=false;btn.textContent=lab;}};
+    for(let i=0;i<els.length;i++){btn.textContent=`Making ${i+1} of ${els.length}…`;const c=await snap(els[i],{scale:4,backgroundColor:"#ffffff",useCORS:true});
+      const blob=await new Promise(r=>c.toBlob(r,"image/png"));const o=labelOrders[i];
+      files.push(new File([blob],`base605-${o&&o.no?ono(o.no).slice(1):"order"+(i+1)}-label.png`,{type:"image/png"}));}
+    btn.disabled=false;await shareOrDownload(files,btn,lab);
+  }catch(e){console.error(e);toast("Couldn't save the labels. Try Print instead.");btn.textContent=lab;}
+  finally{btn.disabled=false;}};
 // names wrap only between words; if one word is too wide for the label, the name shrinks until it fits (no "FLORCRU / Z")
 function fitLabels(){const run=()=>document.querySelectorAll("#labels .pkg .ln").forEach(el=>{
   el.style.fontSize="";let pt=26;
