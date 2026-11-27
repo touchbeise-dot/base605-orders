@@ -454,7 +454,7 @@ details.oact .obtns{margin-top:8px}
   <div class="wrap topin">
     <div class="brand">
       <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="var(--pine)" d="M12 11c-2-4-6-6-9-5 2 1 2 3 1 4 2 0 3 1 3 3 1-1 3-2 5-2Zm0 0c2-4 6-6 9-5-2 1-2 3-1 4-2 0-3 1-3 3-1-1-3-2-5-2Z"/><circle cx="9.5" cy="15" r="2.6" fill="var(--red)"/><circle cx="14.5" cy="15" r="2.6" fill="var(--red)"/><circle cx="12" cy="19" r="2.6" fill="var(--red)"/></svg>
-      base605 <small>Tag editor <span style="font-size:11px;opacity:.55">v18c</span></small>
+      base605 <small>Tag editor <span style="font-size:11px;opacity:.55">v18d</span></small>
     </div>
     <a class="toapp" href="../" aria-label="Back to the order app"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Order app</a>
     <nav class="tabs" role="tablist">
@@ -895,12 +895,15 @@ details.oact .obtns{margin-top:8px}
     if (canvas.width !== CW) canvas.width = CW;
     if (canvas.height !== CH) canvas.height = CH;
     var paper = state && state.paper, dc = state && state.dc;
+    var art = bg ? (dc && dc.mode && dc.mode !== "orig" ? recolor(bg, dc) : bg) : null;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = paper || "#ffffff"; ctx.fillRect(0, 0, CW, CH);
+    /* no paper colour picked: fill with the artwork's own edge colour, so moving/shrinking a design
+       with a coloured background (cream, red…) doesn't leave white gaps */
+    ctx.fillStyle = paper || (art && edgeColor(art)) || "#ffffff"; ctx.fillRect(0, 0, CW, CH);
     ctx.setTransform(s, 0, 0, s, ox, oy);
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     var bs = (state && state.bgScale) || 1;
-    if (bg) { var art = dc && dc.mode && dc.mode !== "orig" ? recolor(bg, dc) : bg;
+    if (bg) {
       if (paper) ctx.globalCompositeOperation = "multiply";
       var bx0 = (state && state.bgX) || 0, by0 = (state && state.bgY) || 0;
       ctx.drawImage(art, W * (1 - bs) / 2 + bx0, H * (1 - bs) / 2 + by0, W * bs, H * bs);
@@ -908,6 +911,25 @@ details.oact .obtns{margin-top:8px}
     var info = drawText(ctx, card, state);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     return info;
+  }
+
+  /* Average colour along the artwork's edges (cached). Returns null if the edges don't agree (busy art) or can't be read. */
+  function edgeColor(img) {
+    if (img.__edge !== undefined) return img.__edge;
+    var out = null;
+    try {
+      var c = document.createElement("canvas"), n = 32; c.width = n; c.height = n;
+      var x = c.getContext("2d"); x.drawImage(img, 0, 0, n, n);
+      var d = x.getImageData(0, 0, n, n).data, px = [];
+      for (var i = 0; i < n; i++) { [[i, 0], [i, n - 1], [0, i], [n - 1, i]].forEach(function (p) { var k = (p[1] * n + p[0]) * 4; if (d[k + 3] > 200) px.push([d[k], d[k + 1], d[k + 2]]); }); }
+      if (px.length > n) {
+        var m = [0, 1, 2].map(function (j) { var v = px.map(function (p) { return p[j]; }).sort(function (a, b) { return a - b; }); return v[v.length >> 1]; });
+        var near = px.filter(function (p) { return Math.abs(p[0] - m[0]) + Math.abs(p[1] - m[1]) + Math.abs(p[2] - m[2]) < 30; }).length;
+        if (near / px.length > 0.7) out = "rgb(" + m.join(",") + ")";
+      }
+    } catch (e) { out = null; }
+    try { img.__edge = out; } catch (e) {}
+    return out;
   }
 
   /* Fonts a card needs, as {family, weight, style, text}. */
